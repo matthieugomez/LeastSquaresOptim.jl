@@ -1,9 +1,2 @@
 julia 0.4-
-FixedEffectModels 0.2.1
-Distances  0.1.1
-StatsBase 0.7.1
-DataArrays
-DataFrames 0.6
-Optim
-Reexport
-
+DualNumbers

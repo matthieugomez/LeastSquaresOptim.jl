@@ -1,7 +1,6 @@
-using LeastSquares
+using LeastSquaresOptim
 
-tests = ["lsoptimization.jl"
-		]
+tests = ["nonlinearleastsquares.jl"]
 
 println("Running tests:")
 
