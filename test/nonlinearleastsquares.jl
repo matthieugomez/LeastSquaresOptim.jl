@@ -503,7 +503,8 @@ end
 
 for matrix in (:dense, :sparse)
     for (solver, solver_abbr) in ((:factorization, :fact), (:iterative, :iter))
-        if matrix == :sparse && solver == :factorization
+        if matrix == :sparse && solver != :iter
+            # test later
             continue
         else
             for (method, method_abbr) in ((:dogleg, :dl), (:levenberg_marquardt, :lm))
@@ -553,8 +554,36 @@ for (name, f!, g!, x) in alltests
 end
 
 
-#test autodiff
+# test dense cholesky
 for (method, method_abbr) in ((:dogleg, :dl), (:levenberg_marquardt, :lm))
+    alltests = [rosenbrock(); 
+    powell_singular(); powell_badly_scaled(); 
+    wood();
+    helical_valley(); 
+    watson(6); 
+    chebyquad(5); chebyquad(6); chebyquad(7); chebyquad(9);
+    brown_almost_linear(10); brown_almost_linear(30);
+    discrete_boundary_value(10);
+    discrete_integral_equation(1); discrete_integral_equation(10);
+    trigonometric(10); variably_dimensioned(10); 
+    broyden_tridiagonal(10); broyden_banded(10)]
+    for (name, f!, g!, x) in alltests
+        fcur = similar(x)
+        J = Array(Float64, length(x), length(x))
+        nls = LeastSquaresProblem(x, fcur, f!, J, g!)
+        r = optimize!(nls, method = method, solver = :factorization_cholesky, iterations = 10_000)
+        @printf("%-6s %4s %2s %30s %5d %5d   %5d   %10e\n", :dense, :chol, method_abbr, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
+        @test r.converged
+        @test r.ssr <= 1e-3
+    end
+end
+
+
+
+
+
+#test autodiff
+@time for (method, method_abbr) in ((:dogleg, :dl), (:levenberg_marquardt, :lm))
     alltests = [rosenbrock(); 
     powell_singular(); powell_badly_scaled(); 
     wood();
@@ -589,5 +618,3 @@ result = optimize!(nls, iterations = 10_000)
 nls = LeastSquaresProblem(x, fcur, f!, sparse(J), g!)
 result = optimize!(nls, iterations = 10_000)
 @test result.method == :levenberg_marquardt
-
-

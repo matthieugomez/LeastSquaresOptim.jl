@@ -16,6 +16,14 @@ typealias DenseLeastSquaresProblem{Tx, Ty, Tf, TJ<:StridedVecOrMat, Tg} LeastSqu
 
 typealias SparseLeastSquaresProblem{Tx, Ty, Tf, TJ<:SparseMatrixCSC, Tg} LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}
 
+# Generate g! using ForwardDiff package
+function LeastSquaresProblem(x::Vector, y::Vector, f!::Function, J::Matrix; chunk_size = 1)
+    permf!(yp::Vector, xp::Vector) = f!(xp, yp)
+    permg! = jacobian(permf!, mutates = true, chunk_size = chunk_size, output_length = length(y))
+    g!(xp::Vector, Jp::Matrix) = permg!(Jp, xp)
+    LeastSquaresProblem(x, y, f!, J, g!)
+end
+
 ###############################################################################
 ##
 ## Non Linear Least Squares Allocated

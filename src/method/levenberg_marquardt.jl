@@ -44,6 +44,7 @@ function optimize!{T, Tmethod <: LevenbergMarquardt, Tsolve}(
     x, fcur, f!, J, g! = anls.nls.x, anls.nls.y, anls.nls.f!, anls.nls.J, anls.nls.g!
 
     # initialize
+    Tx, Ty = eltype(x), eltype(fcur)
     f_calls,  g_calls, mul_calls = 0, 0, 0
     x_converged, f_converged, gr_converged, converged =
         false, false, false, false
@@ -65,14 +66,14 @@ function optimize!{T, Tmethod <: LevenbergMarquardt, Tsolve}(
         lmiter = solve!(anls, λ)
         mul_calls += lmiter
         # trial ssr
-        axpy!(-1, δx, x)
+        axpy!(-one(Tx), δx, x)
         f!(x, ftrial)
         f_calls += 1
         trial_ssr = sumabs2(ftrial)
 
         # predicted ssr
         _A_mul_B!(ftmp, J, δx)
-        axpy!(-1.0, fcur, ftmp)
+        axpy!(-one(Ty), fcur, ftmp)
         predicted_ssr = sumabs2(ftmp)
 
         # test convergence
@@ -91,7 +92,7 @@ function optimize!{T, Tmethod <: LevenbergMarquardt, Tsolve}(
             need_jacobian = true
         else
             # revert update
-            axpy!(1, δx, x)
+            axpy!(one(Tx), δx, x)
             λ = min(λ * decrease_factor , MAX_λ)
             decrease_factor *= 2.0
         end

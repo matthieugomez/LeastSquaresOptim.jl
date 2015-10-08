@@ -41,6 +41,9 @@ function optimize!{T, Tmethod <: Dogleg, Tsolve}(
     f_calls,  g_calls, mul_calls = 0, 0, 0
     x_converged, f_converged, gr_converged, converged =
         false, false, false, false
+
+  
+    Tx, Ty = eltype(x), eltype(fcur)
     f!(x, fcur)
     f_calls += 1
     ssr = sumabs2(fcur)
@@ -70,7 +73,7 @@ function optimize!{T, Tmethod <: Dogleg, Tsolve}(
                 end
                 # δdiff = δgn - δsd
                 copy!(δdiff, δgn)
-                axpy!(-1, δsd,  δdiff)
+                axpy!(-one(Tx), δsd,  δdiff)
                 if norm(δgn) <= Δ
                     # Gauss-Newton step is within the region
                     # It is the optimal solution to the trust-region problem.
@@ -88,14 +91,14 @@ function optimize!{T, Tmethod <: Dogleg, Tsolve}(
             end
 
             # update x
-            axpy!(-1, δx, x)
+            axpy!(-one(Tx), δx, x)
             f!(x, ftrial)
             f_calls += 1
             trial_ssr = sumabs2(ftrial)
 
             _A_mul_B!(ftmp, J, δx)
             mul_calls += 1
-            axpy!(-1.0, fcur, ftmp)
+            axpy!(-one(Ty), fcur, ftmp)
             predicted_ssr = sumabs2(ftmp)
 
             # test convergence
@@ -110,7 +113,7 @@ function optimize!{T, Tmethod <: Dogleg, Tsolve}(
                 ssr = trial_ssr
             else
                 # unsucessful iteration
-                axpy!(1.0, δx, x)
+                axpy!(one(Tx), δx, x)
             end
             if ρ < DECREASE_THRESHOLD
                Δ = max(MIN_Δ, Δ * 0.5)

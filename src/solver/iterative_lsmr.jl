@@ -21,11 +21,13 @@ end
 
 function Ac_mul_B!{TA, Tx}(α::Number, pm::PMatrix{TA, Tx}, a, 
                 β::Number, b::Tx)
-    Ac_mul_B!(1, pm.A, a, 0, pm.tmp)
+    T = eltype(b)
+    β = convert(T, β)
+    Ac_mul_B!(one(T), pm.A, a, zero(T), pm.tmp)
     map!(*, pm.tmp, pm.tmp, pm.normalization)
-    if β != 1
-        if β == 0
-            fill!(b, 0)
+    if β != one(T)
+        if β == zero(T)
+            fill!(b, β)
         else
             scale!(b, β)
         end
@@ -85,11 +87,7 @@ end
 function A_mul_B!{TA, Tx, Ty}(α::Number, mw::DampenedMatrix{TA, Tx}, a::Tx, 
                 β::Number, b::DampenedVector{Ty, Tx})
     if β != 1
-        if β == 0
-            fill!(b, 0)
-        else
-            scale!(b, β)
-        end
+        scale!(b, β)
     end
     A_mul_B!(α, mw.A, a, 1, b.y)
     map!((z, x, y)-> z + α * x * y, b.x, b.x, a, mw.diagonal)
@@ -98,14 +96,16 @@ end
 
 function Ac_mul_B!{TA, Tx, Ty}(α::Number, mw::DampenedMatrix{TA, Tx}, a::DampenedVector{Ty, Tx}, 
                 β::Number, b::Tx)
-    if β != 1
-        if β == 0
-            fill!(b, 0)
+    T = eltype(b)
+    β = convert(T, β)
+    if β != one(T)
+        if β == zero(T)
+            fill!(b, β)
         else
             scale!(b, β)
         end
     end
-    Ac_mul_B!(α, mw.A, a.y, 1, b)
+    Ac_mul_B!(α, mw.A, a.y, one(T), b)
     map!((z, x, y)-> z + α * x * y, b, b, a.x, mw.diagonal)  
     return b
 end
@@ -149,7 +149,8 @@ function solve!{T, Tmethod <: Dogleg, Tsolve <: DoglegLSMR}(
 
     # prepare A
     colsumabs2!(normalization, J)
-    map!(x -> x > 0 ? 1 / sqrt(x) : 0, normalization, normalization)
+    Tx = eltype(normalization)
+    map!(x -> x > zero(Tx) ? 1 / sqrt(x) : zero(Tx), normalization, normalization)
     A = PreconditionedMatrix(J, normalization, tmp)
 
     # solve
@@ -200,8 +201,9 @@ function solve!{T, Tmethod <: LevenbergMarquardt, Tsolve <: LevenbergMarquardtLS
     copy!(normalization, dtd)
     map!(x -> max(x, MIN_DIAGONAL), dtd, dtd)
     scale!(dtd, λ)
-    axpy!(1.0, dtd, normalization)
-    map!(x -> x > 0 ? 1 / sqrt(x) : 0, normalization, normalization)
+    Tx = eltype(normalization)
+    axpy!(one(Tx), dtd, normalization)
+    map!(x -> x > zero(Tx) ? 1 / sqrt(x) : zero(Tx), normalization, normalization)
     map!(sqrt, dtd, dtd)
     A = PreconditionedMatrix(DampenedMatrix(J, dtd), normalization, tmp)
 

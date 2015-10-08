@@ -2,7 +2,7 @@
 [![Coverage Status](https://coveralls.io/repos/matthieugomez/LeastSquaresOptim.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/matthieugomez/LeastSquaresOptim.jl?branch=master)
 ## Motivation
 
-This package solves non linear least squares optimization problems with minimal memory footprint. The user provided Jacobian matrix can be dense (type `StridedVecOrMat`), sparse (type `SparseMatrixCSC`), or represented by operators (`A_mul_B` and `Ac_mul_B`)
+This package solves non linear least squares optimization problems. It handles problems with dense Jacobian (type `StridedVecOrMat`), sparse Jacobian (of type `SparseMatrixCSC`), and problems where the Jacobian is represented by a few operators (`A_mul_B` and `Ac_mul_B`). Almost all operations are done in place, making the package particularly adapted to high dimensional problems.
 
 1. There are two least square optimization methods
 
@@ -13,17 +13,19 @@ This package solves non linear least squares optimization problems with minimal 
 
 2. The least squares problem encountered at each iteration can be solved in two different ways:
 
-	- `solver = :factorization`. This solver can be used when the jacobian is a dense or a sparse matrix. 
+	- `solver = :factorization`. 
 		- For dense jacobians, it relies on the QR factorization in LAPACK.
 		- For sparse jacobians, it relies on the cholesky factorization in SuiteSparse. A symbolic factorization is computed at the first iteration and numerically updated at each iteration. With this method, you need to make sure that `g!` does not change the symbolic structure of the jacobian `J` (i.e. access individual elements via `rowvals(J)`, not `J[i, j]`)
-	- `solve = :iterative`. This solver can be used when the jacobian is a dense or sparse matrix, or any object with the following methods:
-		- `A_mul_B!(α::Number, A, x, β::Number, fcur)` updates `fcur -> α Ax + βfcur`
-		- `Ac_mul_B!(α::Number, A, fcur, β::Number, x)` updates `x -> α A'fcur + βx`
-		- `colsumabs2!(x, J)` updates `x -> diag(J'J)`
+	- `solve = :iterative` corresponds to a conjugate gradient method (more precisely [LSMR]([http://web.stanford.edu/group/SOL/software/lsmr/) with diagonal preconditioner). The jacobian can be a dense matrix, a sparse matrix, or any type implementing the following methods:
+		- `A_mul_B!(α::Number, A, x, β::Number, fcur)`that  updates fcur -> α Ax + βfcur
+		- `Ac_mul_B!(α::Number, A, fcur, β::Number, x)` that updates x -> α A'fcur + βx
+		- `colsumabs2!(x, A)` that updates x -> diag(A'A)
+		- `size(A, i::Integer)` and `eltype(A)`
 
-		This solver relies on a conjugate gradient method (more precisely [LSMR]([http://web.stanford.edu/group/SOL/software/lsmr/) with diagonal preconditioner).
+		An example of the latter case is given in the package [SparseFactorModels.jl](https://github.com/matthieugomez/SparseFactorModels.jl).
 
-If the jacobian is dense, `solver` defaults to `:factorization`. and `method` defaults to `:dogleg`.Otherwise `solver` defaults to `:iterative` and `method` defaults to `levenberg_marquardt`.
+
+For dense Jacobians, `solver` defaults to `:factorization`. and `method` defaults to `:dogleg`.Otherwise `solver` defaults to `:iterative` and `method` defaults to `levenberg_marquardt`.
 
 
 ## Syntax
@@ -56,11 +58,11 @@ optimize!(NonLinearLeastSquares(x, fcur, f!, J, g!))
 ```
 
 ## Automatic differentiation
-Automatic differenciation can be used for dense Jacobians thanks to the `DualNumbers` package. 
+Automatic differenciation can be used for dense Jacobians thanks to the `ForwardDiff` package. 
 Just omit the `g!` function when constructing a `NonLinearLeastSquares` object:
 
 ```julia
-optimize!(NonLinearLeastSquares(x::Vector{T}, fcur::Vector{T}, f!::Function, J::Matrix{T}))
+optimize!(NonLinearLeastSquares(x::Vector, fcur::Vector, f!::Function, J::Matrix))
 ```
 
 ## Memory 
@@ -72,10 +74,11 @@ You can also avoid this initial allocation by passing a  `NonLinearLeastSquaresA
 
 ## Related packages
 Related:
+- [LSqfit.jl](https://github.com/JuliaOpt/LsqFit.jl) estimates parameters and their standard errors for non linear least squares problems with dense Jacobians.
 - [Optim.jl](https://github.com/JuliaOpt/Optim.jl) solves general optimization problems.
 - [IterativeSolvers.jl](https://github.com/JuliaLang/IterativeSolvers.jl) includes several iterative solvers for linear least squares.
-- [NLSolve.jl](https://github.com/EconForge/NLsolve.jl) solves non linear equations by least squares optimization.
-- [SparseFactorModels.jl](https://github.com/matthieugomez/SparseFactorModels.jl) uses this package as a back end.
+- [NLSolve.jl](https://github.com/EconForge/NLsolve.jl) solves non linear equations by least squares minimization.
+
 
 ## References
 - Nocedal, Jorge and Stephen Wright *An Inexact Levenberg-Marquardt method for Large Sparse Nonlinear Least Squares*  (1985) The Journal of the Australian Mathematical Society
