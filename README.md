@@ -74,7 +74,7 @@ You can also avoid this initial allocation by passing a  `NonLinearLeastSquaresA
 
 ## Related packages
 Related:
-- [LSqfit.jl](https://github.com/JuliaOpt/LsqFit.jl) estimates parameters and their standard errors for non linear least squares problems with dense Jacobians.
+- [LSqfit.jl](https://github.com/JuliaOpt/LsqFit.jl) fits curves (i.e. models of the form y = f(x, β))
 - [Optim.jl](https://github.com/JuliaOpt/Optim.jl) solves general optimization problems.
 - [IterativeSolvers.jl](https://github.com/JuliaLang/IterativeSolvers.jl) includes several iterative solvers for linear least squares.
 - [NLSolve.jl](https://github.com/EconForge/NLsolve.jl) solves non linear equations by least squares minimization.

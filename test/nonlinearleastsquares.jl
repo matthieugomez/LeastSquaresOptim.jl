@@ -91,22 +91,27 @@ end
 for matrix in (:dense, :sparse)
     for (method, method_abbr) in ((:dogleg, :dl), (:levenberg_marquardt, :lm))
         for (solver, solver_abbr) in ((:factorization, :fact), (:iterative, :iter))
-            if matrix == :sparse && method == :levenberg_marquardt
-                continue
-            else
-                name, f!, g!, x = factor()
-                fcur = ones(9)
-                J = ones(9, 6)
-                g!(x, J)
-                if matrix == :sparse
-                    J = sparse(J)
-                end
-                nls = LeastSquaresProblem(x, fcur, f!, J, g!)
-                r = optimize!(nls, method = method, solver = solver)
-                @printf("%-6s %4s %2s %30s %5d %5d   %5d   %10e\n", matrix, solver_abbr, method_abbr, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
-                @test r.ssr <= 12
-                @test r.converged
+        if matrix == :sparse && method == :levenberg_marquardt
+            continue
+        else
+            name, f!, g!, x = factor()
+            fcur = ones(9)
+            J = ones(9, 6)
+            g!(x, J)
+            if matrix == :sparse
+                J = sparse(J)
+            end
+            nls = LeastSquaresProblem(x, fcur, f!, J, g!)
+            r = optimize!(nls, method = method, solver = solver)
+            @printf("%-6s %4s %2s %30s %5d %5d   %5d   %10e\n", matrix, solver_abbr, method_abbr, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
+            @test r.ssr <= 12
+            @test r.converged
             end
         end
     end
 end
+
+
+
+
+
