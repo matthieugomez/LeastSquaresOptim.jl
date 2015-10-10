@@ -38,5 +38,11 @@ function wdot(x::AbstractVector, y::AbstractVector, w::AbstractVector)
     return out
 end
 
+# can be user written
+function wdot(x, y, w)
+    dot(x, y, w)
+end
+
+
 wsumabs2(x, w) = wdot(x, x, w)
 wnorm(x, w) = sqrt(wsumabs2(x, w))

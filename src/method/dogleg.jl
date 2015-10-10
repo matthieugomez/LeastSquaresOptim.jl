@@ -73,7 +73,7 @@ function optimize!{T, Tmethod <: Dogleg, Tsolve}(
             wnorm_δgr = wnorm(δgr, dtd)
 
             # compute Cauchy point
-            broadcast!((x, y) -> x * sqrt(y), δgn, δgr, dtd)
+            map!((x, y) -> x * sqrt(y), δgn, δgr, dtd)
             A_mul_B!(one(Ty), J, δgn, zero(Ty), fpredict)
             mul_calls += 1
             α = wnorm_δgr^2 / sumabs2(fpredict)
@@ -107,7 +107,7 @@ function optimize!{T, Tmethod <: Dogleg, Tsolve}(
             d = sqrt(c^2 + b_minus_a_squared_norm * (Δ^2 - a_squared_norm))
             β = (c <= 0) ? (d - c)/ b_minus_a_squared_norm : (Δ^2 - a_squared_norm) / (d + c)
             copy!(δx, δgn)
-            scale!(β, δx)
+            scale!(δx, β)
             axpy!(α * (1 - β), δgr, δx)
             wnorm_δx = wnorm(δx, dtd)
         end
