@@ -74,7 +74,7 @@ You can also avoid this initial allocation by passing a  `NonLinearLeastSquaresA
 
 ## Related packages
 Related:
-- [LSqfit.jl](https://github.com/JuliaOpt/LsqFit.jl) fits curves (i.e. models of the form y = f(x, β))
+- [LSqfit.jl](https://github.com/JuliaOpt/LsqFit.jl) is a higher level package to fit curves (i.e. models of the form y = f(x, β))
 - [Optim.jl](https://github.com/JuliaOpt/Optim.jl) solves general optimization problems.
 - [IterativeSolvers.jl](https://github.com/JuliaLang/IterativeSolvers.jl) includes several iterative solvers for linear least squares.
 - [NLSolve.jl](https://github.com/EconForge/NLsolve.jl) solves non linear equations by least squares minimization.
