@@ -40,6 +40,8 @@ function optimize!{T, Tmethod <: Dogleg, Tsolve}(
     δgn, δgr, δx, dtd = anls.method.δgn, anls.method.δgr, anls.method.δx, anls.method.dtd
     ftrial, fpredict = anls.method.ftrial, anls.method.fpredict
     x, fcur, f!, J, g! = anls.nls.x, anls.nls.y, anls.nls.f!, anls.nls.J, anls.nls.g!
+
+    # initialize
     Tx, Ty = eltype(x), eltype(fcur)
     reuse = false
     f_calls,  g_calls, mul_calls = 0, 0, 0
@@ -53,6 +55,7 @@ function optimize!{T, Tmethod <: Dogleg, Tsolve}(
     iter = 0  
     while !converged && iter < iterations 
         iter += 1
+        # compute step
         if !reuse
             #update gradient
             g!(x, J)
@@ -112,6 +115,7 @@ function optimize!{T, Tmethod <: Dogleg, Tsolve}(
             wnorm_δx = wnorm(δx, dtd)
         end
 
+        # update
         x, ftrial, trial_ssr, predicted_ssr = update!(anls.nls, δx, ftrial, fpredict)
         f_calls += 1
         mul_calls += 1

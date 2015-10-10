@@ -5,7 +5,7 @@
 ##
 ##############################################################################
 
-type DenseQRSolver{Tqr, Tu} <: AbstractSolver
+type DenseQRSolver{Tqr, Tu <: AbstractVector} <: AbstractSolver
     qr::Tqr
     u::Tu
 end
@@ -36,7 +36,7 @@ end
 ##############################################################################
 
 
-type DenseQRDampenedSolver{Tqr, Tu} <: AbstractSolver
+type DenseQRDampenedSolver{Tqr, Tu <: AbstractVector} <: AbstractSolver
     qr::Tqr
     u::Tu
 end
