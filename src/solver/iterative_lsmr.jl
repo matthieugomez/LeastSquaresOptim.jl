@@ -112,7 +112,7 @@ end
 
 ##############################################################################
 ## 
-## Dogleg : solve J'J \ J'y
+## solve J'J \ J'y (used in Dogleg)
 ##
 ## we use LSMR for the problem J'J \ J' fcur 
 ## with 1/sqrt(diag(J'J)) as preconditioner
@@ -135,14 +135,12 @@ function allocate(nls::LeastSquaresProblem,
         _zeros(nls.x), _zeros(nls.x),  _zeros(nls.x), _zeros(nls.y))
 end
 
-function solve!{T, Tmethod <: Dogleg, Tsolve <: DoglegLSMR}(
-    anls::LeastSquaresProblemAllocated{T, Tmethod, Tsolve})
-    normalization, tmp, v, h, hbar, b = anls.solve.normalization, anls.solve.tmp, anls.solve.v, anls.solve.h, anls.solve.hbar, anls.solve.b
-    J, y = anls.nls.J, anls.nls.y
-    δgn = anls.method.δgn
+function solve!(x, nls::LeastSquaresProblem, solve::DoglegLSMR)
+    normalization, tmp, v, h, hbar, b = solve.normalization, solve.tmp, solve.v, solve.h, solve.hbar, solve.b
+    J, y = nls.J, nls.y
 
     # prepare x
-    fill!(δgn, 0)
+    fill!(x, 0)
 
     # prepare b
     copy!(b, y)
@@ -154,13 +152,13 @@ function solve!{T, Tmethod <: Dogleg, Tsolve <: DoglegLSMR}(
     A = PreconditionedMatrix(J, normalization, tmp)
 
     # solve
-    x, ch = lsmr!(δgn, A, b, v, h, hbar)
+    x, ch = lsmr!(x, A, b, v, h, hbar)
     return ch.mvps
 end
 
 ##############################################################################
 ## 
-## LevenbergMarquardt: solve (J'J + λ dtd) \ J'y
+## solve (J'J + λ dtd) \ J'y (used in LevenbergMarquardt)
 ## See "An Inexact Levenberg-Marquardt Method for Large Sparse Nonlinear Least Squares"
 ## Weight Holt (1985)
 ##
@@ -182,14 +180,12 @@ function allocate(nls::LeastSquaresProblem,
         _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.y))
 end
 
-function solve!{T, Tmethod <: LevenbergMarquardt, Tsolve <: LevenbergMarquardtLSMR}(
-    anls::LeastSquaresProblemAllocated{T, Tmethod, Tsolve}, λ)
-    normalization, tmp, v, h, hbar, zerosvector, u = anls.solve.normalization, anls.solve.tmp, anls.solve.v, anls.solve.h, anls.solve.hbar, anls.solve.zerosvector, anls.solve.u
-    δx, dtd = anls.method.δx, anls.method.dtd
-    y, J = anls.nls.y, anls.nls.J
+function solve!(x, dtd, λ, nls::LeastSquaresProblem, solve::LevenbergMarquardtLSMR)
+    normalization, tmp, v, h, hbar, zerosvector, u = solve.normalization, solve.tmp, solve.v, solve.h, solve.hbar, solve.zerosvector, solve.u
+    y, J = nls.y, nls.J
 
     # prepare x
-    fill!(δx, 0)
+    fill!(x, 0)
 
     # prepare b
     copy!(u, y)
@@ -208,6 +204,6 @@ function solve!{T, Tmethod <: LevenbergMarquardt, Tsolve <: LevenbergMarquardtLS
     A = PreconditionedMatrix(DampenedMatrix(J, dtd), normalization, tmp)
 
     # solve
-    x, ch = lsmr!(δx, A, b, v, h, hbar, btol = 0.5)
+    x, ch = lsmr!(x, A, b, v, h, hbar, btol = 0.5)
     return ch.mvps
 end

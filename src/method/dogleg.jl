@@ -67,7 +67,7 @@ function optimize!{T, Tmethod <: Dogleg, Tsolve}(
                 scale!(δx, Δ / norm(δsd))
             else
                 if (!gncomputed)
-                    ls_iter = solve!(anls)
+                    ls_iter = solve!(δgn, anls.nls, anls.solve)
                     mul_calls += ls_iter
                     gncomputed = true
                 end

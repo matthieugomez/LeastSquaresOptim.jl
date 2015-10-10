@@ -63,7 +63,7 @@ function optimize!{T, Tmethod <: LevenbergMarquardt, Tsolve}(
         end
         colsumabs2!(dtd, J)
         # solve (J'J + λ * diagm(dtd))δx = J'fcur
-        lmiter = solve!(anls, λ)
+        lmiter = solve!(δx, dtd, λ, anls.nls, anls.solve)
         mul_calls += lmiter
         # trial ssr
         axpy!(-one(Tx), δx, x)

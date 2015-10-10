@@ -1,7 +1,7 @@
 
 ##############################################################################
 ## 
-## Dogleg : solve J'J \ J'y by QR
+## solve J'J \ J'y by QR (used in Dogleg)
 ##
 ##############################################################################
 
@@ -15,25 +15,23 @@ function allocate(nls::DenseLeastSquaresProblem,
     return DenseQRDogleg(similar(nls.J), _zeros(nls.y))
 end
 
-function solve!{T <: DenseLeastSquaresProblem, Tmethod <: Dogleg, Tsolve <: DenseQRDogleg}(
-    anls::LeastSquaresProblemAllocated{T, Tmethod, Tsolve})
-    y, J = anls.nls.y, anls.nls.J
-    u, qr = anls.solve.u, anls.solve.qr
-    δgn = anls.method. δgn
+function solve!(x, nls::DenseLeastSquaresProblem, solve::DenseQRDogleg)
+    y, J = nls.y, nls.J
+    u, qr = solve.u, solve.qr
     
     copy!(qr, J)
     copy!(u, y)
     A_ldiv_B!(qrfact!(qr), u)
 
-    @inbounds @simd for i in 1:length(δgn)
-        δgn[i] = u[i]
+    @inbounds @simd for i in 1:length(x)
+        x[i] = u[i]
     end
     return 1
 end
 
 ##############################################################################
 ## 
-## LevenbergMarquardt: solve (J'J + λ dtd) \ J'y by QR
+## solve (J'J + λ dtd) \ J'y by QR (used in LevenbergMarquardt)
 ##
 ##############################################################################
 
@@ -50,11 +48,9 @@ function allocate(nls:: DenseLeastSquaresProblem,
     return DenseQRLevenvergMarquardt(qr, u)
 end
 
-function solve!{T <: DenseLeastSquaresProblem, Tmethod <: LevenbergMarquardt, Tsolve <: DenseQRLevenvergMarquardt}(
-    anls::LeastSquaresProblemAllocated{T, Tmethod, Tsolve}, λ)
-    y, J = anls.nls.y, anls.nls.J
-    u, qr = anls.solve.u, anls.solve.qr
-    dtd, δx = anls.method.dtd, anls.method.δx
+function solve!(x, dtd, λ, nls::DenseLeastSquaresProblem, solve::DenseQRLevenvergMarquardt)
+    y, J = nls.y, nls.J
+    u, qr = solve.u, solve.qr
     
     # transform dtd
     clamp!(dtd, MIN_DIAGONAL, Inf)
@@ -81,15 +77,15 @@ function solve!{T <: DenseLeastSquaresProblem, Tmethod <: LevenbergMarquardt, Ts
     # solve
     A_ldiv_B!(qrfact!(qr), u)
 
-    @inbounds @simd for i in 1:length(δx)
-        δx[i] = u[i]
+    @inbounds @simd for i in 1:length(x)
+        x[i] = u[i]
     end
     return 1
 end
 
 ##############################################################################
 ## 
-## Dogleg : solve J'J \ J'y by Cholesky
+## solve J'J \ J'y by Cholesky (used in Dogleg)
 ##
 ##############################################################################
 
@@ -102,21 +98,19 @@ function allocate(nls::DenseLeastSquaresProblem,
     return DenseCholeskyDogleg(Array(eltype(nls.J), length(nls.x), length(nls.x)))
 end
 
-function solve!{T <: DenseLeastSquaresProblem, Tmethod <: Dogleg, Tsolve <: DenseCholeskyDogleg}(
-    anls::LeastSquaresProblemAllocated{T, Tmethod, Tsolve})
-    y, J = anls.nls.y, anls.nls.J
-    chol = anls.solve.chol
-    δgn = anls.method.δgn
+function solve!(x, nls::DenseLeastSquaresProblem, solve::DenseCholeskyDogleg)
+    y, J = nls.y, nls.J
+    chol = solve.chol
     
     Ac_mul_B!(chol, J,  J)
-    Ac_mul_B!(δgn, J,  y)
-    A_ldiv_B!(cholfact!(chol, :U, Val{true}), δgn)
+    Ac_mul_B!(x, J,  y)
+    A_ldiv_B!(cholfact!(chol, :U, Val{true}), x)
     return 1
 end
 
 ##############################################################################
 ## 
-## LevenbergMarquardt: solve (J'J + λ dtd) \ J'y by Cholesky
+## solve (J'J + λ dtd) \ J'y by Cholesky (used in LevenbergMarquardt)
 ##
 ##############################################################################
 
@@ -129,11 +123,9 @@ function allocate(nls:: DenseLeastSquaresProblem,
     return DenseCholeskyLevenbergMarquardt(Array(eltype(nls.J), length(nls.x), length(nls.x)))
 end
 
-function solve!{T <: DenseLeastSquaresProblem, Tmethod <: LevenbergMarquardt, Tsolve <: DenseCholeskyLevenbergMarquardt}(
-    anls::LeastSquaresProblemAllocated{T, Tmethod, Tsolve}, λ)
-    y, J = anls.nls.y, anls.nls.J
-    chol = anls.solve.chol
-    dtd, δx = anls.method.dtd, anls.method.δx
+function solve!(x, dtd, λ, nls::DenseLeastSquaresProblem, solve::DenseCholeskyLevenbergMarquardt)
+    y, J = nls.y, nls.J
+    chol = solve.chol
     
     # update chol as J'J + λdtd
     Ac_mul_B!(chol, J, J)
@@ -144,8 +136,8 @@ function solve!{T <: DenseLeastSquaresProblem, Tmethod <: LevenbergMarquardt, Ts
     end
 
     # solve
-    Ac_mul_B!(δx, J, y)
-    A_ldiv_B!(cholfact!(chol), δx)
+    Ac_mul_B!(x, J, y)
+    A_ldiv_B!(cholfact!(chol), x)
     return 1
 end
 

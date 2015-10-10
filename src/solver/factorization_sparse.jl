@@ -34,12 +34,12 @@ end
 
 ##############################################################################
 ## 
-## Dogleg : solve J'J \ J'y
+## solve J'J \ J'y (used in Dogleg)
 ##
 ##############################################################################
 
 type SparseDogleg{Tx} <: AbstractSolver
-    x::Tx
+    v::Tx
     J::Sparse{Float64}
     Jt::Sparse{Float64}
     F::Factor{Float64}
@@ -57,15 +57,14 @@ function allocate(nls::SparseLeastSquaresProblem,
     return SparseDogleg(_zeros(nls.x), sparseJ, sparseJt, F, cm)
 end
 
-function solve!{T <: SparseLeastSquaresProblem , Tmethod <: Dogleg, Tsolve <: SparseDogleg}(
-    anls::LeastSquaresProblemAllocated{T, Tmethod, Tsolve})
-    J, y = anls.nls.J, anls.nls.y
-    x, sparseJ, sparseJt, F, cm = anls.solve.x,anls.solve.J, anls.solve.Jt, anls.solve.F, anls.solve.cm
+function solve!(x, nls::SparseLeastSquaresProblem, solve::SparseDogleg)
+    J, y = nls.J, nls.y
+    v, sparseJ, sparseJt, F, cm = solve.v, solve.J, solve.Jt, solve.F, solve.cm
     Sparse!(J, sparseJ)
     transpose_unsym_!(sparseJ, 2, sparseJt)
     factorize_p!(sparseJt, 0, F, cm)
-    Ac_mul_B!(x, J, y)
+    Ac_mul_B!(v, J, y)
     # !! there is a memory allocation here
-    copy!(anls.method.δgn, F \ x)
+    copy!(x, F \ v)
     return 1
 end
