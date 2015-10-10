@@ -2,7 +2,7 @@
 [![Coverage Status](https://coveralls.io/repos/matthieugomez/LeastSquaresOptim.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/matthieugomez/LeastSquaresOptim.jl?branch=master)
 ## Motivation
 
-This package solves non linear least squares optimization problems. It handles problems with dense Jacobian (type `StridedVecOrMat`), sparse Jacobian (of type `SparseMatrixCSC`), and problems where the Jacobian is represented by a few operators (`A_mul_B` and `Ac_mul_B`). Almost all operations are done in place, making the package particularly adapted to high dimensional problems.
+This package solves non linear least squares optimization problems. It handles problems with dense Jacobian (type `StridedVecOrMat`), sparse Jacobian (of type `SparseMatrixCSC`), or problems where the Jacobian is just represented by a operators (`A_mul_B` and `Ac_mul_B`). Almost all operations are done in place, making the package particularly adapted to high dimensional problems.
 
 1. There are two least square optimization methods
 
@@ -19,10 +19,8 @@ This package solves non linear least squares optimization problems. It handles p
 	- `solve = :iterative` corresponds to a conjugate gradient method (more precisely [LSMR]([http://web.stanford.edu/group/SOL/software/lsmr/) with diagonal preconditioner). The jacobian can be a dense matrix, a sparse matrix, or any type implementing the following methods:
 		- `A_mul_B!(α::Number, A, x, β::Number, fcur)`that  updates fcur -> α Ax + βfcur
 		- `Ac_mul_B!(α::Number, A, fcur, β::Number, x)` that updates x -> α A'fcur + βx
-		- `colsumabs2!(x, A)` that updates x -> diag(A'A)
-		- `size(A, i::Integer)` and `eltype(A)`
-
-		An example of the latter case is given in the package [SparseFactorModels.jl](https://github.com/matthieugomez/SparseFactorModels.jl).
+		- `colsumabs2!(x, A)`, `size(A, i::Integer)` and `eltype(A)`
+		Similarly, neither `x` or `f(x)` need to be AbstractVectors. An example can be found in the package [SparseFactorModels.jl](https://github.com/matthieugomez/SparseFactorModels.jl).
 
 The default solver depends on the type of the jacobian. For dense Jacobians, `solver` defaults to `:factorization`. and `method` defaults to `:dogleg`.Otherwise `solver` defaults to `:iterative` and `method` defaults to `levenberg_marquardt`.
 
