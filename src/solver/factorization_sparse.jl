@@ -38,7 +38,7 @@ end
 ##
 ##############################################################################
 
-type SparseDogleg{Tx} <: AbstractSolver
+type SparseCholeskySolver{Tx} <: AbstractSolver
     v::Tx
     J::Sparse{Float64}
     Jt::Sparse{Float64}
@@ -54,10 +54,10 @@ function allocate(nls::SparseLeastSquaresProblem,
     set_print_level(cm, 0)
     unsafe_store!(common_final_ll, 1)
     F = analyze(sparseJt, cm)
-    return SparseDogleg(_zeros(nls.x), sparseJ, sparseJt, F, cm)
+    return SparseCholeskySolver(_zeros(nls.x), sparseJ, sparseJt, F, cm)
 end
 
-function solve!(x, nls::SparseLeastSquaresProblem, solve::SparseDogleg)
+function solve!(x, nls::SparseLeastSquaresProblem, solve::SparseCholeskySolver)
     J, y = nls.J, nls.y
     v, sparseJ, sparseJt, F, cm = solve.v, solve.J, solve.Jt, solve.F, solve.cm
     Sparse!(J, sparseJ)

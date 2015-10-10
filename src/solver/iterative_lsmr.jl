@@ -119,7 +119,7 @@ end
 ##
 ##############################################################################
 
-type DoglegLSMR{Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty} <: AbstractSolver
+type LSMRSolver{Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty} <: AbstractSolver
     normalization::Tx1
     tmp::Tx2
     v::Tx3
@@ -131,11 +131,11 @@ end
 
 function allocate(nls::LeastSquaresProblem,
     ::Type{Val{:dogleg}}, ::Type{Val{:iterative}})
-    DoglegLSMR(_zeros(nls.x), _zeros(nls.x), _zeros(nls.x), 
+    LSMRSolver(_zeros(nls.x), _zeros(nls.x), _zeros(nls.x), 
         _zeros(nls.x), _zeros(nls.x),  _zeros(nls.x), _zeros(nls.y))
 end
 
-function solve!(x, nls::LeastSquaresProblem, solve::DoglegLSMR)
+function solve!(x, nls::LeastSquaresProblem, solve::LSMRSolver)
     normalization, tmp, v, h, hbar, b = solve.normalization, solve.tmp, solve.v, solve.h, solve.hbar, solve.b
     J, y = nls.J, nls.y
 
@@ -164,7 +164,7 @@ end
 ##
 ##############################################################################
 
-type LevenbergMarquardtLSMR{Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty} <: AbstractSolver
+type LSMRDampenedSolver{Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty} <: AbstractSolver
     normalization::Tx1
     tmp::Tx2
     v::Tx3
@@ -176,11 +176,11 @@ end
 
 function allocate(nls::LeastSquaresProblem,
     ::Type{Val{:levenberg_marquardt}}, ::Type{Val{:iterative}})
-    LevenbergMarquardtLSMR(_zeros(nls.x), _zeros(nls.x), 
+    LSMRDampenedSolver(_zeros(nls.x), _zeros(nls.x), 
         _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.y))
 end
 
-function solve!(x, dtd, λ, nls::LeastSquaresProblem, solve::LevenbergMarquardtLSMR)
+function solve!(x, dtd, λ, nls::LeastSquaresProblem, solve::LSMRDampenedSolver)
     normalization, tmp, v, h, hbar, zerosvector, u = solve.normalization, solve.tmp, solve.v, solve.h, solve.hbar, solve.zerosvector, solve.u
     y, J = nls.y, nls.J
 

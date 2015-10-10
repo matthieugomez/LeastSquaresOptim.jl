@@ -5,17 +5,17 @@
 ##
 ##############################################################################
 
-type DenseQRDogleg{Tqr, Tu} <: AbstractSolver
+type DenseQRSolver{Tqr, Tu} <: AbstractSolver
     qr::Tqr
     u::Tu
 end
 
 function allocate(nls::DenseLeastSquaresProblem,
     ::Type{Val{:dogleg}}, ::Type{Val{:factorization}})
-    return DenseQRDogleg(similar(nls.J), _zeros(nls.y))
+    return DenseQRSolver(similar(nls.J), _zeros(nls.y))
 end
 
-function solve!(x, nls::DenseLeastSquaresProblem, solve::DenseQRDogleg)
+function solve!(x, nls::DenseLeastSquaresProblem, solve::DenseQRSolver)
     y, J = nls.y, nls.J
     u, qr = solve.u, solve.qr
     
@@ -36,7 +36,7 @@ end
 ##############################################################################
 
 
-type DenseQRLevenvergMarquardt{Tqr, Tu} <: AbstractSolver
+type DenseQRDampenedSolver{Tqr, Tu} <: AbstractSolver
     qr::Tqr
     u::Tu
 end
@@ -45,7 +45,7 @@ function allocate(nls:: DenseLeastSquaresProblem,
     ::Type{Val{:levenberg_marquardt}}, ::Type{Val{:factorization}})
     qr = zeros(eltype(nls.J), length(nls.y) + length(nls.x), length(nls.x))
     u = zeros(length(nls.y) + length(nls.x))
-    return DenseQRLevenvergMarquardt(qr, u)
+    return DenseQRDampenedSolver(qr, u)
 end
 
 function solve!(x, dtd, λ, nls::DenseLeastSquaresProblem, solve::DenseQRLevenvergMarquardt)
@@ -89,16 +89,16 @@ end
 ##
 ##############################################################################
 
-type DenseCholeskyDogleg{Tc} <: AbstractSolver
+type DenseCholeskySolver{Tc} <: AbstractSolver
     chol::Tc
 end
 
 function allocate(nls::DenseLeastSquaresProblem,
     ::Type{Val{:dogleg}}, ::Type{Val{:factorization_cholesky}})
-    return DenseCholeskyDogleg(Array(eltype(nls.J), length(nls.x), length(nls.x)))
+    return DenseCholeskySolver(Array(eltype(nls.J), length(nls.x), length(nls.x)))
 end
 
-function solve!(x, nls::DenseLeastSquaresProblem, solve::DenseCholeskyDogleg)
+function solve!(x, nls::DenseLeastSquaresProblem, solve::DenseCholeskySolver)
     y, J = nls.y, nls.J
     chol = solve.chol
     
@@ -114,16 +114,16 @@ end
 ##
 ##############################################################################
 
-type DenseCholeskyLevenbergMarquardt{Tc} <: AbstractSolver
+type DenseCholeskyDampenedSolver{Tc} <: AbstractSolver
     chol::Tc
 end
 
 function allocate(nls:: DenseLeastSquaresProblem,
     ::Type{Val{:levenberg_marquardt}}, ::Type{Val{:factorization_cholesky}})
-    return DenseCholeskyLevenbergMarquardt(Array(eltype(nls.J), length(nls.x), length(nls.x)))
+    return DenseCholeskyDampenedSolver(Array(eltype(nls.J), length(nls.x), length(nls.x)))
 end
 
-function solve!(x, dtd, λ, nls::DenseLeastSquaresProblem, solve::DenseCholeskyLevenbergMarquardt)
+function solve!(x, dtd, λ, nls::DenseLeastSquaresProblem, solve::DenseCholeskyDampenedSolver)
     y, J = nls.y, nls.J
     chol = solve.chol
     
