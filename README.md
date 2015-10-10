@@ -24,9 +24,9 @@ This package solves non linear least squares optimization problems. It handles p
 
 		An example of the latter case is given in the package [SparseFactorModels.jl](https://github.com/matthieugomez/SparseFactorModels.jl).
 
+The default solver depends on the type of the jacobian. For dense Jacobians, `solver` defaults to `:factorization`. and `method` defaults to `:dogleg`.Otherwise `solver` defaults to `:iterative` and `method` defaults to `levenberg_marquardt`.
 
-For dense Jacobians, `solver` defaults to `:factorization`. and `method` defaults to `:dogleg`.Otherwise `solver` defaults to `:iterative` and `method` defaults to `levenberg_marquardt`.
-
+A good presentation of these different methods and solvers can be found in the [Ceres documentation](http://ceres-solver.org/solving.html) is
 
 ## Syntax
 The arguments for `NonLinearLeastSquares` are
