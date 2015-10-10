@@ -1,5 +1,9 @@
 using LeastSquaresOptim, Base.Test
 
+# StRD tests (in progress)
+# http://www.itl.nist.gov/div898/strd/nls/nls_main.shtml
+# Careful: solution are not the ones given on the website.
+
 function misra1a()
     name = "misra1a"
     data = [
@@ -23,7 +27,9 @@ function misra1a()
     1.0000000000E-04        5.0000000000E-04        5.5015643181E-04;
     ]
     f(x, beta) = beta[1]*(1-exp(-beta[2]*x))
-    name, data, parameters, f
+    solution = [238.94212915141114,0.0005501564318796973]
+
+    name, data, parameters, f, solution
 end
 
 function Chwirut2()
@@ -91,7 +97,9 @@ function Chwirut2()
     0.02        0.010;
     ]
     f(x, beta) = exp(-beta[1]*x)/(beta[2]+beta[3]*x)   
-    name, data, parameters, f
+    solution =[0.16657643201956981,0.005165325897362337,0.0121500155768727]
+
+    name, data, parameters, f, solution
 end
 
 function Chwitrut1()
@@ -318,7 +326,9 @@ function Chwitrut1()
     0.02        0.010;
     ] 
     f(x, beta) = exp(-beta[1]*x)/(beta[2]+beta[3]*x)   
-    name, data, parameters, f
+    solution = [0.19027794950546645,0.006131398285792059,0.010530915245898486]
+
+    name, data, parameters, f, solution
 end
 
 function Lanczos3()
@@ -358,7 +368,8 @@ function Lanczos3()
     7.6         6.3;     
     ]
     f(x, beta) = beta[1] * exp(-beta[2] * x) + beta[3] * exp(-beta[4]*x) + beta[5] * exp(-beta[6]*x)
-    name, data, parameters, f
+    solution = [0.08681642488643469,0.9549810708443807,0.8440077982096189,2.9515952452570193,1.5825685566602525,4.986356528035884]
+    name, data, parameters, f, solution
 end
 
 function Gauss1()
@@ -628,7 +639,8 @@ function Gauss1()
     ]
 
     f(x, beta) = beta[1] * exp(-beta[2]x) + beta[3]*exp(-(x - beta[4])^2 / beta[5]^2) + beta[6]*exp(-(x - beta[7])^2 / beta[8]^2)
-    return name, data, parameters, f
+ solution =  [98.77820846003205,0.010497275267276392,100.48990425393075,67.48111150933194,23.129772501651757,71.99450044276362,178.99805064403137,18.389388166337437]
+    return name, data, parameters, f, solution
 end
 
 function Gauss2()
@@ -897,7 +909,9 @@ function Gauss2()
     18.0        20.0;
     ]
     f(x, beta) = beta[1] * exp(-beta[2]*x) + beta[3] * exp(-(x - beta[4])^2 / beta[5]^2) + beta[6]*exp(-(x - beta[7])^2 / beta[8]^2)
-    return name, data, parameters, f
+    solution = [99.0183283504825,0.010994945372595774,101.8802252585162,107.03095519792656,23.578584011675545,72.04558953937348,153.27010191461994,19.52597255846091]
+
+    return name, data, parameters, f, solution
 end
 
 
@@ -916,7 +930,9 @@ function DanWood()
     5           4;
     ]
     f(x, beta) = beta[1] * x^beta[2]
-    return name, data, parameters, f
+    solution =  [0.7688622535580905,3.8604056105108495]
+
+    return name, data, parameters, f, solution
 end
 
 function Misra1b()
@@ -944,7 +960,10 @@ function Misra1b()
     ]
 
     f(x, beta) =  beta[1]* (1 - (1 / (1 + beta[2] * x / 2)^2))
-    return name, data, parameters, f
+    solution = [337.99746179088305,0.0003903909126540893]
+
+
+    return name, data, parameters, f, solution
 end
 
 
@@ -971,7 +990,9 @@ function MGH09()
     39          0.39 ;
     ]
     f(x, beta) =  beta[1]*(x^2 + x*beta[2]) / (x^2 + x * beta[3] + beta[4])
-    return name, data, parameters, f
+    solution = [    1.9280693458E-01,   1.9128232873E-01    ,       1.2305650693E-01    ,   1.3606233068E-01]
+
+    return name, data, parameters, f, solution
 end
 
 
@@ -1027,7 +1048,9 @@ function Thurber()
     0.03        0.05     ;
     ]
     f(x, beta) =  (beta[1] + beta[2]*x + beta[3]*x^2 + beta[4]*x^3) / (1 + beta[5]*x + beta[6]*x^2 + beta[7]*x^3) 
-    return name, data, parameters, f
+    solution = [1291.8261698796643,1855.5020718749865,853.9202870200489,130.39514324374565,1.2126322702254466,0.5348202506943717,0.12106727623053581]
+
+    return name, data, parameters, f, solution
 end
 
 
@@ -1049,7 +1072,8 @@ function BoxBOD()
     1          0.75;
     ]
     f(x, beta) =  beta[1]* (1 - exp(-beta[2]*x))
-    return name, data, parameters, f
+    solution = [    2.1380940889E+02    , 5.4723748542E-01]
+    return name, data, parameters, f, solution
 end
 
 
@@ -1075,7 +1099,9 @@ function Rat42()
     ]
 
     f(x, beta) = beta[1] / (1 + exp(beta[2] - beta[3]*x))
-    return name, data, parameters, f
+    solution = [72.46223626209179,2.618076784829265,0.06735920081565117]
+
+    return name, data, parameters, f, solution
 end
 
 function MGH10()
@@ -1106,7 +1132,9 @@ function MGH10()
     ]
 
     f(x, beta) =  beta[1] * exp(beta[2] / (x + beta[3]))
-    return name, data, parameters, f
+    solution = [1.1123886777589083e-11,351382.48555996205,10040.212836088316]
+
+    return name, data, parameters, f, solution
 end
 
 
@@ -1159,7 +1187,9 @@ function Eckerle4()
     500         450   ;
     ]
     f(x, beta) = beta[1] / beta[2] * exp(-(x - beta[3])^2 / (2*beta[2]^2))
-    return name, data, parameters, f
+    solution = [1.5543834302782398,4.088835832904201,451.5412157420717]
+
+    return name, data, parameters, f, solution
 end
 
 
@@ -1193,7 +1223,9 @@ function Rat43()
     1           1.3 ;
     ]
     f(x, beta) = beta[1] / (1 + exp(beta[2] - beta[3] * x))^(1/beta[4])
-    return name, data, parameters, f
+    solution = [699.6414823331608,5.277148920424921,0.7596313234401143,1.2792566814525475]
+
+    return name, data, parameters, f, solution
 end
 
 
@@ -1365,7 +1397,8 @@ function Bennett5()
     0.8         0.85;
     ]
     f(x, beta) = beta[1] *(beta[2] + x)^(-1/beta[3])
-    return name, data, parameters, f
+    solution = [-2523.6970770710054,46.73736590349044,0.932171783274377]
+    return name, data, parameters, f, solution
 end
 
 
@@ -1373,20 +1406,24 @@ end
 tests =  [misra1a, Chwirut2, Chwitrut1, Lanczos3, Gauss1, Gauss2, DanWood, Misra1b, MGH09, Thurber, BoxBOD, Rat42, MGH10, Eckerle4, Rat43, Bennett5]
 
 for (method, method_abbr) in ((:dogleg, :dl), (:levenberg_marquardt, :lm))
+    n = 0
+    N = 0
     for test in tests
-        name, data, parameters, f = test()
+        name, data, parameters, f, solution = test()
         function f!(x, fcur)
             for i in 1:size(data, 1)
                 fcur[i] = data[i, 1] - f(data[i, 2], x)
             end
         end
-
-        for i in 1:size(parameters, 2)
-            r = optimize!(LeastSquaresProblem(parameters[:, i], ones(size(data, 1)), f!, ones(size(data, 1), size(parameters, 1))), method = method)
+        r = optimize!(LeastSquaresProblem(parameters[:, 1], ones(size(data, 1)), f!, ones(size(data, 1), size(parameters, 1))), method = method, xtol = 1e-50, ftol = 1e-36, grtol = 1e-50)
+      #  @show solution
+        for j in 1:size(parameters, 2)
+            r = optimize!(LeastSquaresProblem(parameters[:, j], ones(size(data, 1)), f!, ones(size(data, 1), size(parameters, 1))), method = method)
+            n += norm(r.x-solution) <= 1e-3
+            N += 1
+            @test !isnan(mean(r.x) )
         end
     end
+    println("strd $method_abbr $n / $N")
 end
-
-
-
 

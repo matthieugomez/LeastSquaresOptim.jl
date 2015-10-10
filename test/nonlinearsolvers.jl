@@ -555,14 +555,14 @@ end
 
 
 # test dense cholesky
-for (method, method_abbr) in ((:dogleg, :dl), (:levenberg_marquardt, :lm))
+for (method, method_abbr) in ((:levenberg_marquardt, :lm), (:dogleg, :dl))
     alltests = [rosenbrock(); 
     powell_singular(); powell_badly_scaled(); 
     wood();
     helical_valley(); 
     watson(6); 
     chebyquad(5); chebyquad(6); chebyquad(7); chebyquad(9);
-    brown_almost_linear(10); brown_almost_linear(30);
+    brown_almost_linear(10);# brown_almost_linear(30);
     discrete_boundary_value(10);
     discrete_integral_equation(1); discrete_integral_equation(10);
     trigonometric(10); variably_dimensioned(10); 
@@ -577,9 +577,6 @@ for (method, method_abbr) in ((:dogleg, :dl), (:levenberg_marquardt, :lm))
         @test r.ssr <= 1e-3
     end
 end
-
-
-
 
 
 #test autodiff

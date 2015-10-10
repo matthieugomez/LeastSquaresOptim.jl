@@ -153,7 +153,7 @@ function solve!(x, nls::LeastSquaresProblem, solve::LSMRSolver)
 
     # solve
     x, ch = lsmr!(x, A, b, v, h, hbar)
-    return ch.mvps
+    return x, ch.mvps
 end
 
 ##############################################################################
@@ -205,5 +205,5 @@ function solve!(x, dtd, λ, nls::LeastSquaresProblem, solve::LSMRDampenedSolver)
 
     # solve
     x, ch = lsmr!(x, A, b, v, h, hbar, btol = 0.5)
-    return ch.mvps
+    return x, ch.mvps
 end

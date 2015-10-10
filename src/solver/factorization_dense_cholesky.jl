@@ -20,7 +20,7 @@ function solve!(x, nls::DenseLeastSquaresProblem, solve::DenseCholeskySolver)
     Ac_mul_B!(chol, J,  J)
     Ac_mul_B!(x, J,  y)
     A_ldiv_B!(cholfact!(chol, :U, Val{true}), x)
-    return 1
+    return x, 1
 end
 
 ##############################################################################
@@ -53,6 +53,6 @@ function solve!(x, dtd, λ, nls::DenseLeastSquaresProblem, solve::DenseCholeskyD
     # solve
     Ac_mul_B!(x, J, y)
     A_ldiv_B!(cholfact!(chol), x)
-    return 1
+    return x, 1
 end
 

@@ -89,7 +89,7 @@ function factor()
 end
 
 for matrix in (:dense, :sparse)
-    for (method, method_abbr) in ((:dogleg, :dl), (:levenberg_marquardt, :lm))
+    for (method, method_abbr) in ((:levenberg_marquardt, :lm), (:dogleg, :dl))
         for (solver, solver_abbr) in ((:factorization, :fact), (:iterative, :iter))
         if matrix == :sparse && method == :levenberg_marquardt
             continue

@@ -26,3 +26,17 @@ end
 
 
 _zeros(x) = fill!(similar(x), 0)
+
+
+
+
+function wdot(x::AbstractVector, y::AbstractVector, w::AbstractVector)
+    out = zero(one(eltype(x)) * one(eltype(y)) * one(eltype(w)))
+    @inbounds @simd for i in 1:length(x)
+        out += w[i] * x[i] * y[i]
+    end
+    return out
+end
+
+wsumabs2(x, w) = wdot(x, x, w)
+wnorm(x, w) = sqrt(wsumabs2(x, w))

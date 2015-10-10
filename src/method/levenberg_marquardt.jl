@@ -43,7 +43,6 @@ function optimize!{T, Tmethod <: LevenbergMarquardt, Tsolve}(
     δx, dtd = anls.method.δx, anls.method.dtd
     ftrial, fpredict = anls.method.ftrial, anls.method.fpredict
     x, fcur, f!, J, g! = anls.nls.x, anls.nls.y, anls.nls.f!, anls.nls.J, anls.nls.g!
-    δsd = dtd
 
     # initialize
     Tx, Ty = eltype(x), eltype(fcur)
@@ -66,7 +65,7 @@ function optimize!{T, Tmethod <: LevenbergMarquardt, Tsolve}(
         colsumabs2!(dtd, J)
         
         # solve (J'J + λ * diagm(dtd))δx = J'fcur
-        lmiter = solve!(δx, dtd, λ, anls.nls, anls.solve)
+        δx, lmiter = solve!(δx, dtd, λ, anls.nls, anls.solve)
         mul_calls += lmiter
 
         x, ftrial, trial_ssr, predicted_ssr = update!(anls.nls, δx, ftrial, fpredict)
@@ -74,8 +73,8 @@ function optimize!{T, Tmethod <: LevenbergMarquardt, Tsolve}(
         f_calls += 1
         mul_calls += 1
 
-        Ac_mul_B!(one(Tx), J, fcur, zero(Tx), δsd)
-        maxabs_gr = maxabs(δsd)
+        Ac_mul_B!(one(Tx), J, fcur, zero(Tx), dtd)
+        maxabs_gr = maxabs(dtd)
         mul_calls += 1
 
         x_converged, f_converged, gr_converged, converged =

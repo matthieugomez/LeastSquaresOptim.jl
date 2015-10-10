@@ -66,5 +66,5 @@ function solve!(x, nls::SparseLeastSquaresProblem, solve::SparseCholeskySolver)
     Ac_mul_B!(v, J, y)
     # !! there is a memory allocation here
     copy!(x, F \ v)
-    return 1
+    return x, 1
 end

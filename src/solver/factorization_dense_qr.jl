@@ -21,12 +21,12 @@ function solve!(x, nls::DenseLeastSquaresProblem, solve::DenseQRSolver)
     
     copy!(qr, J)
     copy!(u, y)
-    A_ldiv_B!(qrfact!(qr), u)
+    A_ldiv_B!(qrfact!(qr, Val{true}), u)
 
     @inbounds @simd for i in 1:length(x)
         x[i] = u[i]
     end
-    return 1
+    return x, 1
 end
 
 ##############################################################################
@@ -75,10 +75,10 @@ function solve!(x, dtd, λ, nls::DenseLeastSquaresProblem, solve::DenseQRDampene
     end
 
     # solve
-    A_ldiv_B!(qrfact!(qr), u)
+    A_ldiv_B!(qrfact!(qr, Val{true}), u)
 
     @inbounds @simd for i in 1:length(x)
         x[i] = u[i]
     end
-    return 1
+    return x, 1
 end
