@@ -15,7 +15,7 @@ This package solves non linear least squares optimization problems. It handles p
 
 	- `solver = :factorization`. 
 		- For dense jacobians, it relies on the QR factorization in LAPACK.
-		- For sparse jacobians, it relies on the cholesky factorization in SuiteSparse. A symbolic factorization is computed at the first iteration and numerically updated at each iteration. With this method, you need to make sure that `g!` does not change the symbolic structure of the jacobian `J` (i.e. access individual elements via `rowvals(J)`, not `J[i, j]`)
+		- For sparse jacobians, it relies on the cholesky factorization in SuiteSparse. A symbolic factorization is computed at the first iteration and numerically updated at each iteration.
 	- `solve = :iterative` corresponds to a conjugate gradient method (more precisely [LSMR]([http://web.stanford.edu/group/SOL/software/lsmr/) with diagonal preconditioner). The jacobian can be a dense matrix, a sparse matrix, or any type implementing the following methods:
 		- `A_mul_B!(α::Number, A, x, β::Number, fcur)`that  updates fcur -> α Ax + βfcur
 		- `Ac_mul_B!(α::Number, A, fcur, β::Number, x)` that updates x -> α A'fcur + βx

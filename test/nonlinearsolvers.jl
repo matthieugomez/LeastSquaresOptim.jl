@@ -501,6 +501,7 @@ function broyden_banded(n::Integer)
 end
 
 
+
 for matrix in (:dense, :sparse)
     for (solver, solver_abbr) in ((:factorization, :fact), (:iterative, :iter))
         if matrix == :sparse && solver != :iter
@@ -537,9 +538,18 @@ for matrix in (:dense, :sparse)
 end
 
 # test sparse factorization
-alltests = [  wood(); rosenbrock(); powell_singular();  brown_almost_linear(10); 
+alltests =  [rosenbrock(); 
+powell_singular(); powell_badly_scaled(); 
+wood();
+helical_valley(); 
+watson(6); watson(9);
+chebyquad(5); chebyquad(6); chebyquad(7); chebyquad(9);
+brown_almost_linear(10); brown_almost_linear(30); brown_almost_linear(40);
+discrete_boundary_value(10);
 discrete_integral_equation(1); discrete_integral_equation(10);
-broyden_tridiagonal(10); broyden_banded(10) ]
+trigonometric(10); variably_dimensioned(10); 
+broyden_tridiagonal(10); broyden_banded(10)]
+
 for (name, f!, g!, x) in alltests
     fcur = similar(x)
     J = ones(length(x), length(x))
@@ -547,10 +557,15 @@ for (name, f!, g!, x) in alltests
     fill!(J.nzval, 0)     
     g!(x, J)
     nls = LeastSquaresProblem(x, fcur, f!, J, g!)
-    r = optimize!(nls, method = :dogleg, solver = :factorization)
-    @printf("%-6s %4s %2s %30s %5d %5d   %5d   %10e\n", :sparse, :fact, :dl, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
-    @test r.converged
-    @test r.ssr <= 1e-3
+    # try because g! may change symbolic factorizations (see Julia issue #9906)
+    try
+        r = optimize!(nls, method = :dogleg, solver = :factorization)
+        @test r.converged
+        @test r.ssr <= 1e-3
+        @printf("%-6s %4s %2s %30s %5d %5d   %5d   %10e\n", :sparse, :fact, :dl, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
+    catch y
+        @test isa(y, ErrorException)
+    end
 end
 
 

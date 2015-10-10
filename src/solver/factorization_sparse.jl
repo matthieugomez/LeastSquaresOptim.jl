@@ -38,7 +38,9 @@ end
 ##
 ##############################################################################
 
-type SparseCholeskySolver{Tx} <: AbstractSolver
+type SparseCholeskySolver{Ti, Tx} <: AbstractSolver
+    colptr::Vector{Ti}
+    rowval::Vector{Ti}
     v::Tx
     J::Sparse{Float64}
     Jt::Sparse{Float64}
@@ -48,18 +50,26 @@ end
 
 function allocate(nls::SparseLeastSquaresProblem,
     ::Type{Val{:dogleg}}, ::Type{Val{:factorization}})
+    colptr = deepcopy(nls.J.colptr)
+    rowval = deepcopy(nls.J.rowval)
     sparseJ = Sparse(nls.J)
     sparseJt = transpose_(sparseJ, 2)
     cm = defaults(common()) 
     set_print_level(cm, 0)
     unsafe_store!(common_final_ll, 1)
     F = analyze(sparseJt, cm)
-    return SparseCholeskySolver(_zeros(nls.x), sparseJ, sparseJt, F, cm)
+    return SparseCholeskySolver(colptr, rowval, _zeros(nls.x), sparseJ, sparseJt, F, cm)
 end
 
 function solve!(x, nls::SparseLeastSquaresProblem, solve::SparseCholeskySolver)
     J, y = nls.J, nls.y
     v, sparseJ, sparseJt, F, cm = solve.v, solve.J, solve.Jt, solve.F, solve.cm
+
+    # check symbolic structure is the same
+    if solve.colptr != J.colptr || solve.rowval != J.rowval
+        error("The symbolic structure of the Jacobian has been changed. Either (i) rewrite g! so that it does not modify the structure of J (see Julia issue #9906) (ii) use solver = :iterative rather than solver = :factorization")
+    end
+
     Sparse!(J, sparseJ)
     transpose_unsym_!(sparseJ, 2, sparseJt)
     factorize_p!(sparseJt, 0, F, cm)
