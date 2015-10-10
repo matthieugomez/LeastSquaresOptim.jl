@@ -9,7 +9,7 @@ type LevenbergMarquardt{Tx1, Tx2, Ty1, Ty2} <: AbstractMethod
     δx::Tx1
     dtd::Tx2
     ftrial::Ty1
-    ftmp::Ty2
+    fpredict::Ty2
 end
 
 function allocate(nls::LeastSquaresProblem, ::Type{Val{:levenberg_marquardt}})
@@ -28,6 +28,7 @@ const MIN_λ = 1e-16 # maximum trust region radius
 const MIN_STEP_QUALITY = 1e-3
 const GOOD_STEP_QUALITY = 0.75
 const MIN_DIAGONAL = 1e-6
+const MAX_DIAGONAL = 1e32
 
 
 # used directly this method to avoid any allocation within the function
@@ -40,14 +41,15 @@ function optimize!{T, Tmethod <: LevenbergMarquardt, Tsolve}(
 
     # allocations
     δx, dtd = anls.method.δx, anls.method.dtd
-    ftrial, ftmp = anls.method.ftrial, anls.method.ftmp
+    ftrial, fpredict = anls.method.ftrial, anls.method.fpredict
     x, fcur, f!, J, g! = anls.nls.x, anls.nls.y, anls.nls.f!, anls.nls.J, anls.nls.g!
+    δsd = dtd
 
     # initialize
     Tx, Ty = eltype(x), eltype(fcur)
     f_calls,  g_calls, mul_calls = 0, 0, 0
-    x_converged, f_converged, gr_converged, converged =
-        false, false, false, false
+    converged, x_converged, f_converged, gr_converged, converged =
+        false, false, false, false, false
     f!(x, fcur)
     f_calls += 1
     ssr = sumabs2(fcur)
@@ -62,32 +64,28 @@ function optimize!{T, Tmethod <: LevenbergMarquardt, Tsolve}(
             need_jacobian = false
         end
         colsumabs2!(dtd, J)
+        
         # solve (J'J + λ * diagm(dtd))δx = J'fcur
         lmiter = solve!(δx, dtd, λ, anls.nls, anls.solve)
         mul_calls += lmiter
-        # trial ssr
-        axpy!(-one(Tx), δx, x)
-        f!(x, ftrial)
-        f_calls += 1
-        trial_ssr = sumabs2(ftrial)
 
-        # predicted ssr
-        _A_mul_B!(ftmp, J, δx)
-        axpy!(-one(Ty), fcur, ftmp)
-        predicted_ssr = sumabs2(ftmp)
-
-        # test convergence
-        _Ac_mul_B!(dtd, J, fcur)
-        mul_calls += 1
-        x_converged, f_converged, gr_converged, converged =
-            assess_convergence(δx, x, dtd, trial_ssr, ssr, xtol, ftol, grtol)
-
+        x, ftrial, trial_ssr, predicted_ssr = update!(anls.nls, δx, ftrial, fpredict)
         ρ = (ssr - trial_ssr) / (ssr - predicted_ssr)
+        f_calls += 1
+        mul_calls += 1
+
+        Ac_mul_B!(one(Tx), J, fcur, zero(Tx), δsd)
+        maxabs_gr = maxabs(δsd)
+        mul_calls += 1
+
+        x_converged, f_converged, gr_converged, converged =
+          assess_convergence(δx, x, maxabs_gr, ssr, trial_ssr, xtol, ftol, grtol)
+
         if ρ > MIN_STEP_QUALITY
             copy!(fcur, ftrial)
             ssr = trial_ssr
             # increase trust region radius (from Ceres solver)
-            λ = max(λ * max(1/3, 1.0 - (2.0 * ρ-1.0)^3), MIN_λ)
+            λ = max(λ * max(1/3, 1.0 - (2.0 * ρ - 1.0)^3), MIN_λ)
             decrease_factor = 2.0
             need_jacobian = true
         else
@@ -98,8 +96,8 @@ function optimize!{T, Tmethod <: LevenbergMarquardt, Tsolve}(
         end
     end
     LeastSquaresResult(:levenberg_marquardt, x, ssr, iter, converged,
-                            x_converged, xtol, f_converged, ftol, gr_converged, grtol, 
-                            f_calls, g_calls, mul_calls)
+                        x_converged, xtol, f_converged, ftol, gr_converged, grtol, 
+                        f_calls, g_calls, mul_calls)
 end
 
 

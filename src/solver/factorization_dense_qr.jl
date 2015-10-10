@@ -53,7 +53,7 @@ function solve!(x, dtd, λ, nls::DenseLeastSquaresProblem, solve::DenseQRDampene
     u, qr = solve.u, solve.qr
     
     # transform dtd
-    clamp!(dtd, MIN_DIAGONAL, Inf)
+    clamp!(dtd, MIN_DIAGONAL, MAX_DIAGONAL)
     scale!(dtd, λ)
 
     # update qr as |J; diagm(dtd)|

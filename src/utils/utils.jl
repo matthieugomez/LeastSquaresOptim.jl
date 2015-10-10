@@ -4,13 +4,6 @@
 ##
 ##############################################################################
 
-for name in (:Ac_mul_B!, :A_mul_B!)
-    _name = parse("_$name")
-    @eval begin
-        $_name(y::AbstractVector, X::StridedVecOrMat, x::AbstractVector) = $name(y, X, x)
-        $_name(y, X, x) = $name(1, X, x, 0, y)
-    end
-end
 
 for (name, symbol) in ((:Ac_mul_B!, 'T'),
                        (:A_mul_B!, 'N'))

@@ -31,11 +31,12 @@ LeastSquaresResult
 
 include("utils/lsmr.jl")
 include("utils/utils.jl")
-include("utils/assess_convergence.jl")
 
 include("types.jl")
 include("method/levenberg_marquardt.jl")
 include("method/dogleg.jl")
+include("method/utils.jl")
+
 include("solver/factorization_dense_qr.jl")
 include("solver/factorization_dense_cholesky.jl")
 include("solver/factorization_sparse.jl")

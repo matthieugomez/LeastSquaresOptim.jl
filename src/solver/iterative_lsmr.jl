@@ -195,7 +195,7 @@ function solve!(x, dtd, λ, nls::LeastSquaresProblem, solve::LSMRDampenedSolver)
     # prepare A
     fill!(tmp, 0)
     copy!(normalization, dtd)
-    map!(x -> max(x, MIN_DIAGONAL), dtd, dtd)
+    clamp!(dtd, MIN_DIAGONAL, MAX_DIAGONAL)
     scale!(dtd, λ)
     Tx = eltype(normalization)
     axpy!(one(Tx), dtd, normalization)

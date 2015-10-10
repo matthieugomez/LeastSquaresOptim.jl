@@ -10,7 +10,7 @@ type Dogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2} <: AbstractMethod
     δdiff::Tx3
     δx::Tx4
     ftrial::Ty1
-    ftmp::Ty2
+    fpredict::Ty2
 end
 
 function allocate(nls::LeastSquaresProblem, ::Type{Val{:dogleg}})
@@ -36,26 +36,28 @@ function optimize!{T, Tmethod <: Dogleg, Tsolve}(
     iterations::Integer = 1_000, Δ::Number = 1.0)
  
     δgn, δsd, δdiff, δx = anls.method.δgn, anls.method.δsd, anls.method.δdiff, anls.method.δx
-    ftrial, ftmp = anls.method.ftrial, anls.method.ftmp
+    ftrial, fpredict = anls.method.ftrial, anls.method.fpredict
     x, fcur, f!, J, g! = anls.nls.x, anls.nls.y, anls.nls.f!, anls.nls.J, anls.nls.g!
-    f_calls,  g_calls, mul_calls = 0, 0, 0
-    x_converged, f_converged, gr_converged, converged =
-        false, false, false, false
-
-  
     Tx, Ty = eltype(x), eltype(fcur)
+
+    f_calls,  g_calls, mul_calls = 0, 0, 0
+    converged, x_converged, f_converged, gr_converged, converged =
+        false, false, false, false, false
     f!(x, fcur)
     f_calls += 1
     ssr = sumabs2(fcur)
-    iter = 0
+
+
+    iter = 0  
     while !converged && iter < iterations 
         iter += 1
         g!(x, J)
         g_calls += 1
-        _Ac_mul_B!(δsd, J, fcur)
-        _A_mul_B!(ftmp, J, δsd)
+        Ac_mul_B!(one(Tx), J, fcur, zero(Tx), δsd)
+        A_mul_B!(one(Ty), J, δsd, zero(Ty), fpredict)
+        maxabs_gr = maxabs(δsd)
         mul_calls += 2
-        scale!(δsd, sumabs2(δsd) / sumabs2(ftmp))
+        scale!(δsd, sumabs2(δsd) / sumabs2(fpredict))
         gncomputed = false
         ρ = -1
         while !converged && ρ < 0
@@ -90,23 +92,14 @@ function optimize!{T, Tmethod <: Dogleg, Tsolve}(
                 end
             end
 
-            # update x
-            axpy!(-one(Tx), δx, x)
-            f!(x, ftrial)
+            x, ftrial, trial_ssr, predicted_ssr = update!(anls.nls, δx, ftrial, fpredict)
             f_calls += 1
-            trial_ssr = sumabs2(ftrial)
-
-            _A_mul_B!(ftmp, J, δx)
             mul_calls += 1
-            axpy!(-one(Ty), fcur, ftmp)
-            predicted_ssr = sumabs2(ftmp)
-
-            # test convergence
-            _Ac_mul_B!(δdiff, J, fcur)
-            mul_calls += 1
-             x_converged, f_converged, gr_converged, converged =
-                assess_convergence(δx, x, δdiff, trial_ssr, ssr, xtol, ftol, grtol)
             ρ = (ssr - trial_ssr) / (ssr - predicted_ssr)
+
+            x_converged, f_converged, gr_converged, converged = 
+                assess_convergence(δx, x, maxabs_gr, ssr, trial_ssr, xtol, ftol, grtol)
+
             if ρ >= MIN_STEP_QUALITY
                 # Successful iteration
                 copy!(fcur, ftrial)

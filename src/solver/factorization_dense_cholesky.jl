@@ -44,7 +44,7 @@ function solve!(x, dtd, λ, nls::DenseLeastSquaresProblem, solve::DenseCholeskyD
     
     # update chol as J'J + λdtd
     Ac_mul_B!(chol, J, J)
-    clamp!(dtd, MIN_DIAGONAL, Inf)
+    clamp!(dtd, MIN_DIAGONAL, MAX_DIAGONAL)
     scale!(dtd, λ)
     @inbounds @simd for i in 1:size(chol, 1)
         chol[i, i] += dtd[i]
