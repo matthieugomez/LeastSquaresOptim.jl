@@ -48,7 +48,7 @@ function allocate(nls:: DenseLeastSquaresProblem,
     return DenseQRDampenedSolver(qr, u)
 end
 
-function solve!(x, dtd, λ, nls::DenseLeastSquaresProblem, solve::DenseQRLevenvergMarquardt)
+function solve!(x, dtd, λ, nls::DenseLeastSquaresProblem, solve::DenseQRDampenedSolver)
     y, J = nls.y, nls.J
     u, qr = solve.u, solve.qr
     
