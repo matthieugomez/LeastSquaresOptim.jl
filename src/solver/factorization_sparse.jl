@@ -21,12 +21,6 @@ end
 # Update B as Sparse(A)
 function Sparse!{Tv<:VTypes,Ti<:ITypes}(A::SparseMatrixCSC{Tv,Ti}, B::Sparse{Tv})
     s = unsafe_load(B.p)
-    for i = 1:length(A.colptr)
-        unsafe_store!(s.p, A.colptr[i] - 1, i)
-    end
-    for i = 1:length(A.rowval)
-        unsafe_store!(s.i, A.rowval[i] - 1, i)
-    end
     unsafe_copy!(s.x, pointer(A.nzval), length(A.nzval))
     @isok check_sparse(B)
     return B
