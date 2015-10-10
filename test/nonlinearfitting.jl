@@ -2,7 +2,6 @@ using LeastSquaresOptim, Base.Test
 
 # StRD tests (in progress)
 # http://www.itl.nist.gov/div898/strd/nls/nls_main.shtml
-# Careful: solution are not the ones given on the website.
 
 function misra1a()
     name = "misra1a"
@@ -27,7 +26,7 @@ function misra1a()
     1.0000000000E-04        5.0000000000E-04        5.5015643181E-04;
     ]
     f(x, beta) = beta[1]*(1-exp(-beta[2]*x))
-    solution = [238.94212915141114,0.0005501564318796973]
+    solution = [2.3894212918E+02, 5.5015643181E-04]
 
     name, data, parameters, f, solution
 end
@@ -97,7 +96,7 @@ function Chwirut2()
     0.02        0.010;
     ]
     f(x, beta) = exp(-beta[1]*x)/(beta[2]+beta[3]*x)   
-    solution =[0.16657643201956981,0.005165325897362337,0.0121500155768727]
+    solution =[ 1.6657666537E-01, 5.1653291286E-03, 1.2150007096E-02]
 
     name, data, parameters, f, solution
 end
@@ -326,7 +325,7 @@ function Chwitrut1()
     0.02        0.010;
     ] 
     f(x, beta) = exp(-beta[1]*x)/(beta[2]+beta[3]*x)   
-    solution = [0.19027794950546645,0.006131398285792059,0.010530915245898486]
+    solution = [1.9027818370E-01, 6.1314004477E-03, 1.0530908399E-02]
 
     name, data, parameters, f, solution
 end
@@ -368,7 +367,15 @@ function Lanczos3()
     7.6         6.3;     
     ]
     f(x, beta) = beta[1] * exp(-beta[2] * x) + beta[3] * exp(-beta[4]*x) + beta[5] * exp(-beta[6]*x)
-    solution = [0.08681642488643469,0.9549810708443807,0.8440077982096189,2.9515952452570193,1.5825685566602525,4.986356528035884]
+    solution = [
+ 8.6816414977E-02,
+ 9.5498101505E-01,
+ 8.4400777463E-01,
+ 2.9515951832E+00,
+ 1.5825685901E+00,
+ 4.9863565084E+00
+ ]
+
     name, data, parameters, f, solution
 end
 
@@ -637,9 +644,19 @@ function Gauss1()
     178.0       180.0;
     16.5        20.0;
     ]
-
+    
+    solution = [
+    9.8778210871E+01,
+    1.0497276517E-02,
+    1.0048990633E+02,
+    6.7481111276E+01,
+    2.3129773360E+01,
+    7.1994503004E+01,
+    1.7899805021E+02,
+    1.8389389025E+01
+    ]
     f(x, beta) = beta[1] * exp(-beta[2]x) + beta[3]*exp(-(x - beta[4])^2 / beta[5]^2) + beta[6]*exp(-(x - beta[7])^2 / beta[8]^2)
- solution =  [98.77820846003205,0.010497275267276392,100.48990425393075,67.48111150933194,23.129772501651757,71.99450044276362,178.99805064403137,18.389388166337437]
+
     return name, data, parameters, f, solution
 end
 
@@ -909,8 +926,17 @@ function Gauss2()
     18.0        20.0;
     ]
     f(x, beta) = beta[1] * exp(-beta[2]*x) + beta[3] * exp(-(x - beta[4])^2 / beta[5]^2) + beta[6]*exp(-(x - beta[7])^2 / beta[8]^2)
-    solution = [99.0183283504825,0.010994945372595774,101.8802252585162,107.03095519792656,23.578584011675545,72.04558953937348,153.27010191461994,19.52597255846091]
 
+     solution = [
+     9.9018328406E+01 ,
+     1.0994945399E-02 ,
+     1.0188022528E+02 ,
+     1.0703095519E+02 ,
+     2.3578584029E+01 ,
+     7.2045589471E+01 ,
+     1.5327010194E+02 ,
+     1.9525972636E+01 
+     ]
     return name, data, parameters, f, solution
 end
 
@@ -930,7 +956,8 @@ function DanWood()
     5           4;
     ]
     f(x, beta) = beta[1] * x^beta[2]
-    solution =  [0.7688622535580905,3.8604056105108495]
+    solution =  [7.6886226176E-01,  3.8604055871E+00]
+ 
 
     return name, data, parameters, f, solution
 end
@@ -960,7 +987,7 @@ function Misra1b()
     ]
 
     f(x, beta) =  beta[1]* (1 - (1 / (1 + beta[2] * x / 2)^2))
-    solution = [337.99746179088305,0.0003903909126540893]
+    solution = [3.3799746163E+02, 3.9039091287E-04]
 
 
     return name, data, parameters, f, solution
@@ -990,8 +1017,12 @@ function MGH09()
     39          0.39 ;
     ]
     f(x, beta) =  beta[1]*(x^2 + x*beta[2]) / (x^2 + x * beta[3] + beta[4])
-    solution = [    1.9280693458E-01,   1.9128232873E-01    ,       1.2305650693E-01    ,   1.3606233068E-01]
-
+    solution = [ 
+    1.9280693458E-01,     
+    1.9128232873E-01,     
+    1.2305650693E-01,     
+    1.3606233068E-01
+    ]    
     return name, data, parameters, f, solution
 end
 
@@ -1048,8 +1079,15 @@ function Thurber()
     0.03        0.05     ;
     ]
     f(x, beta) =  (beta[1] + beta[2]*x + beta[3]*x^2 + beta[4]*x^3) / (1 + beta[5]*x + beta[6]*x^2 + beta[7]*x^3) 
-    solution = [1291.8261698796643,1855.5020718749865,853.9202870200489,130.39514324374565,1.2126322702254466,0.5348202506943717,0.12106727623053581]
-
+    solution = [
+    1.2881396800E+03 ,
+     1.4910792535E+03,
+     5.8323836877E+02,
+     7.5416644291E+01,
+     9.6629502864E-01,
+     3.9797285797E-01,
+     4.9727297349E-02
+     ]
     return name, data, parameters, f, solution
 end
 
@@ -1072,7 +1110,8 @@ function BoxBOD()
     1          0.75;
     ]
     f(x, beta) =  beta[1]* (1 - exp(-beta[2]*x))
-    solution = [    2.1380940889E+02    , 5.4723748542E-01]
+    solution = [2.1380940889E+02,  5.4723748542E-01]
+
     return name, data, parameters, f, solution
 end
 
@@ -1099,7 +1138,7 @@ function Rat42()
     ]
 
     f(x, beta) = beta[1] / (1 + exp(beta[2] - beta[3]*x))
-    solution = [72.46223626209179,2.618076784829265,0.06735920081565117]
+    solution = [ 7.2462237576E+01 , 2.6180768402E+00, 6.7359200066E-02]
 
     return name, data, parameters, f, solution
 end
@@ -1132,8 +1171,7 @@ function MGH10()
     ]
 
     f(x, beta) =  beta[1] * exp(beta[2] / (x + beta[3]))
-    solution = [1.1123886777589083e-11,351382.48555996205,10040.212836088316]
-
+    solution = [5.6096364710E-03, 6.1813463463E+03, 3.4522363462E+02    ]
     return name, data, parameters, f, solution
 end
 
@@ -1187,7 +1225,7 @@ function Eckerle4()
     500         450   ;
     ]
     f(x, beta) = beta[1] / beta[2] * exp(-(x - beta[3])^2 / (2*beta[2]^2))
-    solution = [1.5543834302782398,4.088835832904201,451.5412157420717]
+    solution = [1.5543827178E+00    ,   4.0888321754E+00    ,4.5154121844E+02]
 
     return name, data, parameters, f, solution
 end
@@ -1223,7 +1261,12 @@ function Rat43()
     1           1.3 ;
     ]
     f(x, beta) = beta[1] / (1 + exp(beta[2] - beta[3] * x))^(1/beta[4])
-    solution = [699.6414823331608,5.277148920424921,0.7596313234401143,1.2792566814525475]
+    solution = [
+    6.9964151270E+02, 
+    5.2771253025E+00,
+    7.5962938329E-01,
+    1.2792483859E+00
+  ]
 
     return name, data, parameters, f, solution
 end
@@ -1397,7 +1440,7 @@ function Bennett5()
     0.8         0.85;
     ]
     f(x, beta) = beta[1] *(beta[2] + x)^(-1/beta[3])
-    solution = [-2523.6970770710054,46.73736590349044,0.932171783274377]
+    solution = [    -2.5235058043E+03,4.6736564644E+01,9.3218483193E-01]
     return name, data, parameters, f, solution
 end
 
