@@ -8,7 +8,12 @@
 type DenseQRSolver{Tqr, Tu <: AbstractVector} <: AbstractSolver
     qr::Tqr
     u::Tu
+    function DenseQRSolver(qr, u)
+        length(u) == size(qr, 1) || throw(DimensionMismatch("u must have length size(qr, 1)"))
+        new(qr, u)
+    end
 end
+DenseQRSolver{Tqr, Tu <: AbstractVector}(qr::Tqr, u::Tu) = DenseQRSolver{Tqr, Tu}(qr, u)
 
 function allocate(nls::DenseLeastSquaresProblem,
     ::Type{Val{:dogleg}}, ::Type{Val{:factorization}})
@@ -39,7 +44,12 @@ end
 type DenseQRDampenedSolver{Tqr, Tu <: AbstractVector} <: AbstractSolver
     qr::Tqr
     u::Tu
+    function DenseQRDampenedSolver(qr, u)
+        length(u) == size(qr, 1) || throw(DimensionMismatch("u must have length size(qr, 1)"))
+        new(qr, u)
+    end
 end
+DenseQRDampenedSolver{Tqr, Tu <: AbstractVector}(qr::Tqr, u::Tu) = DenseQRDampenedSolver{Tqr, Tu}(qr, u)
 
 function allocate(nls:: DenseLeastSquaresProblem,
     ::Type{Val{:levenberg_marquardt}}, ::Type{Val{:factorization}})

@@ -10,7 +10,13 @@ type LevenbergMarquardt{Tx1, Tx2, Ty1, Ty2} <: AbstractMethod
     dtd::Tx2
     ftrial::Ty1
     fpredict::Ty2
+    function LevenbergMarquardt(δx, dtd, ftrial, fpredict)
+        length(δx) == length(dtd) || throw(DimensionMismatch("The lengths of δx and dtd must match."))
+        length(ftrial) == length(fpredict) || throw(DimensionMismatch("The lengths of ftrial and fpredict must match."))
+        new(δx, dtd, ftrial, fpredict)
+    end
 end
+LevenbergMarquardt{Tx1, Tx2, Ty1, Ty2}(δx::Tx1, dtd::Tx2, ftrial::Ty1, fpredict::Ty2) = LevenbergMarquardt{Tx1, Tx2, Ty1, Ty2}(δx, dtd, ftrial, fpredict)
 
 function allocate(nls::LeastSquaresProblem, ::Type{Val{:levenberg_marquardt}})
    LevenbergMarquardt(_zeros(nls.x), _zeros(nls.x), _zeros(nls.y), _zeros(nls.y))

@@ -172,7 +172,18 @@ type LSMRDampenedSolver{Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty} <: AbstractSolver
     hbar::Tx5
     zerosvector::Tx6
     u::Ty
+    function LSMRDampenedSolver(normalization, tmp, v, h, hbar, zerosvector, u)
+        length(normalization) == length(tmp) || throw(DimensionMismatch("normalization and tmp must have the same length"))
+        length(normalization) == length(v) || throw(DimensionMismatch("normalization and v must have the same length"))
+        length(normalization) == length(h) || throw(DimensionMismatch("normalization and h must have the same length"))
+        length(normalization) == length(hbar) || throw(DimensionMismatch("normalization and hbar must have the same length"))
+        length(normalization) == length(zerosvector) || throw(DimensionMismatch("normalization and zerosvector must have the same length"))
+        new(normalization, tmp, v, h, hbar, zerosvector, u)
+    end
 end
+
+LSMRDampenedSolver{Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty}(normalization::Tx1, tmp::Tx2, v::Tx3, h::Tx4, hbar::Tx5, zerosvector::Tx6, u::Ty) = LSMRDampenedSolver{Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty}(normalization, tmp, v, h, hbar, zerosvector, u)
+
 
 function allocate(nls::LeastSquaresProblem,
     ::Type{Val{:levenberg_marquardt}}, ::Type{Val{:iterative}})

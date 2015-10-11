@@ -11,7 +11,15 @@ type Dogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2} <: AbstractMethod
     dtd::Tx4
     ftrial::Ty1
     fpredict::Ty2
+    function Dogleg(δgn, δgr, δx, dtd, ftrial, fpredict)
+        length(δgn) == length(δgr) || throw(DimensionMismatch("The lengths of δgn and δgr must match."))
+        length(δgn) == length(δx) || throw(DimensionMismatch("The lengths of δgn and δx must match."))
+        length(δgn) == length(dtd) || throw(DimensionMismatch("The lengths of δgn and dtd must match."))
+        length(ftrial) == length(fpredict) || throw(DimensionMismatch("The lengths of ftrial and fpredict must match."))
+        new(δgn, δgr, δx, dtd, ftrial, fpredict)
+    end
 end
+Dogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2}(δgn::Tx1, δgr::Tx2, δx::Tx3, dtd::Tx4, ftrial::Ty1, fpredict::Ty2) = Dogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2}(δgn, δgr, δx, dtd, ftrial, fpredict)
 
 function allocate(nls::LeastSquaresProblem, ::Type{Val{:dogleg}})
     Dogleg(_zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), 

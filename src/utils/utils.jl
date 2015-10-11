@@ -12,37 +12,32 @@ for (name, symbol) in ((:Ac_mul_B!, 'T'),
     end
 end
 
-function colsumabs2!(dtd::AbstractVector, J::StridedVecOrMat)
-    for i in 1:length(dtd)
-        dtd[i] = sumabs2(slice(J, :, i))
+function colsumabs2!(v::AbstractVector, A::StridedVecOrMat)
+    length(v) == size(A, 2) || error("v should have length size(A, 2)")
+    @inbounds for j in 1:length(v)
+        v[j] = sumabs2(slice(A, :, j))
     end
 end
 
 function colsumabs2!(v::AbstractVector, A::Base.SparseMatrix.SparseMatrixCSC)
-    for i in 1:length(v)
-        v[i] = sumabs2(sub(nonzeros(A), nzrange(A, i)))
+    length(v) == size(A, 2) || error("v should have length size(A, 2)")
+    @inbounds for j in 1:length(v)
+        v[j] = sumabs2(sub(nonzeros(A), nzrange(A, j)))
     end
 end
 
-
 _zeros(x) = fill!(similar(x), 0)
 
-
-
-
 function wdot(x::AbstractVector, y::AbstractVector, w::AbstractVector)
+    (length(x) == length(y) && length(y) == length(w)) || error("vectors have not the same length")
     out = zero(one(eltype(x)) * one(eltype(y)) * one(eltype(w)))
-    @inbounds @simd for i in 1:length(x)
+    @inbounds for i in 1:length(x)
         out += w[i] * x[i] * y[i]
     end
     return out
 end
 
 # can be user written
-function wdot(x, y, w)
-    dot(x, y, w)
-end
-
-
+wdot(x, y, w) = dot(x, y, w)
 wsumabs2(x, w) = wdot(x, x, w)
 wnorm(x, w) = sqrt(wsumabs2(x, w))

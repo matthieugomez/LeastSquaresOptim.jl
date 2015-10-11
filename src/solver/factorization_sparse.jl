@@ -42,6 +42,7 @@ type SparseCholeskySolver{Ti, Tx} <: AbstractSolver
     cm::Array{UInt8, 1}
 end
 
+
 function allocate(nls::SparseLeastSquaresProblem,
     ::Type{Val{:dogleg}}, ::Type{Val{:factorization}})
     colptr = deepcopy(nls.J.colptr)
