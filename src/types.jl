@@ -15,6 +15,7 @@ type LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}
         length(y) == size(J, 1) || throw(DimensionMismatch("y must have length size(J, 1)"))
         size(J, 1) >= size(J, 2) || throw(DimensionMismatch("size(J, 1) must be greater than size(J, 2)"))
         new(x, y, f!, J, g!)
+    end
 end
 LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}(x::Tx, y::Ty, f!::Tf, J::TJ, g!::Tg) = LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}(x, y, f!, J, g!) 
 
