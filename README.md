@@ -74,7 +74,7 @@ For all methods and solvers, `optimize!` also accepts the options : `ftol`, `xto
 ## Memory 
 Objects are updated in place at each iteration: memory is allocated once and for all at the beginning of the function. 
 
-You can even avoid any initial allocation by passing a `LeastSquaresProblemAllocated` to the `optimize!` function. Such an object bundles a `LeastSquaresProblem` object with a few storage objects. Since the set of storage objects depends on the method and solver used, these options should be passed to the constructor.
+You can even avoid any initial allocation by passing a `LeastSquaresProblemAllocated` to the `optimize!` function. Such an object bundles a `LeastSquaresProblem` object with a few storage objects. Since the set of storage objects depends on the method and solver used, these options should be passed to the constructor rather than the `optimize!` function:
 ```julia
 rosenbrock = LeastSquaresProblemAllocated(x, fcur, rosenbrock_f!, J, rosenbrock_g!; 
                                           method = :dogleg, solver = :qr)
