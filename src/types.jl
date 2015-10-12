@@ -56,28 +56,29 @@ function LeastSquaresProblemAllocated{Tx, Ty, Tf, TJ, Tg}(
     method::Union{Void, Symbol} = nothing, solver::Union{Void, Symbol} = nothing)
     valsolver = default_solver(solver, TJ)
     valmethod = default_method(method, valsolver)
-    if valsolver == :qr && TJ == SparseMatrixCSC
-        throw("qr is not available for sparse Jacobians")
-    end
+
     LeastSquaresProblemAllocated(nls,
     allocate(nls, valmethod), 
     allocate(nls, valmethod, valsolver))
 end
 
-# or dense matrices, default to factorization f, otherwise iterative
-function default_solver(x::Symbol, ::Type)
-    if x != :qr && x != :cholesky && x != :iterative
-        throw("$x is not a valid solver. Choose between :qr, :cholesky, and :iterative")
+## for dense matrices, default to cholesky ; otherwise iterative
+function default_solver(x::Symbol, t::Type)
+    if x ∉ (:qr, :cholesky, :iterative)
+        throw("$x is not a valid solver. Choose between :qr, :cholesky, and :iterative.")
+    end
+    if x == :qr && t <: SparseMatrixCSC
+        throw("solver = :qr is not available for sparse Jacobians. Choose between :cholesky and :iterative.")
     end
     Val{x}
 end
 default_solver{T<:StridedVecOrMat}(::Void, ::Type{T}) = Val{:qr}
 default_solver(::Void, ::Type) = Val{:iterative}
 
-# for iterative, default to levenberg_marquardt ; otherwise dogleg
+## for iterative, default to levenberg_marquardt ; otherwise dogleg
 function default_method(x::Symbol, ::Type)
-    if x != :levenberg_marquardt && x != :dogleg
-        throw("$x is not a valid method. Choose between :levenberg_marquardt and :dogleg")
+    if x ∉ (:levenberg_marquardt, :dogleg)
+        throw("$x is not a valid method. Choose between :levenberg_marquardt and :dogleg.")
     end
     Val{x}
 end
@@ -89,7 +90,6 @@ function LeastSquaresProblemAllocated(args...; kwargs...)
     LeastSquaresProblemAllocated(LeastSquaresProblem(args...); kwargs...)
 end
 
-
 # optimize
 function optimize!(nls::LeastSquaresProblem; 
     method::Union{Void, Symbol} = nothing, 
@@ -98,9 +98,6 @@ function optimize!(nls::LeastSquaresProblem;
     nlsp = LeastSquaresProblemAllocated(nls ; method = method, solver = solver)
     optimize!(nlsp; kwargs...)
 end
-
-
-
 ###############################################################################
 ##
 ## Result of Non Linear Least Squares
