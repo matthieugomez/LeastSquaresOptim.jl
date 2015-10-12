@@ -15,7 +15,6 @@ To find `x` that minimizes `f'(x)f(x)`, construct a `LeastSquaresProblem` object
  - `J` is a pre-allocation for the jacobian.
  - `g!` a callable object such that `g!(x, out)` writes the jacobian at x in `out`.
 
-When calling `optimize!`, `x`, `fcur` and `J` are updated in place during the function
 
 A simple example:
 ```julia
@@ -35,9 +34,11 @@ end
 x = [-1.2; 1.]
 fcur = Array(Float64, 2)
 J = Array(Float64, 2, 2)
-optimize!(LeastSquaresProblem(x, fcur, rosenbrock_f!, J, rosenbrock_g!))
+rosenbrock_problem = LeastSquaresProblem(x, fcur, rosenbrock_f!, J, rosenbrock_g!))
+optimize!(rosenbrock_problem)
 ```
 
+When calling `optimize!`, `x`, `fcur` and `J` are updated in place during the function
 
 
 ## Methods
