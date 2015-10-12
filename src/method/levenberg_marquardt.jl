@@ -29,8 +29,8 @@ end
 ##
 ##############################################################################
 
-const MAX_λ = 1e16 # minimum trust region radius
-const MIN_λ = 1e-16 # maximum trust region radius
+const MAX_Δ = 1e16 # minimum trust region radius
+const MIN_Δ = 1e-16 # maximum trust region radius
 const MIN_STEP_QUALITY = 1e-3
 const GOOD_STEP_QUALITY = 0.75
 const MIN_DIAGONAL = 1e-6
@@ -41,7 +41,7 @@ const MAX_DIAGONAL = 1e32
 function optimize!{T, Tmethod <: LevenbergMarquardt, Tsolve}(
         anls::LeastSquaresProblemAllocated{T, Tmethod , Tsolve};
             xtol::Number = 1e-8, ftol::Number = 1e-8, grtol::Number = 1e-8,
-            iterations::Integer = 1_000, λ::Number = 10.0)
+            iterations::Integer = 1_000, Δ::Number = 10.0)
 
     decrease_factor = 2.0
 
@@ -71,7 +71,7 @@ function optimize!{T, Tmethod <: LevenbergMarquardt, Tsolve}(
             need_jacobian = false
         end
         colsumabs2!(dtd, J)        
-        δx, lmiter = solve!(δx, dtd, λ, anls.nls, anls.solve)
+        δx, lmiter = solve!(δx, dtd, 1/Δ, anls.nls, anls.solve)
         mul_calls += lmiter
 
         # update
@@ -92,13 +92,13 @@ function optimize!{T, Tmethod <: LevenbergMarquardt, Tsolve}(
             copy!(fcur, ftrial)
             ssr = trial_ssr
             # increase trust region radius (from Ceres solver)
-            λ = max(λ * max(1/3, 1.0 - (2.0 * ρ - 1.0)^3), MIN_λ)
+            Δ = min(Δ / max(1/3, 1.0 - (2.0 * ρ - 1.0)^3), MAX_Δ)
             decrease_factor = 2.0
             need_jacobian = true
         else
             # revert update
             axpy!(one(Tx), δx, x)
-            λ = min(λ * decrease_factor , MAX_λ)
+            Δ = max(Δ / decrease_factor , MIN_Δ)
             decrease_factor *= 2.0
         end
     end

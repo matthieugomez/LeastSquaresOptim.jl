@@ -42,7 +42,7 @@ optimize!(LeastSquaresProblem(x, fcur, rosenbrock_f!, J, rosenbrock_g!))
 
 ## Methods
 
-The `optimize` method accepts the option `method` and `solver`
+The `optimize!` method accepts two options : `method` and `solver`
 
 1. There are two least square optimization methods
 
@@ -63,18 +63,17 @@ The `optimize` method accepts the option `method` and `solver`
 		
 		Similarly, neither `x` or `f(x)` need to be AbstractVectors. An example can be found in the package [SparseFactorModels.jl](https://github.com/matthieugomez/SparseFactorModels.jl).
 
-A more thorough presentation of these methods and solvers can be found in the [Ceres documentation](http://ceres-solver.org/solving.html).
+A thorough presentation of these methods and solvers can be found in the [Ceres documentation](http://ceres-solver.org/solving.html).
 
 The default solver depends on the type of the jacobian. For dense Jacobians, `solver` defaults to `:factorization`. and `method` defaults to `:dogleg`.Otherwise `solver` defaults to `:iterative` and `method` defaults to `levenberg_marquardt`.
 
 
+For all methods and solvers, `optimize!` also accepts the options : `ftol`, `xtol`, `gr_tol`, `iterations` and `Δ` (initial radius).
 
 ## Memory 
 Objects are updated in place at each iteration: memory is allocated once and for all at the beginning of the function. 
 
-You can even avoid any initial allocation by passing a `LeastSquaresProblemAllocated` to the `optimize!` function. Such an object bundles a `LeastSquaresProblem` object with a few storage objects.
-
-Since the type and number of objects depends on the method and solver used, you need to pass these options to the constructor rather than the `optimize` functon.
+You can even avoid any initial allocation by passing a `LeastSquaresProblemAllocated` to the `optimize!` function. Such an object bundles a `LeastSquaresProblem` object with a few storage objects. Since the type and number of objects depends on the method and solver used, you need to pass these options to the constructor rather than the `optimize` functon.
 ```julia
 optimize!(LeastSquaresProblemAllocated(x, fcur, rosenbrock_f!, J, rosenbrock_g!; method = :dogleg, solver = :factorization))
 ```
