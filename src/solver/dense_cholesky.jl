@@ -9,7 +9,7 @@ type DenseCholeskySolver{Tc} <: AbstractSolver
 end
 
 function allocate(nls::DenseLeastSquaresProblem,
-    ::Type{Val{:dogleg}}, ::Type{Val{:factorization_cholesky}})
+    ::Type{Val{:dogleg}}, ::Type{Val{:cholesky}})
     return DenseCholeskySolver(Array(eltype(nls.J), length(nls.x), length(nls.x)))
 end
 
@@ -34,7 +34,7 @@ type DenseCholeskyDampenedSolver{Tc} <: AbstractSolver
 end
 
 function allocate(nls:: DenseLeastSquaresProblem,
-    ::Type{Val{:levenberg_marquardt}}, ::Type{Val{:factorization_cholesky}})
+    ::Type{Val{:levenberg_marquardt}}, ::Type{Val{:cholesky}})
     return DenseCholeskyDampenedSolver(Array(eltype(nls.J), length(nls.x), length(nls.x)))
 end
 

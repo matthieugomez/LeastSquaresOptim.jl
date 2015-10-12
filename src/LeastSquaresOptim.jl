@@ -37,9 +37,9 @@ include("method/levenberg_marquardt.jl")
 include("method/dogleg.jl")
 include("method/utils.jl")
 
-include("solver/factorization_dense_qr.jl")
-include("solver/factorization_dense_cholesky.jl")
-include("solver/factorization_sparse.jl")
+include("solver/dense_qr.jl")
+include("solver/dense_cholesky.jl")
+include("solver/sparse_cholesky.jl")
 include("solver/iterative_lsmr.jl")
 
 end

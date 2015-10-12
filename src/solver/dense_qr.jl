@@ -16,7 +16,7 @@ end
 DenseQRSolver{Tqr, Tu <: AbstractVector}(qr::Tqr, u::Tu) = DenseQRSolver{Tqr, Tu}(qr, u)
 
 function allocate(nls::DenseLeastSquaresProblem,
-    ::Type{Val{:dogleg}}, ::Type{Val{:factorization}})
+    ::Type{Val{:dogleg}}, ::Type{Val{:qr}})
     return DenseQRSolver(similar(nls.J), _zeros(nls.y))
 end
 
@@ -52,7 +52,7 @@ end
 DenseQRDampenedSolver{Tqr, Tu <: AbstractVector}(qr::Tqr, u::Tu) = DenseQRDampenedSolver{Tqr, Tu}(qr, u)
 
 function allocate(nls:: DenseLeastSquaresProblem,
-    ::Type{Val{:levenberg_marquardt}}, ::Type{Val{:factorization}})
+    ::Type{Val{:levenberg_marquardt}}, ::Type{Val{:qr}})
     qr = zeros(eltype(nls.J), length(nls.y) + length(nls.x), length(nls.x))
     u = zeros(length(nls.y) + length(nls.x))
     return DenseQRDampenedSolver(qr, u)

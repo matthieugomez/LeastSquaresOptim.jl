@@ -91,7 +91,8 @@ end
 iter = 0
 for matrix in (:dense, :sparse)
     for (method, method_abbr) in ((:levenberg_marquardt, :lm), (:dogleg, :dl))
-        for (solver, solver_abbr) in ((:factorization, :fact), (:iterative, :iter))
+        factorization = matrix == :dense ? :qr : :cholesky
+        for (solver, solver_abbr) in ((factorization, :fact), (:iterative, :iter))
             iter += 1
             if matrix == :sparse && method == :levenberg_marquardt
                 continue

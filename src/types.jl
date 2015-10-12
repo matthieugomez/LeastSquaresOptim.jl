@@ -50,30 +50,47 @@ type LeastSquaresProblemAllocated{T <: LeastSquaresProblem, Tmethod <: AbstractM
     solve::Tsolve
 end
 
+# Constructor
 function LeastSquaresProblemAllocated{Tx, Ty, Tf, TJ, Tg}(
     nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}; 
     method::Union{Void, Symbol} = nothing, solver::Union{Void, Symbol} = nothing)
     valsolver = default_solver(solver, TJ)
     valmethod = default_method(method, valsolver)
+    if valsolver == :qr && TJ == SparseMatrixCSC
+        throw("qr is not available for sparse Jacobians")
+    end
     LeastSquaresProblemAllocated(nls,
     allocate(nls, valmethod), 
     allocate(nls, valmethod, valsolver))
 end
 
+# or dense matrices, default to factorization f, otherwise iterative
+function default_solver(x::Symbol, ::Type)
+    if x != :qr && x != :cholesky && x != :iterative
+        throw("$x is not a valid solver. Choose between :qr, :cholesky, and :iterative")
+    end
+    Val{x}
+end
+default_solver{T<:StridedVecOrMat}(::Void, ::Type{T}) = Val{:qr}
+default_solver(::Void, ::Type) = Val{:iterative}
+
+# for iterative, default to levenberg_marquardt ; otherwise dogleg
+function default_method(x::Symbol, ::Type)
+    if x != :levenberg_marquardt && x != :dogleg
+        throw("$x is not a valid method. Choose between :levenberg_marquardt and :dogleg")
+    end
+    Val{x}
+end
+default_method(::Void, ::Type{Val{:iterative}}) = Val{:levenberg_marquardt}
+default_method(::Void, ::Type) = Val{:dogleg}
+
+
 function LeastSquaresProblemAllocated(args...; kwargs...)
     LeastSquaresProblemAllocated(LeastSquaresProblem(args...); kwargs...)
 end
 
-# or dense matrices, default to factorization f, otherwise iterative
-default_solver(x::Symbol, ::Type) = Val{x}
-default_solver{T<:StridedVecOrMat}(::Void, ::Type{T}) = Val{:factorization}
-default_solver(::Void, ::Type) = Val{:iterative}
 
-# for iterative, default to levenberg_marquardt ; otherwise dogleg
-default_method(x::Symbol, ::Type) = Val{x}
-default_method(::Void, ::Type{Val{:iterative}}) = Val{:levenberg_marquardt}
-default_method(::Void, ::Type) = Val{:dogleg}
-
+# optimize
 function optimize!(nls::LeastSquaresProblem; 
     method::Union{Void, Symbol} = nothing, 
     solver::Union{Void, Symbol} = nothing, 

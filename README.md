@@ -53,9 +53,8 @@ The `optimize!` method accepts two options : `method` and `solver`
 
 2. The least squares problem encountered at each iteration can be solved in two different ways:
 
-	- `solver = :factorization`. 
-		- For dense jacobians, it relies on the QR factorization in LAPACK.
-		- For sparse jacobians, it relies on the cholesky factorization in SuiteSparse. A symbolic factorization is computed at the first iteration and numerically updated at each iteration.
+	- `solver = :qr`. Available for dense matrices
+	- `solver = :cholesky`. Available for dense matrices and sparse matrices. For sparse matrices, a symbolic factorization is computed at the first iteration (from SuiteSparse) and numerically updated at each iteration
 	- `solve = :iterative` corresponds to a conjugate gradient method (more precisely [LSMR]([http://web.stanford.edu/group/SOL/software/lsmr/) with diagonal preconditioner). The jacobian can be a dense matrix, a sparse matrix, or any type implementing the following methods:
 		- `A_mul_B!(α::Number, A, x, β::Number, fcur)`that  updates fcur -> α Ax + βfcur
 		- `Ac_mul_B!(α::Number, A, fcur, β::Number, x)` that updates x -> α A'fcur + βx
@@ -65,7 +64,9 @@ The `optimize!` method accepts two options : `method` and `solver`
 
 A thorough presentation of these methods and solvers can be found in the [Ceres documentation](http://ceres-solver.org/solving.html).
 
-The default solver depends on the type of the jacobian. For dense Jacobians, `solver` defaults to `:factorization`. and `method` defaults to `:dogleg`.Otherwise `solver` defaults to `:iterative` and `method` defaults to `levenberg_marquardt`.
+The default solver depends on the type of the jacobian. 
+- For dense Jacobians, defaults are `method = :dogleg` and `solver = :qr`
+- For sparse Jacobians, defaults are  `method = :levenberg_marquardt` and `solver = :iterative` 
 
 
 For all methods and solvers, `optimize!` also accepts the options : `ftol`, `xtol`, `gr_tol`, `iterations` and `Δ` (initial radius).
@@ -75,7 +76,11 @@ Objects are updated in place at each iteration: memory is allocated once and for
 
 You can even avoid any initial allocation by passing a `LeastSquaresProblemAllocated` to the `optimize!` function. Such an object bundles a `LeastSquaresProblem` object with a few storage objects. Since the type and number of objects depends on the method and solver used, you need to pass these options to the constructor rather than the `optimize` functon.
 ```julia
-optimize!(LeastSquaresProblemAllocated(x, fcur, rosenbrock_f!, J, rosenbrock_g!; method = :dogleg, solver = :factorization))
+rosenbrock = LeastSquaresProblemAllocated(x, fcur, rosenbrock_f!, J, rosenbrock_g!; 
+                                          method = :dogleg, solver = :factorization)
+optimize!(rosenbrock)
+
+
 ```
 
 This can be useful when alternatively minimizing a problem with respect to different parameters.

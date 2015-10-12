@@ -503,9 +503,9 @@ end
 
 
 for matrix in (:dense, :sparse)
-    for (solver, solver_abbr) in ((:factorization, :fact), (:iterative, :iter))
-        if matrix == :sparse && solver != :iter
-            # test later
+    for (solver, solver_abbr) in ((:qr, :qr), (:iterative, :iter))
+        if (matrix == :sparse && solver == :qr)
+            # tests below
             continue
         else
             for (method, method_abbr) in ((:dogleg, :dl), (:levenberg_marquardt, :lm))
@@ -559,7 +559,7 @@ for (name, f!, g!, x) in alltests
     nls = LeastSquaresProblem(x, fcur, f!, J, g!)
     # try because g! may change symbolic factorizations (see Julia issue #9906)
     try
-        r = optimize!(nls, method = :dogleg, solver = :factorization)
+        r = optimize!(nls, method = :dogleg, solver = :cholesky)
         @test r.converged
         @test r.ssr <= 1e-3
         @printf("%-6s %4s %2s %30s %5d %5d   %5d   %10e\n", :sparse, :fact, :dl, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
@@ -586,7 +586,7 @@ for (method, method_abbr) in ((:levenberg_marquardt, :lm), (:dogleg, :dl))
         fcur = similar(x)
         J = Array(Float64, length(x), length(x))
         nls = LeastSquaresProblem(x, fcur, f!, J, g!)
-        r = optimize!(nls, method = method, solver = :factorization_cholesky)
+        r = optimize!(nls, method = method, solver = :cholesky)
         @printf("%-6s %4s %2s %30s %5d %5d   %5d   %10e\n", :dense, :chol, method_abbr, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
         @test r.converged
         @test r.ssr <= 1e-3

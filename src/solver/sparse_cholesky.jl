@@ -44,7 +44,7 @@ end
 
 
 function allocate(nls::SparseLeastSquaresProblem,
-    ::Type{Val{:dogleg}}, ::Type{Val{:factorization}})
+    ::Type{Val{:dogleg}}, ::Type{Val{:cholesky}})
     colptr = deepcopy(nls.J.colptr)
     rowval = deepcopy(nls.J.rowval)
     sparseJ = Sparse(nls.J)
@@ -62,7 +62,7 @@ function solve!(x, nls::SparseLeastSquaresProblem, solve::SparseCholeskySolver)
 
     # check symbolic structure is the same
     if solve.colptr != J.colptr || solve.rowval != J.rowval
-        error("The symbolic structure of the Jacobian has been changed. Either (i) rewrite g! so that it does not modify the structure of J (see Julia issue #9906) (ii) use solver = :iterative rather than solver = :factorization")
+        error("The symbolic structure of the Jacobian has been changed. Either (i) rewrite g! so that it does not modify the structure of J (see Julia issue #9906) (ii) use solver = :iterative rather than solver = :cholesky")
     end
 
     Sparse!(J, sparseJ)
