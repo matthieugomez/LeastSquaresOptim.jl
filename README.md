@@ -77,7 +77,7 @@ Objects are updated in place at each iteration: memory is allocated once and for
 You can even avoid any initial allocation by passing a `LeastSquaresProblemAllocated` to the `optimize!` function. Such an object bundles a `LeastSquaresProblem` object with a few storage objects. Since the type and number of objects depends on the method and solver used, you need to pass these options to the constructor rather than the `optimize` functon.
 ```julia
 rosenbrock = LeastSquaresProblemAllocated(x, fcur, rosenbrock_f!, J, rosenbrock_g!; 
-                                          method = :dogleg, solver = :factorization)
+                                          method = :dogleg, solver = :qr)
 optimize!(rosenbrock)
 
 
