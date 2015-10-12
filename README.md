@@ -42,7 +42,7 @@ optimize!(LeastSquaresProblem(x, fcur, rosenbrock_f!, J, rosenbrock_g!))
 
 ## Methods
 
-The `optimize!` method accepts two options : `method` and `solver`
+The `optimize!` method accepts two main options : `method` and `solver`
 
 1. There are two least square optimization methods
 
@@ -54,7 +54,7 @@ The `optimize!` method accepts two options : `method` and `solver`
 2. The least squares problem encountered at each iteration can be solved in two different ways:
 
 	- `solver = :qr`. Available for dense matrices
-	- `solver = :cholesky`. Available for dense matrices and sparse matrices. For sparse matrices, a symbolic factorization is computed at the first iteration (from SuiteSparse) and numerically updated at each iteration
+	- `solver = :cholesky`. Available for dense matrices and sparse matrices. For sparse matrices, a symbolic factorization is computed at the first iteration from SuiteSparse and numerically updated at each iteration.
 	- `solve = :iterative` corresponds to a conjugate gradient method (more precisely [LSMR]([http://web.stanford.edu/group/SOL/software/lsmr/) with diagonal preconditioner). The jacobian can be a dense matrix, a sparse matrix, or any type implementing the following methods:
 		- `A_mul_B!(α::Number, A, x, β::Number, fcur)`that  updates fcur -> α Ax + βfcur
 		- `Ac_mul_B!(α::Number, A, fcur, β::Number, x)` that updates x -> α A'fcur + βx
@@ -62,7 +62,7 @@ The `optimize!` method accepts two options : `method` and `solver`
 		
 		Similarly, neither `x` or `f(x)` need to be AbstractVectors. An example can be found in the package [SparseFactorModels.jl](https://github.com/matthieugomez/SparseFactorModels.jl).
 
-A thorough presentation of these methods and solvers can be found in the [Ceres documentation](http://ceres-solver.org/solving.html).
+A thorough presentation of these different methods and solvers can be found in the [Ceres documentation](http://ceres-solver.org/solving.html).
 
 The default solver depends on the type of the jacobian. 
 - For dense Jacobians, defaults are `method = :dogleg` and `solver = :qr`
@@ -79,8 +79,6 @@ You can even avoid any initial allocation by passing a `LeastSquaresProblemAlloc
 rosenbrock = LeastSquaresProblemAllocated(x, fcur, rosenbrock_f!, J, rosenbrock_g!; 
                                           method = :dogleg, solver = :qr)
 optimize!(rosenbrock)
-
-
 ```
 
 This can be useful when alternatively minimizing a problem with respect to different parameters.
