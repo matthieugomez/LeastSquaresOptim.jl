@@ -60,6 +60,10 @@ function LeastSquaresProblemAllocated{Tx, Ty, Tf, TJ, Tg}(
     allocate(nls, valmethod, valsolver))
 end
 
+function LeastSquaresProblemAllocated(args...; kwargs...)
+    LeastSquaresProblemAllocated(LeastSquaresProblem(args...); kwargs...)
+end
+
 # or dense matrices, default to factorization f, otherwise iterative
 default_solver(x::Symbol, ::Type) = Val{x}
 default_solver{T<:StridedVecOrMat}(::Void, ::Type{T}) = Val{:factorization}
@@ -77,6 +81,8 @@ function optimize!(nls::LeastSquaresProblem;
     nlsp = LeastSquaresProblemAllocated(nls ; method = method, solver = solver)
     optimize!(nlsp; kwargs...)
 end
+
+
 
 ###############################################################################
 ##

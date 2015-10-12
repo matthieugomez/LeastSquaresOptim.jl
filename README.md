@@ -13,7 +13,7 @@ To find `x` that minimizes `f'(x)f(x)`, construct a `LeastSquaresProblem` object
  - `y` is a pre-allocation for `f(x)`.
  - `f!` a callable object such that `f!(x, out)` writes `f(x)` in `out`.
  - `J` is a pre-allocation for the jacobian.
- - `g!` a callable object such that `f!(x, out)` writes the jacobian at x in `out`.
+ - `g!` a callable object such that `g!(x, out)` writes the jacobian at x in `out`.
 
 When calling `optimize!`, `x`, `fcur` and `J` are updated in place during the function
 
@@ -21,38 +21,29 @@ A simple example:
 ```julia
 using LeastSquaresOptim
 
+function rosenbrock_f!(x, fcur)
+	fcur[1] = 1 - x[1]
+	fcur[2] = 100 * (x[2]-x[1]^2)
+end
+function rosenbrock_g!(x, J)
+	J[1, 1] = -1
+	J[1, 2] = 0
+	J[2, 1] = -200 * x[1]
+	J[2, 2] = 109
+end
+
 x = [-1.2; 1.]
 fcur = Array(Float64, 2)
 J = Array(Float64, 2, 2)
-function f!(x, fcur)
-	fcur[1] = 1 - x[1]
-	fcur[2] = 10(x[2]-x[1]^2)
-end
-function g!(x, J)
-	J[1, 1] = -1
-	J[1, 2] = 0
-	J[2, 1] = -20x[1]
-	J[2, 2] = 10
-end
-
-optimize!(LeastSquaresProblem(x, fcur, f!, J, g!))
-# Results of Optimization Algorithm
-#  * Algorithm: dogleg
-#  * Minimizer: [1.0,1.0]
-#  * Sum of squares at Minimum: 0.000000
-#  * Iterations: 27
-#  * Convergence: true
-#  * |x - x'| < 1.0e-08: false
-#  * |f(x) - f(x')| / |f(x)| < 1.0e-08: true
-#  * |g(x)| < 1.0e-08: false
-#  * Function Calls: 28
-#  * Gradient Calls: 14
-#  * Multiplication Calls: 69
+optimize!(LeastSquaresProblem(x, fcur, rosenbrock_f!, J, rosenbrock_g!))
 ```
 
 
 
 ## Methods
+
+The `optimize` method accepts the option `method` and `solver`
+
 1. There are two least square optimization methods
 
 	- `method = :levenberg_marquardt`
@@ -79,17 +70,23 @@ The default solver depends on the type of the jacobian. For dense Jacobians, `so
 
 
 ## Memory 
-
 Objects are updated in place at each iteration: memory is allocated once and for all at the beginning of the function. 
 
 You can even avoid any initial allocation by passing a `LeastSquaresProblemAllocated` to the `optimize!` function. Such an object bundles a `LeastSquaresProblem` object with a few storage objects.
+
+Since the type and number of objects depends on the method and solver used, you need to pass these options to the constructor rather than the `optimize` functon.
+```julia
+optimize!(LeastSquaresProblemAllocated(x, fcur, rosenbrock_f!, J, rosenbrock_g!; method = :dogleg, solver = :factorization))
+```
+
+This can be useful when alternatively minimizing a problem with respect to different parameters.
 
 ## Automatic differentiation
 Automatic differenciation can be used for dense Jacobians thanks to the `ForwardDiff` package. 
 Just omit the `g!` function when constructing a `LeastSquaresProblem` object:
 
 ```julia
-optimize!(LeastSquaresProblem(x::Vector, fcur::Vector, f!::Function, J::Matrix))
+optimize!(LeastSquaresProblem(x, fcur, rosenbrock_f!, J))
 ```
 
 
