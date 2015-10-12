@@ -62,9 +62,9 @@ The `optimize!` method accepts two main options : `method` and `solver`
 		
 		Similarly, neither `x` or `f(x)` need to be AbstractVectors. An example can be found in the package [SparseFactorModels.jl](https://github.com/matthieugomez/SparseFactorModels.jl).
 
-A thorough presentation of these different methods and solvers can be found in the [Ceres documentation](http://ceres-solver.org/solving.html).
+To know more about these different `methods` and `solvers`,  check the [Ceres documentation](http://ceres-solver.org/solving.html).
 
-The default solver depends on the type of the jacobian. 
+`optimize!` defaults depend on the type of the jacobian. 
 - For dense Jacobians, defaults are `method = :dogleg` and `solver = :qr`
 - For sparse Jacobians, defaults are  `method = :levenberg_marquardt` and `solver = :iterative` 
 
@@ -74,7 +74,7 @@ For all methods and solvers, `optimize!` also accepts the options : `ftol`, `xto
 ## Memory 
 Objects are updated in place at each iteration: memory is allocated once and for all at the beginning of the function. 
 
-You can even avoid any initial allocation by passing a `LeastSquaresProblemAllocated` to the `optimize!` function. Such an object bundles a `LeastSquaresProblem` object with a few storage objects. Since the type and number of objects depends on the method and solver used, you need to pass these options to the constructor rather than the `optimize` functon.
+You can even avoid any initial allocation by passing a `LeastSquaresProblemAllocated` to the `optimize!` function. Such an object bundles a `LeastSquaresProblem` object with a few storage objects. Since the set of storage objects depends on the method and solver used, these options should be passed to the constructor.
 ```julia
 rosenbrock = LeastSquaresProblemAllocated(x, fcur, rosenbrock_f!, J, rosenbrock_g!; 
                                           method = :dogleg, solver = :qr)
