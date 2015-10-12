@@ -2,25 +2,27 @@
 [![Coverage Status](https://coveralls.io/repos/matthieugomez/LeastSquaresOptim.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/matthieugomez/LeastSquaresOptim.jl?branch=master)
 ## Motivation
 
-This package solves non linear least squares optimization problems. , making it particularly adapted to high dimensional problems.
+This package solves non linear least squares optimization problems
 
 The package has a particular emphasis on high dimensional problems:
 - All operations are done in place
-- The Jacobian can be a dense matrix, a sparse matrix (i.e. of type `SparseMatrixCSC`), or any object that implements multiplication operators (`A_mul_B` and `Ac_mul_B`).
+- The Jacobian can be a dense matrix, a sparse matrix (i.e. of type `SparseMatrixCSC`), or any object that implements multiplication operators (`A_mul_B!` and `Ac_mul_B!`).
 
 ## Syntax
-First construct a `LeastSquaresProblem` object with:
- - `x` is an initial set of parameters
- - `fcur` is a pre-allocation for `f(x)`
- - `f!` a callable object such that `f!(x, out)` updates `out` to `f(x)`
- - `J` is a pre-allocation for the jacobian
- - `g!` a callable object such that `f!(x, J)` updates `J` to the Jacobian at x
 
-`x`, `fcur` and `J` are updated in place during the function
+To minimize `f'(x)f(x)`, construct a `LeastSquaresProblem` object with:
+ - `x` is an initial set of parameters
+ - `y` is a pre-allocation for `f(x)`. The sum to optimize is `f'(x)f(x)`
+ - `f!` a callable object such that `f!(x, out)` writes `f(x)` in `out`
+ - `J` is a pre-allocation for the jacobian
+ - `g!` a callable object such that `f!(x, out)` writes the jacobian at x in `out`
+
+Call `optimize!` on it. `x`, `fcur` and `J` are updated in place during the function
 
 A simple example:
 ```julia
 using LeastSquaresOptim
+
 x = [-1.2; 1.]
 fcur = Array(Float64, 2)
 J = Array(Float64, 2, 2)
@@ -82,7 +84,7 @@ The default solver depends on the type of the jacobian. For dense Jacobians, `so
 
 Objects are updated in place at each iteration: memory is allocated once and for all at the beginning of the function. 
 
-You can even avoid any initial allocation by passing a  `LeastSquaresProblemAllocated` object to the `optimize!` function. Such an object bundles a `LeastSquaresProblem` object with a few storage objects.
+You can even avoid any initial allocation by passing a `LeastSquaresProblemAllocated` to the `optimize!` function. Such an object bundles a `LeastSquaresProblem` object with a few storage objects.
 
 ## Automatic differentiation
 Automatic differenciation can be used for dense Jacobians thanks to the `ForwardDiff` package. 
