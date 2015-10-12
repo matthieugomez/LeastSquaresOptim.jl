@@ -42,6 +42,8 @@ type PreconditionedMatrix{TA, Tx}
     tmp::Tx # a storage vector of size(A, 2)
 end
 
+
+# use invoke when accepts keyboard argument https://github.com/JuliaLang/julia/issues/7045
 function lsmr!(x, A::PreconditionedMatrix, r, v, h, hbar; kwargs...)
     PA = PMatrix(A.A, A.normalization, A.tmp)
     result = lsmr!(x, PA, r, v, h, hbar; kwargs...)

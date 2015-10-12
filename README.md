@@ -4,29 +4,7 @@
 
 This package solves non linear least squares optimization problems. It handles problems with dense Jacobian (type `StridedVecOrMat`), sparse Jacobian (of type `SparseMatrixCSC`), or problems where the Jacobian is just represented by a operators (`A_mul_B` and `Ac_mul_B`). Almost all operations are done in place, making the package particularly adapted to high dimensional problems.
 
-1. There are two least square optimization methods
 
-	- `method = :levenberg_marquardt`
-	- `method = :dogleg`
-
-	Either method proceeds by successive linear least squares problems `min||Ax - b||^2`, where A is a modified Jacobian at the current set of parameters.
-
-2. The least squares problem encountered at each iteration can be solved in two different ways:
-
-	- `solver = :factorization`. 
-		- For dense jacobians, it relies on the QR factorization in LAPACK.
-		- For sparse jacobians, it relies on the cholesky factorization in SuiteSparse. A symbolic factorization is computed at the first iteration and numerically updated at each iteration.
-	- `solve = :iterative` corresponds to a conjugate gradient method (more precisely [LSMR]([http://web.stanford.edu/group/SOL/software/lsmr/) with diagonal preconditioner). The jacobian can be a dense matrix, a sparse matrix, or any type implementing the following methods:
-		- `A_mul_B!(α::Number, A, x, β::Number, fcur)`that  updates fcur -> α Ax + βfcur
-		- `Ac_mul_B!(α::Number, A, fcur, β::Number, x)` that updates x -> α A'fcur + βx
-		- `colsumabs2!(x, A)`, `size(A, i::Integer)` and `eltype(A)`
-		Similarly, neither `x` or `f(x)` need to be AbstractVectors. An example can be found in the package [SparseFactorModels.jl](https://github.com/matthieugomez/SparseFactorModels.jl).
-
-The default solver depends on the type of the jacobian. For dense Jacobians, `solver` defaults to `:factorization`. and `method` defaults to `:dogleg`.Otherwise `solver` defaults to `:iterative` and `method` defaults to `levenberg_marquardt`.
-
-A good presentation of these different methods and solvers can be found in the [Ceres documentation](http://ceres-solver.org/solving.html) is
-
-## Syntax
 The arguments for `NonLinearLeastSquares` are
  - `x` is an initial set of parameters
  - `fcur` is a pre-allocation for `f(x)`
@@ -55,6 +33,40 @@ end
 optimize!(NonLinearLeastSquares(x, fcur, f!, J, g!))
 ```
 
+
+
+## Methods
+1. There are two least square optimization methods
+
+	- `method = :levenberg_marquardt`
+	- `method = :dogleg`
+
+	Either method proceeds by successive linear least squares problems `min||Ax - b||^2`, where A is a modified Jacobian at the current set of parameters.
+
+2. The least squares problem encountered at each iteration can be solved in two different ways:
+
+	- `solver = :factorization`. 
+		- For dense jacobians, it relies on the QR factorization in LAPACK.
+		- For sparse jacobians, it relies on the cholesky factorization in SuiteSparse. A symbolic factorization is computed at the first iteration and numerically updated at each iteration.
+	- `solve = :iterative` corresponds to a conjugate gradient method (more precisely [LSMR]([http://web.stanford.edu/group/SOL/software/lsmr/) with diagonal preconditioner). The jacobian can be a dense matrix, a sparse matrix, or any type implementing the following methods:
+		- `A_mul_B!(α::Number, A, x, β::Number, fcur)`that  updates fcur -> α Ax + βfcur
+		- `Ac_mul_B!(α::Number, A, fcur, β::Number, x)` that updates x -> α A'fcur + βx
+		- `colsumabs2!(x, A)`, `size(A, i::Integer)` and `eltype(A)`
+		
+		Similarly, neither `x` or `f(x)` need to be AbstractVectors. An example can be found in the package [SparseFactorModels.jl](https://github.com/matthieugomez/SparseFactorModels.jl).
+
+A more thorough presentation of these methods and solvers can be found in the [Ceres documentation](http://ceres-solver.org/solving.html).
+
+The default solver depends on the type of the jacobian. For dense Jacobians, `solver` defaults to `:factorization`. and `method` defaults to `:dogleg`.Otherwise `solver` defaults to `:iterative` and `method` defaults to `levenberg_marquardt`.
+
+
+
+## Memory 
+
+Objects are updated in place at each iteration: memory is allocated once and for all at the beginning of the function. 
+
+You can even avoid any initial allocation by passing a  `NonLinearLeastSquaresAllocated` object to the `optimize!` function. Such an object bundles a `NonLinearLeastSquares` object with a few storage objects.
+
 ## Automatic differentiation
 Automatic differenciation can be used for dense Jacobians thanks to the `ForwardDiff` package. 
 Just omit the `g!` function when constructing a `NonLinearLeastSquares` object:
@@ -62,12 +74,6 @@ Just omit the `g!` function when constructing a `NonLinearLeastSquares` object:
 ```julia
 optimize!(NonLinearLeastSquares(x::Vector, fcur::Vector, f!::Function, J::Matrix))
 ```
-
-## Memory 
-
-Objects are updated in place at each iteration: memory is allocated once and for all at the beginning of the function. 
-
-You can also avoid this initial allocation by passing a  `NonLinearLeastSquaresAllocated` object to the `optimize!` function. Such an object bundles a `NonLinearLeastSquares` object with a few storage objects.
 
 
 ## Related packages
