@@ -2,10 +2,14 @@
 [![Coverage Status](https://coveralls.io/repos/matthieugomez/LeastSquaresOptim.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/matthieugomez/LeastSquaresOptim.jl?branch=master)
 ## Motivation
 
-This package solves non linear least squares optimization problems. It handles problems with dense Jacobian (type `StridedVecOrMat`), sparse Jacobian (of type `SparseMatrixCSC`), or problems where the Jacobian is just represented by a operators (`A_mul_B` and `Ac_mul_B`). Almost all operations are done in place, making the package particularly adapted to high dimensional problems.
+This package solves non linear least squares optimization problems. , making it particularly adapted to high dimensional problems.
+
+The package has a particular emphasis on high dimensional problems:
+- All operations are done in place
+- The Jacobian can be a dense matrix, a sparse matrix (i.e. of type `SparseMatrixCSC`), or any object that implements multiplication operators (`A_mul_B` and `Ac_mul_B`).
 
 ## Syntax
-The arguments for `NonLinearLeastSquares` are
+First construct a `LeastSquaresProblem` object with:
  - `x` is an initial set of parameters
  - `fcur` is a pre-allocation for `f(x)`
  - `f!` a callable object such that `f!(x, out)` updates `out` to `f(x)`
@@ -16,7 +20,7 @@ The arguments for `NonLinearLeastSquares` are
 
 A simple example:
 ```julia
-using LeastSquares
+using LeastSquaresOptim
 x = [-1.2; 1.]
 fcur = Array(Float64, 2)
 J = Array(Float64, 2, 2)
@@ -30,7 +34,20 @@ function g!(x, J)
 	J[2, 1] = -20x[1]
 	J[2, 2] = 10
 end
-optimize!(NonLinearLeastSquares(x, fcur, f!, J, g!))
+
+optimize!(LeastSquaresProblem(x, fcur, f!, J, g!))
+# Results of Optimization Algorithm
+#  * Algorithm: dogleg
+#  * Minimizer: [1.0,1.0]
+#  * Sum of squares at Minimum: 0.000000
+#  * Iterations: 27
+#  * Convergence: true
+#  * |x - x'| < 1.0e-08: false
+#  * |f(x) - f(x')| / |f(x)| < 1.0e-08: true
+#  * |g(x)| < 1.0e-08: false
+#  * Function Calls: 28
+#  * Gradient Calls: 14
+#  * Multiplication Calls: 69
 ```
 
 
@@ -65,14 +82,14 @@ The default solver depends on the type of the jacobian. For dense Jacobians, `so
 
 Objects are updated in place at each iteration: memory is allocated once and for all at the beginning of the function. 
 
-You can even avoid any initial allocation by passing a  `NonLinearLeastSquaresAllocated` object to the `optimize!` function. Such an object bundles a `NonLinearLeastSquares` object with a few storage objects.
+You can even avoid any initial allocation by passing a  `LeastSquaresProblemAllocated` object to the `optimize!` function. Such an object bundles a `LeastSquaresProblem` object with a few storage objects.
 
 ## Automatic differentiation
 Automatic differenciation can be used for dense Jacobians thanks to the `ForwardDiff` package. 
-Just omit the `g!` function when constructing a `NonLinearLeastSquares` object:
+Just omit the `g!` function when constructing a `LeastSquaresProblem` object:
 
 ```julia
-optimize!(NonLinearLeastSquares(x::Vector, fcur::Vector, f!::Function, J::Matrix))
+optimize!(LeastSquaresProblem(x::Vector, fcur::Vector, f!::Function, J::Matrix))
 ```
 
 
