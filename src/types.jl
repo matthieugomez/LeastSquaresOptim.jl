@@ -84,10 +84,10 @@ end
 ##
 ##############################################################################
 
-type LeastSquaresResult
-    method::Symbol
-    x::Any
-    ssr::Real
+type LeastSquaresResult{Tx}
+    method::ASCIIString
+    minimizer::Tx
+    ssr::Float64
     iterations::Int
     converged::Bool
     x_converged::Bool
@@ -99,5 +99,30 @@ type LeastSquaresResult
     f_calls::Int
     g_calls::Int
     mul_calls::Int
+end
+
+function LeastSquaresResult(method::ASCIIString, minimizer, ssr::Real, iterations::Int, converged::Bool, x_converged::Bool, xtol::Real, f_converged::Bool, ftol::Real, gr_converged::Bool, grtol::Real, f_calls::Int, g_calls::Int, mul_calls::Int)
+    LeastSquaresResult(method, minimizer, convert(Float64, ssr), iterations, converged, x_converged, convert(Float64, xtol), f_converged, convert(Float64, ftol), gr_converged, convert(Float64, grtol), f_calls, g_calls, mul_calls)
+end
+
+function converged(r::LeastSquaresResult)
+    return r.x_converged || r.f_converged || r.gr_converged
+end
+
+
+function Base.show(io::IO, r::LeastSquaresResult)
+    @printf io "Results of Optimization Algorithm\n"
+    @printf io " * Algorithm: %s\n" r.method
+    @printf io " * Minimizer: [%s]\n" join(r.minimizer, ",")
+    @printf io " * Sum of squares at Minimum: %f\n" r.ssr
+    @printf io " * Iterations: %d\n" r.iterations
+    @printf io " * Convergence: %s\n" converged(r)
+    @printf io " * |x - x'| < %.1e: %s\n" r.xtol r.x_converged
+    @printf io " * |f(x) - f(x')| / |f(x)| < %.1e: %s\n" r.ftol r.f_converged
+    @printf io " * |g(x)| < %.1e: %s\n" r.grtol r.gr_converged
+    @printf io " * Function Calls: %d\n" r.f_calls
+    @printf io " * Gradient Calls: %d\n" r.g_calls
+    @printf io " * Multiplication Calls: %d\n" r.mul_calls
+    return
 end
 

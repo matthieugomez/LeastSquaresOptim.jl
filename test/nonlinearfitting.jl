@@ -1462,9 +1462,9 @@ for (method, method_abbr) in ((:dogleg, :dl), (:levenberg_marquardt, :lm))
       #  @show solution
         for j in 1:size(parameters, 2)
             r = optimize!(LeastSquaresProblem(parameters[:, j], ones(size(data, 1)), f!, ones(size(data, 1), size(parameters, 1))), method = method)
-            n += norm(r.x-solution) <= 1e-3
+            n += norm(r.minimizer - solution) <= 1e-3
             N += 1
-            @test !isnan(mean(r.x) )
+            @test !isnan(mean(r.minimizer) )
         end
     end
     println("strd $method_abbr $n / $N")

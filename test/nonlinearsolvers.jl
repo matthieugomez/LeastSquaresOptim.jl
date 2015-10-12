@@ -626,8 +626,8 @@ fcur = similar(x)
 J = ones(length(x), length(x))
 nls = LeastSquaresProblem(x, fcur, f!, J, g!)
 result = optimize!(nls)
-@test result.method == :dogleg
+@test result.method == "dogleg"
 nls = LeastSquaresProblem(x, fcur, f!, sparse(J), g!)
 result = optimize!(nls)
-@test result.method == :levenberg_marquardt
+@test result.method == "levenberg_marquardt"
 

@@ -88,28 +88,35 @@ function factor()
     return name, f!, g!, x
 end
 
+iter = 0
 for matrix in (:dense, :sparse)
     for (method, method_abbr) in ((:levenberg_marquardt, :lm), (:dogleg, :dl))
         for (solver, solver_abbr) in ((:factorization, :fact), (:iterative, :iter))
-        if matrix == :sparse && method == :levenberg_marquardt
-            continue
-        else
-            name, f!, g!, x = factor()
-            fcur = ones(9)
-            J = ones(9, 6)
-            g!(x, J)
-            if matrix == :sparse
-                J = sparse(J)
+            iter += 1
+            if matrix == :sparse && method == :levenberg_marquardt
+                continue
+            else
+                name, f!, g!, x = factor()
+                fcur = ones(9)
+                J = ones(9, 6)
+                g!(x, J)
+                if matrix == :sparse
+                    J = sparse(J)
+                end
+                nls = LeastSquaresProblem(x, fcur, f!, J, g!)
+                r = optimize!(nls, method = method, solver = solver)
+                if iter == 1
+                    show(r)
+                end
+                @printf("%-6s %4s %2s %30s %5d %5d   %5d   %10e\n", matrix, solver_abbr, method_abbr, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
+                @test r.ssr <= 12
+                @test r.converged
+                end
             end
-            nls = LeastSquaresProblem(x, fcur, f!, J, g!)
-            r = optimize!(nls, method = method, solver = solver)
-            @printf("%-6s %4s %2s %30s %5d %5d   %5d   %10e\n", matrix, solver_abbr, method_abbr, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
-            @test r.ssr <= 12
-            @test r.converged
-            end
-        end
     end
 end
+
+
 
 
 

@@ -149,7 +149,7 @@ function optimize!{T, Tmethod <: Dogleg, Tsolve}(
            Δ = max(Δ, 3.0 * wnorm_δx)
        end          
     end
-    LeastSquaresResult(:dogleg, x, ssr, iter, converged,
+    LeastSquaresResult("dogleg", x, ssr, iter, converged,
                         x_converged, xtol, f_converged, ftol, gr_converged, grtol, 
                         f_calls, g_calls, mul_calls)
 end

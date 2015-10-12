@@ -35,9 +35,9 @@ function assess_convergence(δx,
     maxabs_x = maxabs(x)
     if abs(trial_ssr - ssr) <= ftol * (abs(ssr) + ftol) 
         f_converged = true
-    elseif maxabs(δx) <= xtol * maxabs_x
+    elseif maxabs(δx) <= xtol
             x_converged = true
-    elseif maxabs_gr <= grtol * maxabs_x
+    elseif maxabs_gr <= grtol
             gr_converged = true
     end
     converged = x_converged || f_converged || gr_converged

@@ -4,13 +4,13 @@
 
 This package solves non linear least squares optimization problems. It handles problems with dense Jacobian (type `StridedVecOrMat`), sparse Jacobian (of type `SparseMatrixCSC`), or problems where the Jacobian is just represented by a operators (`A_mul_B` and `Ac_mul_B`). Almost all operations are done in place, making the package particularly adapted to high dimensional problems.
 
-
+## Syntax
 The arguments for `NonLinearLeastSquares` are
  - `x` is an initial set of parameters
  - `fcur` is a pre-allocation for `f(x)`
- - `f!(x, out)` should update `out` as `f(x)`
+ - `f!` a callable object such that `f!(x, out)` updates `out` to `f(x)`
  - `J` is a pre-allocation for the jacobian
- - `g!(x, J)` should update `J` as the jacobian  at `x`
+ - `g!` a callable object such that `f!(x, J)` updates `J` to the Jacobian at x
 
 `x`, `fcur` and `J` are updated in place during the function
 

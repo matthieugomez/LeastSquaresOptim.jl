@@ -85,9 +85,10 @@ function optimize!{T, Tmethod <: LevenbergMarquardt, Tsolve}(
         mul_calls += 1
 
         x_converged, f_converged, gr_converged, converged =
-          assess_convergence(δx, x, maxabs_gr, ssr, trial_ssr, xtol, ftol, grtol)
+            assess_convergence(δx, x, maxabs_gr, ssr, trial_ssr, xtol, ftol, grtol)
 
         if ρ > MIN_STEP_QUALITY
+
             copy!(fcur, ftrial)
             ssr = trial_ssr
             # increase trust region radius (from Ceres solver)
@@ -101,7 +102,7 @@ function optimize!{T, Tmethod <: LevenbergMarquardt, Tsolve}(
             decrease_factor *= 2.0
         end
     end
-    LeastSquaresResult(:levenberg_marquardt, x, ssr, iter, converged,
+    LeastSquaresResult("levenberg_marquardt", x, ssr, iter, converged,
                         x_converged, xtol, f_converged, ftol, gr_converged, grtol, 
                         f_calls, g_calls, mul_calls)
 end
