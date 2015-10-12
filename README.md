@@ -6,6 +6,12 @@ This package solves non linear least squares optimization problems, with a parti
 - All operations are done in place
 - The Jacobian can be a dense matrix, a sparse matrix (i.e. of type `SparseMatrixCSC`), or any object that implements multiplication operators (`A_mul_B!` and `Ac_mul_B!`).
 
+
+To install the package,
+```julia
+Pkg.add("LeastSquaresOptim")
+```
+
 ## Syntax
 
 To find `x` that minimizes `f'(x)f(x)`, construct a `LeastSquaresProblem` object with:
