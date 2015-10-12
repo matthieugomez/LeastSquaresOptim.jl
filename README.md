@@ -2,22 +2,20 @@
 [![Coverage Status](https://coveralls.io/repos/matthieugomez/LeastSquaresOptim.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/matthieugomez/LeastSquaresOptim.jl?branch=master)
 ## Motivation
 
-This package solves non linear least squares optimization problems
-
-The package has a particular emphasis on high dimensional problems:
+This package solves non linear least squares optimization problems, with a particular emphasis on high dimensional problems:
 - All operations are done in place
 - The Jacobian can be a dense matrix, a sparse matrix (i.e. of type `SparseMatrixCSC`), or any object that implements multiplication operators (`A_mul_B!` and `Ac_mul_B!`).
 
 ## Syntax
 
-To minimize `f'(x)f(x)`, construct a `LeastSquaresProblem` object with:
- - `x` is an initial set of parameters
- - `y` is a pre-allocation for `f(x)`. The sum to optimize is `f'(x)f(x)`
- - `f!` a callable object such that `f!(x, out)` writes `f(x)` in `out`
- - `J` is a pre-allocation for the jacobian
- - `g!` a callable object such that `f!(x, out)` writes the jacobian at x in `out`
+To find `x` that minimizes `f'(x)f(x)`, construct a `LeastSquaresProblem` object with:
+ - `x` is an initial set of parameters.
+ - `y` is a pre-allocation for `f(x)`.
+ - `f!` a callable object such that `f!(x, out)` writes `f(x)` in `out`.
+ - `J` is a pre-allocation for the jacobian.
+ - `g!` a callable object such that `f!(x, out)` writes the jacobian at x in `out`.
 
-Call `optimize!` on it. `x`, `fcur` and `J` are updated in place during the function
+When calling `optimize!`, `x`, `fcur` and `J` are updated in place during the function
 
 A simple example:
 ```julia
