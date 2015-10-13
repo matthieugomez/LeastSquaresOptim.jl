@@ -18,12 +18,6 @@ function AbstractMethod(nls::LeastSquaresProblem, ::Type{Val{:dogleg}})
     _zeros(nls.y), _zeros(nls.y))
 end
 
-
-function optimize!{Tx, Ty, Tf, TA, Tg, Tmethod <: Dogleg}(
-    anls::LeastSquaresProblemAllocated{Tx, Ty, Tf, TA, Tg, Tmethod}; kwargs...)
-    dogleg(anls.x, anls.y, anls.f!, anls.A, anls.g!, anls.method.δgn, anls.method.δgr, anls.method.δx, anls.method.dtd, anls.method.ftrial, anls.method.fpredict; kwargs...)
-end
-
 ##############################################################################
 ## 
 ## Method for Dogleg
@@ -39,13 +33,19 @@ const DECREASE_THRESHOLD = 0.25
 const INCREASE_THRESHOLD = 0.75
 
 
-function dogleg(x, fcur, f!, A, g!, δgn, δgr, δx, dtd, ftrial, fpredict;
+function optimize!{T, Tmethod <: Dogleg, Tsolve}(
+    anls::LeastSquaresProblemAllocated{T, Tmethod, Tsolve};
     xtol::Number = 1e-8, ftol::Number = 1e-8, grtol::Number = 1e-8,
     iterations::Integer = 1_000, Δ::Number = 1.0)
  
+     δgn, δgr, δx, dtd = anls.method.δgn, anls.method.δgr, anls.method.δx, anls.method.dtd
+     ftrial, fpredict = anls.method.ftrial, anls.method.fpredict
+     x, fcur, f!, J, g! = anls.nls.x, anls.nls.y, anls.nls.f!, anls.nls.J, anls.nls.g!
+
+
     # check
-    length(x) == size(A, 2) || throw(DimensionMismatch("length(x) must equal size(A, 2)."))
-    length(fcur) == size(A, 1) || throw(DimensionMismatch("length(fcur) must equal size(A, 1)."))
+    length(x) == size(J, 2) || throw(DimensionMismatch("length(x) must equal size(J, 2)."))
+    length(fcur) == size(J, 1) || throw(DimensionMismatch("length(fcur) must equal size(J, 1)."))
     length(x) == length(δgn) || throw(DimensionMismatch("The lengths of x and δgn must match."))
     length(x) == length(δgr) || throw(DimensionMismatch("The lengths of x and δgr must match."))
     length(x) == length(δx) || throw(DimensionMismatch("The lengths of x and δx must match."))
@@ -70,9 +70,9 @@ function dogleg(x, fcur, f!, A, g!, δgn, δgr, δx, dtd, ftrial, fpredict;
         # compute step
         if !reuse
             #update gradient
-            g!(x, A)
+            g!(x, J)
             g_calls += 1
-            colsumabs2!(dtd, A)
+            colsumabs2!(dtd, J)
             clamp!(dtd, MIN_DIAGONAL, MAX_DIAGONAL)
 
             if iter == 1
@@ -82,20 +82,20 @@ function dogleg(x, fcur, f!, A, g!, δgn, δgr, δx, dtd, ftrial, fpredict;
                 end
             end
             # compute (opposite) gradient
-            Ac_mul_B!(one(Tx), A, fcur, zero(Tx), δgr)
+            Ac_mul_B!(one(Tx), J, fcur, zero(Tx), δgr)
             mul_calls += 1
             maxabs_gr = maxabs(δgr)
             wnorm_δgr = wnorm(δgr, dtd)
 
             # compute Cauchy point
             map!((x, y) -> x * sqrt(y), δgn, δgr, dtd)
-            A_mul_B!(one(Ty), A, δgn, zero(Ty), fpredict)
+            A_mul_B!(one(Ty), J, δgn, zero(Ty), fpredict)
             mul_calls += 1
             α = wnorm_δgr^2 / sumabs2(fpredict)
 
             # compute Gauss Newton step δgn
             fill!(δgn, zero(Tx))
-            δgn, ls_iter = solve!(δgn, A, fcur)
+            δgn, ls_iter = solve!(δgn, J, fcur, anls.solver)
             mul_calls += ls_iter
             wnorm_δgn = wnorm(δgn, dtd)
         end
@@ -137,7 +137,7 @@ function dogleg(x, fcur, f!, A, g!, δgn, δgr, δx, dtd, ftrial, fpredict;
         trial_ssr = sumabs2(ftrial)
 
         # predicted ssr
-        A_mul_B!(one(Tx), A, δx, zero(Tx), fpredict)
+        A_mul_B!(one(Tx), J, δx, zero(Tx), fpredict)
         mul_calls += 1
         axpy!(-one(Ty), fcur, fpredict)
         predicted_ssr = sumabs2(fpredict)

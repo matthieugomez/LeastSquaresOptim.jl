@@ -15,10 +15,6 @@ function AbstractMethod(nls::LeastSquaresProblem, ::Type{Val{:levenberg_marquard
    LevenbergMarquardt(_zeros(nls.x), _zeros(nls.x), _zeros(nls.y), _zeros(nls.y))
 end
 
-function optimize!{Tx, Ty, Tf, TA, Tg, Tmethod <: LevenbergMarquardt}(
-    anls::LeastSquaresProblemAllocated{Tx, Ty, Tf, TA, Tg, Tmethod}; kwargs...)
-    levenberg_marquardt!(anls.x, anls.y, anls.f!, anls.A, anls.g!, anls.method.δx, anls.method.dtd, anls.method.ftrial, anls.method.fpredict; kwargs...)
-end
 
 ##############################################################################
 ## 
@@ -33,13 +29,18 @@ const GOOD_STEP_QUALITY = 0.75
 const MIN_DIAGONAL = 1e-6
 const MAX_DIAGONAL = 1e32
 
-function levenberg_marquardt!(x, fcur, f!, A, g!, δx, dtd, ftrial, fpredict;
+function optimize!{T, Tmethod <: LevenbergMarquardt, Tsolve}(
+        anls::LeastSquaresProblemAllocated{T, Tmethod, Tsolve};
             xtol::Number = 1e-8, ftol::Number = 1e-8, grtol::Number = 1e-8,
             iterations::Integer = 1_000, Δ::Number = 10.0)
 
+    δx, dtd = anls.method.δx, anls.method.dtd
+    ftrial, fpredict = anls.method.ftrial, anls.method.fpredict
+    x, fcur, f!, J, g! = anls.nls.x, anls.nls.y, anls.nls.f!, anls.nls.J, anls.nls.g!
+
     # check
-    length(x) == size(A, 2) || throw(DimensionMismatch("length(x) must equal size(A, 2)."))
-    length(fcur) == size(A, 1) || throw(DimensionMismatch("length(fcur) must equal size(A, 1)."))
+    length(x) == size(J, 2) || throw(DimensionMismatch("length(x) must equal size(J, 2)."))
+    length(fcur) == size(J, 1) || throw(DimensionMismatch("length(fcur) must equal size(J, 1)."))
     length(x) == length(dtd) || throw(DimensionMismatch("The lengths of x and dtd must match."))
     length(fcur) == length(ftrial) || throw(DimensionMismatch("The lengths of fcur and ftrial must match."))
     length(ftrial) == length(fpredict) || throw(DimensionMismatch("The lengths of ftrial and fpredict must match."))
@@ -61,12 +62,12 @@ function levenberg_marquardt!(x, fcur, f!, A, g!, δx, dtd, ftrial, fpredict;
 
         # compute step
         if need_jacobian
-            g!(x, A)
+            g!(x, J)
             g_calls += 1
             need_jacobian = false
         end
-        colsumabs2!(dtd, A)        
-        δx, lmiter = solve!(δx, A, fcur, dtd, 1/Δ)
+        colsumabs2!(dtd, J)        
+        δx, lmiter = solve!(δx, J, fcur, dtd, 1/Δ,  anls.solver)
         mul_calls += lmiter
 
         #update x
@@ -78,14 +79,14 @@ function levenberg_marquardt!(x, fcur, f!, A, g!, δx, dtd, ftrial, fpredict;
         trial_ssr = sumabs2(ftrial)
 
         # predicted ssr
-        A_mul_B!(one(Tx), A, δx, zero(Tx), fpredict)
+        A_mul_B!(one(Tx), J, δx, zero(Tx), fpredict)
         mul_calls += 1
         axpy!(-one(Ty), fcur, fpredict)
         predicted_ssr = sumabs2(fpredict)
 
         ρ = (ssr - trial_ssr) / (ssr - predicted_ssr)
 
-        Ac_mul_B!(one(Tx), A, fcur, zero(Tx), dtd)
+        Ac_mul_B!(one(Tx), J, fcur, zero(Tx), dtd)
         maxabs_gr = maxabs(dtd)
         mul_calls += 1
 

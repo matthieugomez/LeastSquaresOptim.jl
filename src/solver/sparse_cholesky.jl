@@ -32,8 +32,7 @@ end
 ##
 ##############################################################################
 
-type SparseCholeskyOperator{Tv, Ti <: Integer, Tx} <: AbstractOperator
-    J::SparseMatrixCSC{Tv, Ti}
+type SparseCholeskySolver{Tv, Ti <: Integer, Tx} <: AbstractSolver
     colptr::Vector{Ti}
     rowval::Vector{Ti}
     v::Tx
@@ -43,7 +42,7 @@ type SparseCholeskyOperator{Tv, Ti <: Integer, Tx} <: AbstractOperator
     cm::Array{UInt8, 1}
 end
 
-function AbstractOperator(nls::SparseLeastSquaresProblem,
+function AbstractSolver(nls::SparseLeastSquaresProblem,
     ::Type{Val{:dogleg}}, ::Type{Val{:cholesky}})
     colptr = deepcopy(nls.J.colptr)
     rowval = deepcopy(nls.J.rowval)
@@ -53,12 +52,12 @@ function AbstractOperator(nls::SparseLeastSquaresProblem,
     set_print_level(cm, 0)
     unsafe_store!(common_final_ll, 1)
     F = analyze(sparseJt, cm)
-    return SparseCholeskyOperator(nls.J, colptr, rowval, _zeros(nls.x), sparseJ, sparseJt, F, cm)
+    return SparseCholeskySolver(colptr, rowval, _zeros(nls.x), sparseJ, sparseJt, F, cm)
 end
 
-function solve!(x::AbstractVector, A::SparseCholeskyOperator, y::AbstractVector)
-    J, colptr, rowval, v, sparseJ, sparseJt, F, cm = 
-    A.J, A.colptr, A.rowval, A.v, A.sparseJ, A.sparseJt, A.F, A.cm
+function solve!(x::AbstractVector, J::SparseMatrixCSC, y::AbstractVector, A::SparseCholeskySolver)
+    colptr, rowval, v, sparseJ, sparseJt, F, cm = 
+    A.colptr, A.rowval, A.v, A.sparseJ, A.sparseJt, A.F, A.cm
 
     # check symbolic structure is the same
     if colptr != J.colptr || rowval != J.rowval

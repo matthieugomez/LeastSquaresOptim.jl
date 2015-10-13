@@ -33,40 +33,22 @@ end
 
 ###############################################################################
 ##
-## AbstractOpertor
-## is a matrix + allocation for least squares solver
+## Non Linear Least Squares Allocated
+## groups a LeastSquaresProblem with allocations
 ##
 ##############################################################################
 
 # allocation for method
 abstract AbstractMethod
 
-# An operator is a matrix + preallocation to solve a least square problem
-abstract AbstractOperator
-colsumabs2!(dtd, A::AbstractOperator) = colsumabs2!(dtd, A.J)
-A_mul_B!(α::Number, A::AbstractOperator, x, β::Number, y) = A_mul_B!(α, A.J, x, β, y)
-Ac_mul_B!(α::Number, A::AbstractOperator, x, β::Number, y) = Ac_mul_B!(α, A.J, x, β, y)
-size(A::AbstractOperator, i::Integer) = size(A.J, i)
-type Functor{Tg}
-    g::Tg
-end
-call(g::Functor, x::Any, A::AbstractOperator) = g.g(x, A.J)
+# allocation for solver
+abstract AbstractSolver
 
 
-###############################################################################
-##
-## Non Linear Least Squares Allocated
-## groups a LeastSquaresProblem with allocations
-##
-##############################################################################
-
-type LeastSquaresProblemAllocated{Tx, Ty, Tf, TA <: AbstractOperator, Tg, Tmethod <: AbstractMethod}
-     x::Tx
-     y::Ty
-     f!::Tf
-     A::TA
-     g!::Tg
+type LeastSquaresProblemAllocated{T <: LeastSquaresProblem, Tmethod <: AbstractMethod, Tsolver <: AbstractSolver}
+     nls::T
      method::Tmethod
+     solver::Tsolver
 end
 
 # Constructor
@@ -76,10 +58,9 @@ function LeastSquaresProblemAllocated{Tx, Ty, Tf, TJ, Tg}(
     valsolver = default_solver(solver, TJ)
     valmethod = default_method(method, valsolver)
     LeastSquaresProblemAllocated(
-        nls.x, nls.y, nls.f!, 
-        AbstractOperator(nls, valmethod, valsolver), 
-        Functor(nls.g!), 
-        AbstractMethod(nls, valmethod))
+        nls,
+        AbstractMethod(nls, valmethod),
+        AbstractSolver(nls, valmethod, valsolver))
 end
 
 ## for dense matrices, default to cholesky ; otherwise iterative

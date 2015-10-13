@@ -1,14 +1,13 @@
-type DenseQROperator{TJ <: StridedMatrix, Tqr <: StridedMatrix, Tu <: AbstractVector} <: AbstractOperator
-    J::TJ
+type DenseQRSolver{Tqr <: StridedMatrix, Tu <: AbstractVector} <: AbstractSolver
     qr::Tqr
     u::Tu
-    function DenseQROperator(J, qr, u)
+    function DenseQRSolver(qr, u)
         length(u) == size(qr, 1) || throw(DimensionMismatch("u must have length size(J, 1)"))
-        new(J, qr, u)
+        new(qr, u)
     end
 end
 
-DenseQROperator{TJ, Tqr, Tu <: AbstractVector}(J::TJ, qr::Tqr, u::Tu) = DenseQROperator{TJ, Tqr, Tu}(J, qr, u)
+DenseQRSolver{Tqr, Tu <: AbstractVector}(qr::Tqr, u::Tu) = DenseQRSolver{Tqr, Tu}(qr, u)
 
 ##############################################################################
 ## 
@@ -16,14 +15,13 @@ DenseQROperator{TJ, Tqr, Tu <: AbstractVector}(J::TJ, qr::Tqr, u::Tu) = DenseQRO
 ##
 ##############################################################################
 
-function AbstractOperator(nls::DenseLeastSquaresProblem,
+function AbstractSolver(nls::DenseLeastSquaresProblem,
     ::Type{Val{:dogleg}}, ::Type{Val{:qr}})
-    return DenseQROperator(nls.J, similar(nls.J), _zeros(nls.y))
+    return DenseQRSolver(similar(nls.J), _zeros(nls.y))
 end
 
-function solve!(x::AbstractVector, A::DenseQROperator, y::AbstractVector)
-    J, u, qr = A.J, A.u, A.qr
-    
+function solve!(x::AbstractVector, J::StridedMatrix,  y::AbstractVector, A::DenseQRSolver)
+    u, qr = A.u, A.qr
     copy!(qr, J)
     copy!(u, y)
     A_ldiv_B!(qrfact!(qr, Val{true}), u)
@@ -40,15 +38,16 @@ end
 ##
 ##############################################################################
 
-function AbstractOperator(nls:: DenseLeastSquaresProblem,
+function AbstractSolver(nls:: DenseLeastSquaresProblem,
     ::Type{Val{:levenberg_marquardt}}, ::Type{Val{:qr}})
     qr = zeros(eltype(nls.J), length(nls.y) + length(nls.x), length(nls.x))
     u = zeros(length(nls.y) + length(nls.x))
-    return DenseQROperator(nls.J, qr, u)
+    return DenseQRSolver(qr, u)
 end
 
-function solve!(x::AbstractVector, A::DenseQROperator, y::AbstractVector, dtd, λ)
-    J, u, qr = A.J, A.u, A.qr
+function solve!(x::AbstractVector, J::StridedMatrix, y::AbstractVector, 
+                dtd::AbstractVector, λ::Real, A::DenseQRSolver)
+    u, qr = A.u, A.qr
     
     # transform dtd
     clamp!(dtd, MIN_DIAGONAL, MAX_DIAGONAL)

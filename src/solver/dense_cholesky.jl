@@ -1,16 +1,14 @@
-type DenseCholeskyOperator{TJ <: StridedMatrix, Tc <: StridedMatrix} <: AbstractOperator
-    J::TJ
+type DenseCholeskySolver{Tc <: StridedMatrix} <: AbstractSolver
     chol::Tc
-    function DenseCholeskyOperator(J, chol)
-        size(J, 2) == size(chol, 1) || throw(DimensionMismatch("J and chol must have the same size"))
+    function DenseCholeskySolver(chol)
         size(chol, 1) == size(chol, 2) || throw(DimensionMismatch("chol must be square"))
-        new(J, chol)
+        new(chol)
     end
 end
 
-DenseCholeskyOperator{TJ, Tc}(J::TJ, chol::Tc) = DenseCholeskyOperator{TJ, Tc}(J, chol)
-function AbstractOperator(nls:: DenseLeastSquaresProblem, ::Type, ::Type{Val{:cholesky}})
-    return DenseCholeskyOperator(nls.J, Array(eltype(nls.J), length(nls.x), length(nls.x)))
+DenseCholeskySolver{Tc}(chol::Tc) = DenseCholeskySolver{Tc}(chol)
+function AbstractSolver(nls:: DenseLeastSquaresProblem, ::Type, ::Type{Val{:cholesky}})
+    return DenseCholeskySolver(Array(eltype(nls.J), length(nls.x), length(nls.x)))
 end
 
 ##############################################################################
@@ -19,8 +17,8 @@ end
 ##
 ##############################################################################
 
-function solve!(x::AbstractVector, A::DenseCholeskyOperator, y::AbstractVector)
-    J, chol = A.J, A.chol
+function solve!(x::AbstractVector, J::StridedMatrix, y::AbstractVector, A::DenseCholeskySolver)
+    chol = A.chol
     Ac_mul_B!(chol, J,  J)
     Ac_mul_B!(x, J,  y)
     A_ldiv_B!(cholfact!(chol, :U, Val{true}), x)
@@ -33,8 +31,9 @@ end
 ##
 ##############################################################################
 
-function solve!(x::AbstractVector, A::DenseCholeskyOperator, y::AbstractVector, dtd::AbstractVector, λ)
-    J, chol = A.J, A.chol
+function solve!(x::AbstractVector, J::StridedMatrix, y::AbstractVector, 
+            dtd::AbstractVector, λ::Real, A::DenseCholeskySolver)
+    chol = A.chol
     
     # update chol as J'J + λdtd
     Ac_mul_B!(chol, J, J)
