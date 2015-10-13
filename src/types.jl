@@ -33,25 +33,32 @@ end
 
 ###############################################################################
 ##
-## Non Linear Least Squares Allocated
-## groups a LeastSquaresProblem with allocations
+## AbstractOpertor
+## is a matrix + allocation for least squares solver
 ##
 ##############################################################################
 
 # allocation for method
 abstract AbstractMethod
 
-
 # An operator is a matrix + preallocation to solve a least square problem
 abstract AbstractOperator
 colsumabs2!(dtd, A::AbstractOperator) = colsumabs2!(dtd, A.J)
 A_mul_B!(α::Number, A::AbstractOperator, x, β::Number, y) = A_mul_B!(α, A.J, x, β, y)
 Ac_mul_B!(α::Number, A::AbstractOperator, x, β::Number, y) = Ac_mul_B!(α, A.J, x, β, y)
+size(A::AbstractOperator, i::Integer) = size(A.J, i)
 type Functor{Tg}
     g::Tg
 end
 call(g::Functor, x::Any, A::AbstractOperator) = g.g(x, A.J)
 
+
+###############################################################################
+##
+## Non Linear Least Squares Allocated
+## groups a LeastSquaresProblem with allocations
+##
+##############################################################################
 
 type LeastSquaresProblemAllocated{Tx, Ty, Tf, TA <: AbstractOperator, Tg, Tmethod <: AbstractMethod}
      x::Tx

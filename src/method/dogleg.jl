@@ -11,15 +11,7 @@ type Dogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2} <: AbstractMethod
     dtd::Tx4
     ftrial::Ty1
     fpredict::Ty2
-    function Dogleg(δgn, δgr, δx, dtd, ftrial, fpredict)
-        length(δgn) == length(δgr) || throw(DimensionMismatch("The lengths of δgn and δgr must match."))
-        length(δgn) == length(δx) || throw(DimensionMismatch("The lengths of δgn and δx must match."))
-        length(δgn) == length(dtd) || throw(DimensionMismatch("The lengths of δgn and dtd must match."))
-        length(ftrial) == length(fpredict) || throw(DimensionMismatch("The lengths of ftrial and fpredict must match."))
-        new(δgn, δgr, δx, dtd, ftrial, fpredict)
-    end
 end
-Dogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2}(δgn::Tx1, δgr::Tx2, δx::Tx3, dtd::Tx4, ftrial::Ty1, fpredict::Ty2) = Dogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2}(δgn, δgr, δx, dtd, ftrial, fpredict)
 
 function AbstractMethod(nls::LeastSquaresProblem, ::Type{Val{:dogleg}})
     Dogleg(_zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), 
@@ -47,12 +39,19 @@ const DECREASE_THRESHOLD = 0.25
 const INCREASE_THRESHOLD = 0.75
 
 
-
 function dogleg(x, fcur, f!, A, g!, δgn, δgr, δx, dtd, ftrial, fpredict;
     xtol::Number = 1e-8, ftol::Number = 1e-8, grtol::Number = 1e-8,
     iterations::Integer = 1_000, Δ::Number = 1.0)
  
-
+    # check
+    length(x) == size(A, 2) || throw(DimensionMismatch("length(x) must equal size(A, 2)."))
+    length(fcur) == size(A, 1) || throw(DimensionMismatch("length(fcur) must equal size(A, 1)."))
+    length(x) == length(δgn) || throw(DimensionMismatch("The lengths of x and δgn must match."))
+    length(x) == length(δgr) || throw(DimensionMismatch("The lengths of x and δgr must match."))
+    length(x) == length(δx) || throw(DimensionMismatch("The lengths of x and δx must match."))
+    length(x) == length(dtd) || throw(DimensionMismatch("The lengths of x and dtd must match."))
+    length(fcur) == length(ftrial) || throw(DimensionMismatch("The lengths of fcur and ftrial must match."))
+    length(ftrial) == length(fpredict) || throw(DimensionMismatch("The lengths of ftrial and fpredict must match."))
 
     # initialize
     Tx, Ty = eltype(x), eltype(fcur)
