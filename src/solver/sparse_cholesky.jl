@@ -32,14 +32,14 @@ end
 ##
 ##############################################################################
 
-type SparseCholeskyOperator{TJ, Ti, Tx} <: AbstractOperator
-    J::TJ
+type SparseCholeskyOperator{Tv, Ti <: Integer, Tx} <: AbstractOperator
+    J::SparseMatrixCSC{Tv, Ti}
     colptr::Vector{Ti}
     rowval::Vector{Ti}
     v::Tx
-    sparseJ::Sparse{Float64}
-    sparseJt::Sparse{Float64}
-    F::Factor{Float64}
+    sparseJ::Sparse{Tv}
+    sparseJt::Sparse{Tv}
+    F::Factor{Tv}
     cm::Array{UInt8, 1}
 end
 
@@ -56,7 +56,7 @@ function AbstractOperator(nls::SparseLeastSquaresProblem,
     return SparseCholeskyOperator(nls.J, colptr, rowval, _zeros(nls.x), sparseJ, sparseJt, F, cm)
 end
 
-function solve!(x, A::SparseCholeskyOperator, y)
+function solve!(x::AbstractVector, A::SparseCholeskyOperator, y::AbstractVector)
     J, colptr, rowval, v, sparseJ, sparseJt, F, cm = 
     A.J, A.colptr, A.rowval, A.v, A.sparseJ, A.sparseJt, A.F, A.cm
 
