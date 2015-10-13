@@ -18,10 +18,14 @@ type LevenbergMarquardt{Tx1, Tx2, Ty1, Ty2} <: AbstractMethod
 end
 LevenbergMarquardt{Tx1, Tx2, Ty1, Ty2}(δx::Tx1, dtd::Tx2, ftrial::Ty1, fpredict::Ty2) = LevenbergMarquardt{Tx1, Tx2, Ty1, Ty2}(δx, dtd, ftrial, fpredict)
 
-function allocate(nls::LeastSquaresProblem, ::Type{Val{:levenberg_marquardt}})
+function AbstractMethod(nls::LeastSquaresProblem, ::Type{Val{:levenberg_marquardt}})
    LevenbergMarquardt(_zeros(nls.x), _zeros(nls.x), _zeros(nls.y), _zeros(nls.y))
 end
 
+function optimize!{Tx, Ty, Tf, TA, Tg, Tmethod <: LevenbergMarquardt}(
+    anls::LeastSquaresProblemAllocated{Tx, Ty, Tf, TA, Tg, Tmethod}; kwargs...)
+    levenberg_marquardt!(anls.x, anls.y, anls.f!, anls.A, anls.g!, anls.method.δx, anls.method.dtd, anls.method.ftrial, anls.method.fpredict; kwargs...)
+end
 
 ##############################################################################
 ## 
@@ -37,21 +41,13 @@ const MIN_DIAGONAL = 1e-6
 const MAX_DIAGONAL = 1e32
 
 
-# used directly this method to avoid any allocation within the function
-function optimize!{T, Tmethod <: LevenbergMarquardt, Tsolve}(
-        anls::LeastSquaresProblemAllocated{T, Tmethod , Tsolve};
+function levenberg_marquardt!(x, fcur, f!, A, g!, δx, dtd, ftrial, fpredict;
             xtol::Number = 1e-8, ftol::Number = 1e-8, grtol::Number = 1e-8,
             iterations::Integer = 1_000, Δ::Number = 10.0)
 
     decrease_factor = 2.0
-
-    # allocations
-    δx, dtd = anls.method.δx, anls.method.dtd
-    ftrial, fpredict = anls.method.ftrial, anls.method.fpredict
-    x, fcur, f!, J, g! = anls.nls.x, anls.nls.y, anls.nls.f!, anls.nls.J, anls.nls.g!
-
     # initialize
-    Tx = eltype(x)
+    Tx, Ty = eltype(x), eltype(ftrial)
     f_calls,  g_calls, mul_calls = 0, 0, 0
     converged, x_converged, f_converged, gr_converged, converged =
         false, false, false, false, false
@@ -66,21 +62,31 @@ function optimize!{T, Tmethod <: LevenbergMarquardt, Tsolve}(
 
         # compute step
         if need_jacobian
-            g!(x, J)
+            g!(x, A)
             g_calls += 1
             need_jacobian = false
         end
-        colsumabs2!(dtd, J)        
-        δx, lmiter = solve!(δx, dtd, 1/Δ, anls.nls, anls.solve)
+        colsumabs2!(dtd, A)        
+        δx, lmiter = solve!(δx, A, fcur, dtd, 1/Δ)
         mul_calls += lmiter
 
-        # update
-        x, ftrial, trial_ssr, predicted_ssr = update!(anls.nls, δx, ftrial, fpredict)
+        #update x
+        axpy!(-one(Tx), δx, x)
+        f!(x, ftrial)
         f_calls += 1
+
+        # trial ssr
+        trial_ssr = sumabs2(ftrial)
+
+        # predicted ssr
+        A_mul_B!(one(Tx), A, δx, zero(Tx), fpredict)
         mul_calls += 1
+        axpy!(-one(Ty), fcur, fpredict)
+        predicted_ssr = sumabs2(fpredict)
+
         ρ = (ssr - trial_ssr) / (ssr - predicted_ssr)
 
-        Ac_mul_B!(one(Tx), J, fcur, zero(Tx), dtd)
+        Ac_mul_B!(one(Tx), A, fcur, zero(Tx), dtd)
         maxabs_gr = maxabs(dtd)
         mul_calls += 1
 

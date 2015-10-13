@@ -1,3 +1,14 @@
+type DenseQRSolver{TJ, Tqr, Tu <: AbstractVector} <: AbstractOperator
+    J::TJ
+    qr::Tqr
+    u::Tu
+    function DenseQRSolver(J, qr, u)
+        length(u) == size(qr, 1) || throw(DimensionMismatch("u must have length size(qr, 1)"))
+        new(J, qr, u)
+    end
+end
+
+DenseQRSolver{TJ, Tqr, Tu <: AbstractVector}(J::TJ, qr::Tqr, u::Tu) = DenseQRSolver{TJ, Tqr, Tu}(J, qr, u)
 
 ##############################################################################
 ## 
@@ -5,24 +16,13 @@
 ##
 ##############################################################################
 
-type DenseQRSolver{Tqr, Tu <: AbstractVector} <: AbstractSolver
-    qr::Tqr
-    u::Tu
-    function DenseQRSolver(qr, u)
-        length(u) == size(qr, 1) || throw(DimensionMismatch("u must have length size(qr, 1)"))
-        new(qr, u)
-    end
-end
-DenseQRSolver{Tqr, Tu <: AbstractVector}(qr::Tqr, u::Tu) = DenseQRSolver{Tqr, Tu}(qr, u)
-
-function allocate(nls::DenseLeastSquaresProblem,
+function AbstractOperator(nls::DenseLeastSquaresProblem,
     ::Type{Val{:dogleg}}, ::Type{Val{:qr}})
-    return DenseQRSolver(similar(nls.J), _zeros(nls.y))
+    return DenseQRSolver(nls.J, similar(nls.J), _zeros(nls.y))
 end
 
-function solve!(x, nls::DenseLeastSquaresProblem, solve::DenseQRSolver)
-    y, J = nls.y, nls.J
-    u, qr = solve.u, solve.qr
+function solve!(x, A::DenseQRSolver, y)
+    J, u, qr = A.J, A.u, A.qr
     
     copy!(qr, J)
     copy!(u, y)
@@ -40,27 +40,15 @@ end
 ##
 ##############################################################################
 
-
-type DenseQRDampenedSolver{Tqr, Tu <: AbstractVector} <: AbstractSolver
-    qr::Tqr
-    u::Tu
-    function DenseQRDampenedSolver(qr, u)
-        length(u) == size(qr, 1) || throw(DimensionMismatch("u must have length size(qr, 1)"))
-        new(qr, u)
-    end
-end
-DenseQRDampenedSolver{Tqr, Tu <: AbstractVector}(qr::Tqr, u::Tu) = DenseQRDampenedSolver{Tqr, Tu}(qr, u)
-
-function allocate(nls:: DenseLeastSquaresProblem,
+function AbstractOperator(nls:: DenseLeastSquaresProblem,
     ::Type{Val{:levenberg_marquardt}}, ::Type{Val{:qr}})
     qr = zeros(eltype(nls.J), length(nls.y) + length(nls.x), length(nls.x))
     u = zeros(length(nls.y) + length(nls.x))
-    return DenseQRDampenedSolver(qr, u)
+    return DenseQRSolver(nls.J, qr, u)
 end
 
-function solve!(x, dtd, λ, nls::DenseLeastSquaresProblem, solve::DenseQRDampenedSolver)
-    y, J = nls.y, nls.J
-    u, qr = solve.u, solve.qr
+function solve!(x, A::DenseQRSolver, y, dtd, λ)
+    J, u, qr = A.J, A.u, A.qr
     
     # transform dtd
     clamp!(dtd, MIN_DIAGONAL, MAX_DIAGONAL)

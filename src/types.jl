@@ -41,13 +41,25 @@ end
 # allocation for method
 abstract AbstractMethod
 
-# allocation for solver
-abstract AbstractSolver
 
-type LeastSquaresProblemAllocated{T <: LeastSquaresProblem, Tmethod <: AbstractMethod, Tsolve <: AbstractSolver}
-    nls::T
-    method::Tmethod
-    solve::Tsolve
+# An operator is a matrix + preallocation to solve a least square problem
+abstract AbstractOperator
+colsumabs2!(dtd, A::AbstractOperator) = colsumabs2!(dtd, A.J)
+A_mul_B!(α::Number, A::AbstractOperator, x, β::Number, y) = A_mul_B!(α, A.J, x, β, y)
+Ac_mul_B!(α::Number, A::AbstractOperator, x, β::Number, y) = Ac_mul_B!(α, A.J, x, β, y)
+type Functor{Tg}
+    g::Tg
+end
+call(g::Functor, x::Any, A::AbstractOperator) = g.g(x, A.J)
+
+
+type LeastSquaresProblemAllocated{Tx, Ty, Tf, TA <: AbstractOperator, Tg, Tmethod <: AbstractMethod}
+     x::Tx
+     y::Ty
+     f!::Tf
+     A::TA
+     g!::Tg
+     method::Tmethod
 end
 
 # Constructor
@@ -56,10 +68,11 @@ function LeastSquaresProblemAllocated{Tx, Ty, Tf, TJ, Tg}(
     method::Union{Void, Symbol} = nothing, solver::Union{Void, Symbol} = nothing)
     valsolver = default_solver(solver, TJ)
     valmethod = default_method(method, valsolver)
-
-    LeastSquaresProblemAllocated(nls,
-    allocate(nls, valmethod), 
-    allocate(nls, valmethod, valsolver))
+    LeastSquaresProblemAllocated(
+        nls.x, nls.y, nls.f!, 
+        AbstractOperator(nls, valmethod, valsolver), 
+        Functor(nls.g!), 
+        AbstractMethod(nls, valmethod))
 end
 
 ## for dense matrices, default to cholesky ; otherwise iterative

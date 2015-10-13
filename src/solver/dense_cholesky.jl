@@ -1,22 +1,20 @@
+type DenseCholeskySolver{TJ, Tc} <: AbstractOperator
+    J::TJ
+    chol::Tc
+end
+
+function AbstractOperator(nls:: DenseLeastSquaresProblem, ::Type, ::Type{Val{:cholesky}})
+    return DenseCholeskySolver(nls.J, Array(eltype(nls.J), length(nls.x), length(nls.x)))
+end
+
 ##############################################################################
 ## 
 ## solve J'J \ J'y by Cholesky (used in Dogleg)
 ##
 ##############################################################################
 
-type DenseCholeskySolver{Tc} <: AbstractSolver
-    chol::Tc
-end
-
-function allocate(nls::DenseLeastSquaresProblem,
-    ::Type{Val{:dogleg}}, ::Type{Val{:cholesky}})
-    return DenseCholeskySolver(Array(eltype(nls.J), length(nls.x), length(nls.x)))
-end
-
-function solve!(x, nls::DenseLeastSquaresProblem, solve::DenseCholeskySolver)
-    y, J = nls.y, nls.J
-    chol = solve.chol
-    
+function solve!(x, A::DenseCholeskySolver, y)
+    J, chol = A.J, A.chol
     Ac_mul_B!(chol, J,  J)
     Ac_mul_B!(x, J,  y)
     A_ldiv_B!(cholfact!(chol, :U, Val{true}), x)
@@ -29,18 +27,8 @@ end
 ##
 ##############################################################################
 
-type DenseCholeskyDampenedSolver{Tc} <: AbstractSolver
-    chol::Tc
-end
-
-function allocate(nls:: DenseLeastSquaresProblem,
-    ::Type{Val{:levenberg_marquardt}}, ::Type{Val{:cholesky}})
-    return DenseCholeskyDampenedSolver(Array(eltype(nls.J), length(nls.x), length(nls.x)))
-end
-
-function solve!(x, dtd, λ, nls::DenseLeastSquaresProblem, solve::DenseCholeskyDampenedSolver)
-    y, J = nls.y, nls.J
-    chol = solve.chol
+function solve!(x, A::DenseCholeskySolver, y, dtd, λ)
+    J, chol = A.J, A.chol
     
     # update chol as J'J + λdtd
     Ac_mul_B!(chol, J, J)

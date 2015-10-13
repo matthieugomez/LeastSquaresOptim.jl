@@ -564,7 +564,9 @@ for (name, f!, g!, x) in alltests
         @test r.ssr <= 1e-3
         @printf("%-6s %4s %2s %30s %5d %5d   %5d   %10e\n", :sparse, :fact, :dl, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
     catch y
-        @test isa(y, ErrorException)
+        if !isa(y, ErrorException)
+            throw(y)
+        end
     end
 end
 

@@ -1,26 +1,3 @@
-
-
-function update!(nls::LeastSquaresProblem, δx, ftrial, fpredict)
-
-    Tx, Ty = eltype(δx), eltype(ftrial)
-    #update x
-    axpy!(-one(Tx), δx, nls.x)
-
-    # compute f at this new x
-    nls.f!(nls.x, ftrial)
-
-    # trial ssr
-    trial_ssr = sumabs2(ftrial)
-
-    # predicted ssr
-    A_mul_B!(one(Tx), nls.J, δx, zero(Tx), fpredict)
-    axpy!(-one(Ty), nls.y, fpredict)
-    predicted_ssr = sumabs2(fpredict)
-
-    return nls.x, ftrial, trial_ssr, predicted_ssr
-end
-
-
 function assess_convergence(δx,
                             x,
                             maxabs_gr,

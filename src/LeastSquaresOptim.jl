@@ -8,7 +8,7 @@ module LeastSquaresOptim
 ##
 ##############################################################################
 
-import Base: A_mul_B!, Ac_mul_B!, copy!, fill!, scale!, norm, axpy!, eltype, length, size
+import Base: A_mul_B!, Ac_mul_B!, copy!, fill!, scale!, norm, axpy!, eltype, length, size, call
 import Base.SparseMatrix.CHOLMOD: VTypes, ITypes, Sparse, Factor, C_Sparse, SuiteSparse_long, transpose_, @cholmod_name, common, defaults, set_print_level, common_final_ll, analyze, factorize_p!, check_sparse
 using ForwardDiff
 
@@ -35,7 +35,7 @@ include("utils/utils.jl")
 include("types.jl")
 include("method/levenberg_marquardt.jl")
 include("method/dogleg.jl")
-include("method/utils.jl")
+include("method/assess_convergence.jl")
 
 include("solver/dense_qr.jl")
 include("solver/dense_cholesky.jl")

@@ -32,18 +32,18 @@ end
 ##
 ##############################################################################
 
-type SparseCholeskySolver{Ti, Tx} <: AbstractSolver
+type SparseCholeskySolver{TJ, Ti, Tx} <: AbstractOperator
+    J::TJ
     colptr::Vector{Ti}
     rowval::Vector{Ti}
     v::Tx
-    J::Sparse{Float64}
-    Jt::Sparse{Float64}
+    sparseJ::Sparse{Float64}
+    sparseJt::Sparse{Float64}
     F::Factor{Float64}
     cm::Array{UInt8, 1}
 end
 
-
-function allocate(nls::SparseLeastSquaresProblem,
+function AbstractOperator(nls::SparseLeastSquaresProblem,
     ::Type{Val{:dogleg}}, ::Type{Val{:cholesky}})
     colptr = deepcopy(nls.J.colptr)
     rowval = deepcopy(nls.J.rowval)
@@ -53,15 +53,15 @@ function allocate(nls::SparseLeastSquaresProblem,
     set_print_level(cm, 0)
     unsafe_store!(common_final_ll, 1)
     F = analyze(sparseJt, cm)
-    return SparseCholeskySolver(colptr, rowval, _zeros(nls.x), sparseJ, sparseJt, F, cm)
+    return SparseCholeskySolver(nls.J, colptr, rowval, _zeros(nls.x), sparseJ, sparseJt, F, cm)
 end
 
-function solve!(x, nls::SparseLeastSquaresProblem, solve::SparseCholeskySolver)
-    J, y = nls.J, nls.y
-    v, sparseJ, sparseJt, F, cm = solve.v, solve.J, solve.Jt, solve.F, solve.cm
+function solve!(x, A::SparseCholeskySolver, y)
+    J, colptr, rowval, v, sparseJ, sparseJt, F, cm = 
+    A.J, A.colptr, A.rowval, A.v, A.sparseJ, A.sparseJt, A.F, A.cm
 
     # check symbolic structure is the same
-    if solve.colptr != J.colptr || solve.rowval != J.rowval
+    if colptr != J.colptr || rowval != J.rowval
         error("The symbolic structure of the Jacobian has been changed. Either (i) rewrite g! so that it does not modify the structure of J (see Julia issue #9906) (ii) use solver = :iterative rather than solver = :cholesky")
     end
 
