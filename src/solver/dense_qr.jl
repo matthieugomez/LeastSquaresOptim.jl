@@ -1,14 +1,14 @@
-type DenseQRSolver{TJ, Tqr, Tu <: AbstractVector} <: AbstractOperator
+type DenseQROperator{TJ <: StridedMatrix, Tqr <: StridedMatrix, Tu <: AbstractVector} <: AbstractOperator
     J::TJ
     qr::Tqr
     u::Tu
-    function DenseQRSolver(J, qr, u)
-        length(u) == size(qr, 1) || throw(DimensionMismatch("u must have length size(qr, 1)"))
+    function DenseQROperator(J, qr, u)
+        length(u) == size(qr, 1) || throw(DimensionMismatch("u must have length size(J, 1)"))
         new(J, qr, u)
     end
 end
 
-DenseQRSolver{TJ, Tqr, Tu <: AbstractVector}(J::TJ, qr::Tqr, u::Tu) = DenseQRSolver{TJ, Tqr, Tu}(J, qr, u)
+DenseQROperator{TJ, Tqr, Tu <: AbstractVector}(J::TJ, qr::Tqr, u::Tu) = DenseQROperator{TJ, Tqr, Tu}(J, qr, u)
 
 ##############################################################################
 ## 
@@ -18,10 +18,10 @@ DenseQRSolver{TJ, Tqr, Tu <: AbstractVector}(J::TJ, qr::Tqr, u::Tu) = DenseQRSol
 
 function AbstractOperator(nls::DenseLeastSquaresProblem,
     ::Type{Val{:dogleg}}, ::Type{Val{:qr}})
-    return DenseQRSolver(nls.J, similar(nls.J), _zeros(nls.y))
+    return DenseQROperator(nls.J, similar(nls.J), _zeros(nls.y))
 end
 
-function solve!(x, A::DenseQRSolver, y)
+function solve!(x::AbstractVector, A::DenseQROperator, y::AbstractVector)
     J, u, qr = A.J, A.u, A.qr
     
     copy!(qr, J)
@@ -44,10 +44,10 @@ function AbstractOperator(nls:: DenseLeastSquaresProblem,
     ::Type{Val{:levenberg_marquardt}}, ::Type{Val{:qr}})
     qr = zeros(eltype(nls.J), length(nls.y) + length(nls.x), length(nls.x))
     u = zeros(length(nls.y) + length(nls.x))
-    return DenseQRSolver(nls.J, qr, u)
+    return DenseQROperator(nls.J, qr, u)
 end
 
-function solve!(x, A::DenseQRSolver, y, dtd, λ)
+function solve!(x::AbstractVector, A::DenseQROperator, y::AbstractVector, dtd, λ)
     J, u, qr = A.J, A.u, A.qr
     
     # transform dtd

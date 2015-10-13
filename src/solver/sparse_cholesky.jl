@@ -32,7 +32,7 @@ end
 ##
 ##############################################################################
 
-type SparseCholeskySolver{TJ, Ti, Tx} <: AbstractOperator
+type SparseCholeskyOperator{TJ, Ti, Tx} <: AbstractOperator
     J::TJ
     colptr::Vector{Ti}
     rowval::Vector{Ti}
@@ -53,10 +53,10 @@ function AbstractOperator(nls::SparseLeastSquaresProblem,
     set_print_level(cm, 0)
     unsafe_store!(common_final_ll, 1)
     F = analyze(sparseJt, cm)
-    return SparseCholeskySolver(nls.J, colptr, rowval, _zeros(nls.x), sparseJ, sparseJt, F, cm)
+    return SparseCholeskyOperator(nls.J, colptr, rowval, _zeros(nls.x), sparseJ, sparseJt, F, cm)
 end
 
-function solve!(x, A::SparseCholeskySolver, y)
+function solve!(x, A::SparseCholeskyOperator, y)
     J, colptr, rowval, v, sparseJ, sparseJt, F, cm = 
     A.J, A.colptr, A.rowval, A.v, A.sparseJ, A.sparseJt, A.F, A.cm
 

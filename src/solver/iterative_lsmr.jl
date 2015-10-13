@@ -121,7 +121,7 @@ end
 ##
 ##############################################################################
 
-type LSMRSolver{TJ, Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty} <: AbstractOperator
+type LSMROperator{TJ, Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty} <: AbstractOperator
     J::TJ
     normalization::Tx1
     tmp::Tx2
@@ -134,7 +134,7 @@ end
 
 function AbstractOperator(nls::LeastSquaresProblem,
     ::Type{Val{:dogleg}}, ::Type{Val{:iterative}})
-    LSMRSolver(nls.J, _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), 
+    LSMROperator(nls.J, _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), 
         _zeros(nls.x), _zeros(nls.x),  _zeros(nls.x), _zeros(nls.y))
 end
 
@@ -166,7 +166,7 @@ end
 ##
 ##############################################################################
 
-type LSMRDampenedSolver{TJ, Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty} <: AbstractOperator
+type LSMRDampenedOperator{TJ, Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty} <: AbstractOperator
     J::TJ
     normalization::Tx1
     tmp::Tx2
@@ -175,7 +175,7 @@ type LSMRDampenedSolver{TJ, Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty} <: AbstractOperato
     hbar::Tx5
     zerosvector::Tx6
     u::Ty
-    function LSMRDampenedSolver(J, normalization, tmp, v, h, hbar, zerosvector, u)
+    function LSMRDampenedOperator(J, normalization, tmp, v, h, hbar, zerosvector, u)
         length(normalization) == length(tmp) || throw(DimensionMismatch("normalization and tmp must have the same length"))
         length(normalization) == length(v) || throw(DimensionMismatch("normalization and v must have the same length"))
         length(normalization) == length(h) || throw(DimensionMismatch("normalization and h must have the same length"))
@@ -185,18 +185,18 @@ type LSMRDampenedSolver{TJ, Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty} <: AbstractOperato
     end
 end
 
-function LSMRDampenedSolver{TJ, Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty}(J::TJ, normalization::Tx1, tmp::Tx2, v::Tx3, h::Tx4, hbar::Tx5, zerosvector::Tx6, u::Ty)
-    LSMRDampenedSolver{TJ, Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty}(J, normalization, tmp, v, h, hbar, zerosvector, u)
+function LSMRDampenedOperator{TJ, Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty}(J::TJ, normalization::Tx1, tmp::Tx2, v::Tx3, h::Tx4, hbar::Tx5, zerosvector::Tx6, u::Ty)
+    LSMRDampenedOperator{TJ, Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty}(J, normalization, tmp, v, h, hbar, zerosvector, u)
 end
 
 
 function AbstractOperator(nls::LeastSquaresProblem,
     ::Type{Val{:levenberg_marquardt}}, ::Type{Val{:iterative}})
-    LSMRDampenedSolver(nls.J, _zeros(nls.x), _zeros(nls.x), 
+    LSMRDampenedOperator(nls.J, _zeros(nls.x), _zeros(nls.x), 
         _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.y))
 end
 
-function solve!(x, A::LSMRDampenedSolver, y, dtd, λ)
+function solve!(x, A::LSMRDampenedOperator, y, dtd, λ)
     J, normalization, tmp, v, h, hbar, zerosvector, u = 
             A.J, A.normalization, A.tmp, A.v, A.h, A.hbar, A.zerosvector, A.u
     
