@@ -56,6 +56,7 @@ function A_ldiv_B!(x::AbstractVector, J::StridedMatrix, y::AbstractVector,
     u, qr = A.u, A.qr
     
     # transform dammp
+    length(u) ==  length(y) + length(x) || throw(DimensionMismatch("length(u) should equal length(x) + length(y)"))
 
     # update qr as |J; diagm(damp)|
     fill!(qr, zero(eltype(qr)))

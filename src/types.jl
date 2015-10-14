@@ -44,7 +44,6 @@ abstract AbstractMethod
 # allocation for solver
 abstract AbstractSolver
 
-
 type LeastSquaresProblemAllocated{T <: LeastSquaresProblem, Tmethod <: AbstractMethod, Tsolver <: AbstractSolver}
      nls::T
      method::Tmethod
