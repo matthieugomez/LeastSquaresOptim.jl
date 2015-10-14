@@ -36,7 +36,9 @@ end
 ## 
 ## solve J'J \ J'y
 ##
-## we use LSMR on A / sqrt(diag(J'J)) (diagonal preconditioner)
+## we use LSMR on Ax = y
+## with A = J / sqrt(diag(J'J)) (diagonal preconditioner)
+##
 ## LSMR works on any matrix with the following methods:
 ## eltype, size, A_mul_B!, Ac_mul_B!
 ##
@@ -95,25 +97,22 @@ end
 
 ##############################################################################
 ## 
-## solve (J'J + damp I) \ J'y (used in LevenbergMarquardt)
+## solve (J'J + diagm(damp)) \ J'y (used in LevenbergMarquardt)
 ## No need to solve exactly :
 ## "An Inexact Levenberg-Marquardt Method for Large Sparse Nonlinear Least Squares"
 ## Weight Holt (1985)
 ##
-## We use
-## LSMR with matrix A = |J         |
-##                      |diag(dtd) |
-## + diagonal preconditioner
+## We use LSMR on A x = b with
+## A = |J          |  + diagonal preconditioner
+##     |diag(damp) |
+## b = vcat(y, zeros(damp))
+##
 ## LSMR works on any matrix with the following methods:
 ## eltype, size, A_mul_B!, Ac_mul_B!
 ## LSMR works on any vector with the following methods:
 ## eltype, length, scale!, norm
 ##
 ##############################################################################
-
-# First define a new type for this augmented space
-# and methods use within lsmr! on this new space
-
 type DampenedVector{Ty, Tx}
     y::Ty # dimension of f(x)
     x::Tx # dimension of x
