@@ -1,6 +1,9 @@
-##############################################################################
+#############################################################################
 ## 
-## LSMR with diagonal preconditioner, ie A -> A / sqrt(A'A)
+## solve J'J \ J'y (used in Dogleg)
+##
+## we use LSMR for the problem J'J \ J' fcur 
+## with 1/sqrt(diag(J'J)) as preconditioner
 ##
 ##############################################################################
 
@@ -49,15 +52,6 @@ function lsmr!(x, A::PreconditionedMatrix, r, v, h, hbar; kwargs...)
     map!(*, x, x, A.normalization)
     return result
 end
-
-#############################################################################
-## 
-## solve J'J \ J'y (used in Dogleg)
-##
-## we use LSMR for the problem J'J \ J' fcur 
-## with 1/sqrt(diag(J'J)) as preconditioner
-##
-##############################################################################
 
 type LSMRSolver{Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty} <: AbstractSolver
     normalization::Tx1
@@ -109,6 +103,12 @@ end
 
 ##############################################################################
 ## 
+## solve (J'J + damp I) \ J'y (used in LevenbergMarquardt)
+## No need to solve exactly :
+## "An Inexact Levenberg-Marquardt Method for Large Sparse Nonlinear Least Squares"
+## Weight Holt (1985)
+##
+## We use
 ## LSMR with matrix A = |J         |
 ##                      |diag(dtd) |
 ##
@@ -167,16 +167,6 @@ function Ac_mul_B!{TA, Tx, Ty}(α::Number, mw::DampenedMatrix{TA, Tx}, a::Dampen
     map!((z, x, y)-> z + α * x * y, b, b, a.x, mw.diagonal)  
     return b
 end
-
-
-##############################################################################
-## 
-## solve (J'J + damp I) \ J'y (used in LevenbergMarquardt)
-## See "An Inexact Levenberg-Marquardt Method for Large Sparse Nonlinear Least Squares"
-## Weight Holt (1985)
-##
-##############################################################################
-
 
 function A_ldiv_B!(x, J, y, damp, A::LSMRSolver)
     normalization, tmp, v, h, hbar, zerosvector, u = 
