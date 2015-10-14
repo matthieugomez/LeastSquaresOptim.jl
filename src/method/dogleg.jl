@@ -25,8 +25,6 @@ function Dogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2}(δgn::Tx1, δgr::Tx2, δx::Tx3, dt
     Dogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2}(δgn, δgr, δx, dtd, ftrial, fpredict)
 end
 
-
-
 function AbstractMethod(nls::LeastSquaresProblem, ::Type{Val{:dogleg}})
     Dogleg(_zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), 
     _zeros(nls.y), _zeros(nls.y))

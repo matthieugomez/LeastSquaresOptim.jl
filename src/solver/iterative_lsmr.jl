@@ -55,11 +55,9 @@ type LSMRSolver{Tx1, Tx2, Tx3, Tx4, Tx5, Ty} <: AbstractSolver
         new(normalization, tmp, v, h, hbar, u)
     end
 end
-
 function LSMRSolver{Tx1, Tx2, Tx3, Tx4, Tx5, Ty}(normalization::Tx1, tmp::Tx2, v::Tx3, h::Tx4, hbar::Tx5, u::Ty)
     LSMRSolver{Tx1, Tx2, Tx3, Tx4, Tx5, Ty}(normalization, tmp, v, h, hbar, u)
 end
-
 function AbstractSolver(nls::LeastSquaresProblem, ::Type{Val{:dogleg}},
      ::Type{Val{:iterative}})
     LSMRSolver(_zeros(nls.x), _zeros(nls.x), _zeros(nls.x), 
@@ -179,8 +177,6 @@ function AbstractSolver(nls::LeastSquaresProblem, ::Type{Val{:levenberg_marquard
     LSMRDampenedSolver(_zeros(nls.x), _zeros(nls.x), _zeros(nls.x), 
         _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.y))
 end
-
-
 
 function A_ldiv_B!(x, J, y, damp, A::LSMRDampenedSolver)
     normalization, tmp, v, h, hbar, zerosvector, u = 
