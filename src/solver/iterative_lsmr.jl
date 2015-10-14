@@ -36,8 +36,9 @@ end
 ## 
 ## solve J'J \ J'y
 ##
-## we use LSMR A / sqrt(diag(J'J)) (diagonal preconditioner)
-## Need to implement eltype, size, A_mul_B!, Ac_mul_B!
+## we use LSMR on A / sqrt(diag(J'J)) (diagonal preconditioner)
+## LSMR works on any matrix with the following methods:
+## eltype, size, A_mul_B!, Ac_mul_B!
 ##
 ##############################################################################
 
@@ -48,14 +49,12 @@ type PreconditionedMatrix{TA, Tx}
 end
 eltype(A::PreconditionedMatrix) = eltype(A.A)
 size(A::PreconditionedMatrix, i::Integer) = size(A.A, i)
-
 function A_mul_B!{TA, Tx}(α::Number, pm::PreconditionedMatrix{TA, Tx}, a::Tx, 
                 β::Number, b)
     map!(*, pm.tmp, a, pm.normalization)
     A_mul_B!(α, pm.A, pm.tmp, β, b)
     return b
 end
-
 function Ac_mul_B!{TA, Tx}(α::Number, pm::PreconditionedMatrix{TA, Tx}, a, 
                 β::Number, b::Tx)
     T = eltype(b)
@@ -105,7 +104,10 @@ end
 ## LSMR with matrix A = |J         |
 ##                      |diag(dtd) |
 ## + diagonal preconditioner
-## Need to implement eltype, size, A_mul_B!, Ac_mul_B!
+## LSMR works on any matrix with the following methods:
+## eltype, size, A_mul_B!, Ac_mul_B!
+## LSMR works on any vector with the following methods:
+## eltype, length, scale!, norm
 ##
 ##############################################################################
 
