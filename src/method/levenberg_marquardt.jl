@@ -10,7 +10,18 @@ type LevenbergMarquardt{Tx1, Tx2, Ty1, Ty2} <: AbstractMethod
     dtd::Tx2
     ftrial::Ty1
     fpredict::Ty2
+
+    function LevenbergMarquardt(δx, dtd, ftrial, fpredict)
+        length(δx) == length(dtd) || throw(DimensionMismatch("The lengths of δx and dtd must match."))
+        length(ftrial) == length(fpredict) || throw(DimensionMismatch("The lengths of ftrial and fpredict must match."))
+        new(δx, dtd, ftrial, fpredict)
+    end
 end
+
+function LevenbergMarquardt{Tx1, Tx2, Ty1, Ty2}(δx::Tx1, dtd::Tx2, ftrial::Ty1, fpredict::Ty2)
+    LevenbergMarquardt{Tx1, Tx2, Ty1, Ty2}(δx, dtd, ftrial, fpredict)
+end
+
 function AbstractMethod(nls::LeastSquaresProblem, ::Type{Val{:levenberg_marquardt}})
    LevenbergMarquardt(_zeros(nls.x), _zeros(nls.x), _zeros(nls.y), _zeros(nls.y))
 end
@@ -36,13 +47,6 @@ function optimize!{T, Tmethod <: LevenbergMarquardt, Tsolve}(
     δx, dtd = anls.method.δx, anls.method.dtd
     ftrial, fpredict = anls.method.ftrial, anls.method.fpredict
     x, fcur, f!, J, g! = anls.nls.x, anls.nls.y, anls.nls.f!, anls.nls.J, anls.nls.g!
-
-    # check
-    length(x) == size(J, 2) || throw(DimensionMismatch("length(x) must equal size(J, 2)."))
-    length(fcur) == size(J, 1) || throw(DimensionMismatch("length(fcur) must equal size(J, 1)."))
-    length(x) == length(dtd) || throw(DimensionMismatch("The lengths of x and dtd must match."))
-    length(fcur) == length(ftrial) || throw(DimensionMismatch("The lengths of fcur and ftrial must match."))
-    length(ftrial) == length(fpredict) || throw(DimensionMismatch("The lengths of ftrial and fpredict must match."))
 
     decrease_factor = 2.0
     # initialize
