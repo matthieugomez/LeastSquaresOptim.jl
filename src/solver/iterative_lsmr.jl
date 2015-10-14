@@ -5,8 +5,6 @@
 ## we use LSMR 
 ## with 1/sqrt(diag(J'J)) as preconditioner
 ##
-## Requires to define a new lsmr! method for diagonal preconditining
-##
 ##############################################################################
 
 type PreconditionedMatrix{TA, Tx}
@@ -112,20 +110,17 @@ type DampenedVector{Ty, Tx}
 end
 eltype(a::DampenedVector) =  promote_type(eltype(a.y), eltype(a.x))
 length(a::DampenedVector) = length(a.y) + length(a.x)
-
 function scale!(a::DampenedVector, α::Number)
     scale!(a.y, α)
     scale!(a.x, α)
     return a
 end
-
 norm(a::DampenedVector) = sqrt(norm(a.y)^2 + norm(a.x)^2)
 
 type DampenedMatrix{TA, Tx}
     A::TA
     diagonal::Tx 
 end
-
 eltype(A::DampenedMatrix) = promote_type(eltype(A.A), eltype(A.diagonal))
 function size(A::DampenedMatrix, dim::Integer)
     m, n = size(A.A)
@@ -133,7 +128,6 @@ function size(A::DampenedMatrix, dim::Integer)
     dim == 1 ? (m + l) : 
     dim == 2 ? n : 1
 end
-
 function A_mul_B!{TA, Tx, Ty}(α::Number, mw::DampenedMatrix{TA, Tx}, a::Tx, 
                 β::Number, b::DampenedVector{Ty, Tx})
     if β != 1
@@ -143,7 +137,6 @@ function A_mul_B!{TA, Tx, Ty}(α::Number, mw::DampenedMatrix{TA, Tx}, a::Tx,
     map!((z, x, y)-> z + α * x * y, b.x, b.x, a, mw.diagonal)
     return b
 end
-
 function Ac_mul_B!{TA, Tx, Ty}(α::Number, mw::DampenedMatrix{TA, Tx}, a::DampenedVector{Ty, Tx}, 
                 β::Number, b::Tx)
     T = eltype(b)
