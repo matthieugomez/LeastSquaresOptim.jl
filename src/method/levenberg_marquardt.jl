@@ -66,8 +66,10 @@ function optimize!{T, Tmethod <: LevenbergMarquardt, Tsolve}(
             g_calls += 1
             need_jacobian = false
         end
-        colsumabs2!(dtd, J)        
-        δx, lmiter = solve!(δx, J, fcur, dtd, 1/Δ,  anls.solver)
+        colsumabs2!(dtd, J)
+        clamp!(dtd, MIN_DIAGONAL, MAX_DIAGONAL)
+        scale!(dtd, 1/Δ)        
+        δx, lmiter = A_ldiv_B!(δx, J, fcur, dtd,  anls.solver)
         mul_calls += lmiter
 
         #update x

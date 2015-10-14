@@ -17,7 +17,7 @@ end
 ##
 ##############################################################################
 
-function solve!(x::AbstractVector, J::StridedMatrix, y::AbstractVector, A::DenseCholeskySolver)
+function A_ldiv_B!(x::AbstractVector, J::StridedMatrix, y::AbstractVector, A::DenseCholeskySolver)
     chol = A.chol
     Ac_mul_B!(chol, J,  J)
     Ac_mul_B!(x, J,  y)
@@ -27,20 +27,18 @@ end
 
 ##############################################################################
 ## 
-## solve (J'J + λ dtd) \ J'y by Cholesky (used in LevenbergMarquardt)
+## solve (J'J + damp I) \ J'y by Cholesky (used in LevenbergMarquardt)
 ##
 ##############################################################################
 
-function solve!(x::AbstractVector, J::StridedMatrix, y::AbstractVector, 
-            dtd::AbstractVector, λ::Real, A::DenseCholeskySolver)
+function A_ldiv_B!(x::AbstractVector, J::StridedMatrix, y::AbstractVector, 
+            damp::AbstractVector, A::DenseCholeskySolver)
     chol = A.chol
     
     # update chol as J'J + λdtd
     Ac_mul_B!(chol, J, J)
-    clamp!(dtd, MIN_DIAGONAL, MAX_DIAGONAL)
-    scale!(dtd, λ)
-    @inbounds @simd for i in 1:size(chol, 1)
-        chol[i, i] += dtd[i]
+    @inbounds for i in 1:size(chol, 1)
+        chol[i, i] += damp[i]
     end
 
     # solve

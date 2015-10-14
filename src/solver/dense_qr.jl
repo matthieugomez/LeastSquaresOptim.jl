@@ -20,7 +20,7 @@ function AbstractSolver(nls::DenseLeastSquaresProblem,
     return DenseQRSolver(similar(nls.J), _zeros(nls.y))
 end
 
-function solve!(x::AbstractVector, J::StridedMatrix,  y::AbstractVector, A::DenseQRSolver)
+function A_ldiv_B!(x::AbstractVector, J::StridedMatrix,  y::AbstractVector, A::DenseQRSolver)
     u, qr = A.u, A.qr
     copy!(qr, J)
     copy!(u, y)
@@ -34,7 +34,7 @@ end
 
 ##############################################################################
 ## 
-## solve (J'J + λ dtd) \ J'y by QR (used in LevenbergMarquardt)
+## solve (J'J + damp I) \ J'y by QR (used in LevenbergMarquardt)
 ##
 ##############################################################################
 
@@ -45,15 +45,13 @@ function AbstractSolver(nls:: DenseLeastSquaresProblem,
     return DenseQRSolver(qr, u)
 end
 
-function solve!(x::AbstractVector, J::StridedMatrix, y::AbstractVector, 
-                dtd::AbstractVector, λ::Real, A::DenseQRSolver)
+function A_ldiv_B!(x::AbstractVector, J::StridedMatrix, y::AbstractVector, 
+                damp::AbstractVector, A::DenseQRSolver)
     u, qr = A.u, A.qr
     
-    # transform dtd
-    clamp!(dtd, MIN_DIAGONAL, MAX_DIAGONAL)
-    scale!(dtd, λ)
+    # transform dammp
 
-    # update qr as |J; diagm(dtd)|
+    # update qr as |J; diagm(damp)|
     fill!(qr, zero(eltype(qr)))
     @inbounds for j in 1:size(J, 2)
         @simd for i in 1:size(J, 1)
@@ -61,8 +59,8 @@ function solve!(x::AbstractVector, J::StridedMatrix, y::AbstractVector,
         end
     end
     leny = length(y)
-    @inbounds for i in 1:length(dtd)
-        qr[leny + i, i] = sqrt(dtd[i])
+    @inbounds for i in 1:length(damp)
+        qr[leny + i, i] = sqrt(damp[i])
     end
 
     # update u as |J; 0|

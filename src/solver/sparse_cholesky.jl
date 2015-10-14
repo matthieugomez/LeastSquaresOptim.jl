@@ -55,7 +55,7 @@ function AbstractSolver(nls::SparseLeastSquaresProblem,
     return SparseCholeskySolver(colptr, rowval, _zeros(nls.x), sparseJ, sparseJt, F, cm)
 end
 
-function solve!(x::AbstractVector, J::SparseMatrixCSC, y::AbstractVector, A::SparseCholeskySolver)
+function A_ldiv_B!(x::AbstractVector, J::SparseMatrixCSC, y::AbstractVector, A::SparseCholeskySolver)
     colptr, rowval, v, sparseJ, sparseJt, F, cm = 
     A.colptr, A.rowval, A.v, A.sparseJ, A.sparseJt, A.F, A.cm
 
