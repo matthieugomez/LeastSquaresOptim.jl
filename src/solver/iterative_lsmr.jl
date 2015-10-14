@@ -1,28 +1,30 @@
 #############################################################################
 ## 
-## solve J'J \ J'y (used in Dogleg)
+## solve J'J \ J'y
 ##
-## we use LSMR for the problem J'J \ J' fcur 
+## we use LSMR 
 ## with 1/sqrt(diag(J'J)) as preconditioner
+##
+## Requires to define a new lsmr! method for diagonal preconditining
 ##
 ##############################################################################
 
-type PMatrix{TA, Tx}
+type PreconditionedMatrix{TA, Tx}
     A::TA
     normalization::Tx 
     tmp::Tx
 end
-eltype(A::PMatrix) = eltype(A.A)
-size(A::PMatrix, i::Integer) = size(A.A, i)
+eltype(A::PreconditionedMatrix) = eltype(A.A)
+size(A::PreconditionedMatrix, i::Integer) = size(A.A, i)
 
-function A_mul_B!{TA, Tx}(α::Number, pm::PMatrix{TA, Tx}, a::Tx, 
+function A_mul_B!{TA, Tx}(α::Number, pm::PreconditionedMatrix{TA, Tx}, a::Tx, 
                 β::Number, b)
     map!(*, pm.tmp, a, pm.normalization)
     A_mul_B!(α, pm.A, pm.tmp, β, b)
     return b
 end
 
-function Ac_mul_B!{TA, Tx}(α::Number, pm::PMatrix{TA, Tx}, a, 
+function Ac_mul_B!{TA, Tx}(α::Number, pm::PreconditionedMatrix{TA, Tx}, a, 
                 β::Number, b::Tx)
     T = eltype(b)
     β = convert(T, β)
@@ -37,20 +39,6 @@ function Ac_mul_B!{TA, Tx}(α::Number, pm::PMatrix{TA, Tx}, a,
     end
     axpy!(α, pm.tmp, b)
     return b
-end
-
-type PreconditionedMatrix{TA, Tx}
-    A::TA
-    normalization::Tx  # 1 / sqrt(diag(A'A))
-    tmp::Tx # a storage vector of size(A, 2)
-end
-
-# use invoke when accepts keyboard argument https://github.com/JuliaLang/julia/issues/7045
-function lsmr!(x, A::PreconditionedMatrix, r, v, h, hbar; kwargs...)
-    PA = PMatrix(A.A, A.normalization, A.tmp)
-    result = lsmr!(x, PA, r, v, h, hbar; kwargs...)
-    map!(*, x, x, A.normalization)
-    return result
 end
 
 type LSMRSolver{Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty} <: AbstractSolver
@@ -98,6 +86,7 @@ function A_ldiv_B!(x, J, y, A::LSMRSolver)
 
     # solve
     x, ch = lsmr!(x, A, u, v, h, hbar)
+    map!(*, x, x, A.normalization)
     return x, ch.mvps
 end
 
@@ -113,6 +102,9 @@ end
 ##                      |diag(dtd) |
 ##
 ##############################################################################
+
+# First define a new type for this augmented space
+# and methods use within lsmr! on this new space
 
 type DampenedVector{Ty, Tx}
     y::Ty # dimension of f(x)
@@ -191,5 +183,6 @@ function A_ldiv_B!(x, J, y, damp, A::LSMRSolver)
 
     # solve
     x, ch = lsmr!(x, A, b, v, h, hbar, btol = 0.5)
+    map!(*, x, x, A.normalization)
     return x, ch.mvps
 end

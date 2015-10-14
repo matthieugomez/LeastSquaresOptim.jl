@@ -1,4 +1,3 @@
-
 ##############################################################################
 ## 
 ## Utils
@@ -26,9 +25,10 @@ function Sparse!{Tv<:VTypes,Ti<:ITypes}(A::SparseMatrixCSC{Tv,Ti}, B::Sparse{Tv}
     return B
 end
 
+
 ##############################################################################
 ## 
-## solve J'J \ J'y (used in Dogleg)
+## Constructor
 ##
 ##############################################################################
 
@@ -54,6 +54,12 @@ function AbstractSolver(nls::SparseLeastSquaresProblem,
     F = analyze(sparseJt, cm)
     return SparseCholeskySolver(colptr, rowval, _zeros(nls.x), sparseJ, sparseJt, F, cm)
 end
+
+##############################################################################
+## 
+## solve J'J \ J'y by Cholesky
+##
+##############################################################################
 
 function A_ldiv_B!(x::AbstractVector, J::SparseMatrixCSC, y::AbstractVector, A::SparseCholeskySolver)
     colptr, rowval, v, sparseJ, sparseJt, F, cm = 
