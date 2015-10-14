@@ -32,7 +32,6 @@ const MAX_DIAGONAL = 1e32
 const DECREASE_THRESHOLD = 0.25
 const INCREASE_THRESHOLD = 0.75
 
-
 function optimize!{T, Tmethod <: Dogleg, Tsolve}(
     anls::LeastSquaresProblemAllocated{T, Tmethod, Tsolve};
     xtol::Number = 1e-8, ftol::Number = 1e-8, grtol::Number = 1e-8,
@@ -168,6 +167,3 @@ function optimize!{T, Tmethod <: Dogleg, Tsolve}(
                         x_converged, xtol, f_converged, ftol, gr_converged, grtol, 
                         f_calls, g_calls, mul_calls)
 end
-
-
-

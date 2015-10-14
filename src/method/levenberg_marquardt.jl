@@ -15,7 +15,6 @@ function AbstractMethod(nls::LeastSquaresProblem, ::Type{Val{:levenberg_marquard
    LevenbergMarquardt(_zeros(nls.x), _zeros(nls.x), _zeros(nls.y), _zeros(nls.y))
 end
 
-
 ##############################################################################
 ## 
 ## Method for LevenbergMarquardt
@@ -114,5 +113,3 @@ function optimize!{T, Tmethod <: LevenbergMarquardt, Tsolve}(
                         x_converged, xtol, f_converged, ftol, gr_converged, grtol, 
                         f_calls, g_calls, mul_calls)
 end
-
-

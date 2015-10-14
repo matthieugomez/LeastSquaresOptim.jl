@@ -1,9 +1,43 @@
 #############################################################################
 ## 
+## Type with stored vectors for lsmr
+##
+##############################################################################
+
+type LSMRSolver{Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty} <: AbstractSolver
+    normalization::Tx1
+    tmp::Tx2
+    v::Tx3
+    h::Tx4
+    hbar::Tx5
+    zerosvector::Tx6
+    u::Ty
+    function LSMRSolver(normalization, tmp, v, h, hbar, zerosvector, u)
+        length(normalization) == length(tmp) || throw(DimensionMismatch("normalization and tmp must have the same length"))
+        length(normalization) == length(v) || throw(DimensionMismatch("normalization and v must have the same length"))
+        length(normalization) == length(h) || throw(DimensionMismatch("normalization and h must have the same length"))
+        length(normalization) == length(hbar) || throw(DimensionMismatch("normalization and hbar must have the same length"))
+        length(normalization) == length(zerosvector) || throw(DimensionMismatch("normalization and zerosvector must have the same length"))
+        new(normalization, tmp, v, h, hbar, zerosvector, u)
+    end
+end
+
+function LSMRSolver{Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty}(normalization::Tx1, tmp::Tx2, v::Tx3, h::Tx4, hbar::Tx5, zerosvector::Tx6, u::Ty)
+    LSMRSolver{Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty}(normalization, tmp, v, h, hbar, zerosvector, u)
+end
+
+function AbstractSolver(nls::LeastSquaresProblem, ::Type,
+     ::Type{Val{:iterative}})
+    LSMRSolver(_zeros(nls.x), _zeros(nls.x), _zeros(nls.x), 
+        _zeros(nls.x), _zeros(nls.x),  _zeros(nls.x), _zeros(nls.y))
+end
+
+#############################################################################
+## 
 ## solve J'J \ J'y
 ##
-## we use LSMR 
-## with 1/sqrt(diag(J'J)) as preconditioner
+## we use LSMR A / sqrt(diag(J'J)) (diagonal preconditioner)
+## Need to implement eltype, size, A_mul_B!, Ac_mul_B!
 ##
 ##############################################################################
 
@@ -39,34 +73,6 @@ function Ac_mul_B!{TA, Tx}(α::Number, pm::PreconditionedMatrix{TA, Tx}, a,
     return b
 end
 
-type LSMRSolver{Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty} <: AbstractSolver
-    normalization::Tx1
-    tmp::Tx2
-    v::Tx3
-    h::Tx4
-    hbar::Tx5
-    zerosvector::Tx6
-    u::Ty
-    function LSMRSolver(normalization, tmp, v, h, hbar, zerosvector, u)
-        length(normalization) == length(tmp) || throw(DimensionMismatch("normalization and tmp must have the same length"))
-        length(normalization) == length(v) || throw(DimensionMismatch("normalization and v must have the same length"))
-        length(normalization) == length(h) || throw(DimensionMismatch("normalization and h must have the same length"))
-        length(normalization) == length(hbar) || throw(DimensionMismatch("normalization and hbar must have the same length"))
-        length(normalization) == length(zerosvector) || throw(DimensionMismatch("normalization and zerosvector must have the same length"))
-        new(normalization, tmp, v, h, hbar, zerosvector, u)
-    end
-end
-
-function LSMRSolver{Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty}(normalization::Tx1, tmp::Tx2, v::Tx3, h::Tx4, hbar::Tx5, zerosvector::Tx6, u::Ty)
-    LSMRSolver{Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty}(normalization, tmp, v, h, hbar, zerosvector, u)
-end
-
-function AbstractSolver(nls::LeastSquaresProblem, ::Type,
-     ::Type{Val{:iterative}})
-    LSMRSolver(_zeros(nls.x), _zeros(nls.x), _zeros(nls.x), 
-        _zeros(nls.x), _zeros(nls.x),  _zeros(nls.x), _zeros(nls.y))
-end
-
 function A_ldiv_B!(x, J, y, A::LSMRSolver)
     normalization, tmp, v, h, hbar, u = A.normalization, A.tmp, A.v, A.h, A.hbar, A.u
 
@@ -98,6 +104,8 @@ end
 ## We use
 ## LSMR with matrix A = |J         |
 ##                      |diag(dtd) |
+## + diagonal preconditioner
+## Need to implement eltype, size, A_mul_B!, Ac_mul_B!
 ##
 ##############################################################################
 
