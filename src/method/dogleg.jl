@@ -8,7 +8,7 @@ type Dogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2} <: AbstractMethod
     δgn::Tx1
     δgr::Tx2
     δx::Tx3
-    damp::Tx4
+    dtd::Tx4
     ftrial::Ty1
     fpredict::Ty2
 end
@@ -38,7 +38,7 @@ function optimize!{T, Tmethod <: Dogleg, Tsolve}(
     xtol::Number = 1e-8, ftol::Number = 1e-8, grtol::Number = 1e-8,
     iterations::Integer = 1_000, Δ::Number = 1.0)
  
-     δgn, δgr, δx, damp = anls.method.δgn, anls.method.δgr, anls.method.δx, anls.method.damp
+     δgn, δgr, δx, dtd = anls.method.δgn, anls.method.δgr, anls.method.δx, anls.method.dtd
      ftrial, fpredict = anls.method.ftrial, anls.method.fpredict
      x, fcur, f!, J, g! = anls.nls.x, anls.nls.y, anls.nls.f!, anls.nls.J, anls.nls.g!
 
@@ -49,7 +49,7 @@ function optimize!{T, Tmethod <: Dogleg, Tsolve}(
     length(x) == length(δgn) || throw(DimensionMismatch("The lengths of x and δgn must match."))
     length(x) == length(δgr) || throw(DimensionMismatch("The lengths of x and δgr must match."))
     length(x) == length(δx) || throw(DimensionMismatch("The lengths of x and δx must match."))
-    length(x) == length(damp) || throw(DimensionMismatch("The lengths of x and damp must match."))
+    length(x) == length(dtd) || throw(DimensionMismatch("The lengths of x and dtd must match."))
     length(fcur) == length(ftrial) || throw(DimensionMismatch("The lengths of fcur and ftrial must match."))
     length(ftrial) == length(fpredict) || throw(DimensionMismatch("The lengths of ftrial and fpredict must match."))
 
@@ -72,11 +72,11 @@ function optimize!{T, Tmethod <: Dogleg, Tsolve}(
             #update gradient
             g!(x, J)
             g_calls += 1
-            colsumabs2!(damp, J)
-            clamp!(damp, MIN_DIAGONAL, MAX_DIAGONAL)
+            colsumabs2!(dtd, J)
+            clamp!(dtd, MIN_DIAGONAL, MAX_DIAGONAL)
 
             if iter == 1
-                wnorm_x = wnorm(x, damp)
+                wnorm_x = wnorm(x, dtd)
                 if wnorm_x > 0
                     Δ *= wnorm_x
                 end
@@ -85,10 +85,10 @@ function optimize!{T, Tmethod <: Dogleg, Tsolve}(
             Ac_mul_B!(one(Tx), J, fcur, zero(Tx), δgr)
             mul_calls += 1
             maxabs_gr = maxabs(δgr)
-            wnorm_δgr = wnorm(δgr, damp)
+            wnorm_δgr = wnorm(δgr, dtd)
 
             # compute Cauchy point
-            map!((x, y) -> x * sqrt(y), δgn, δgr, damp)
+            map!((x, y) -> x * sqrt(y), δgn, δgr, dtd)
             A_mul_B!(one(Ty), J, δgn, zero(Ty), fpredict)
             mul_calls += 1
             α = wnorm_δgr^2 / sumabs2(fpredict)
@@ -97,7 +97,7 @@ function optimize!{T, Tmethod <: Dogleg, Tsolve}(
             fill!(δgn, zero(Tx))
             δgn, ls_iter = A_ldiv_B!(δgn, J, fcur, anls.solver)
             mul_calls += ls_iter
-            wnorm_δgn = wnorm(δgn, damp)
+            wnorm_δgn = wnorm(δgn, dtd)
         end
         # compute δx
         if wnorm_δgn <= Δ
@@ -114,7 +114,7 @@ function optimize!{T, Tmethod <: Dogleg, Tsolve}(
         else
             # Case 3. The Cauchy point is inside the trust region nd the
             # Gauss-Newton step is outside
-            b_dot_a = α * wdot(δgr, δgn, damp)
+            b_dot_a = α * wdot(δgr, δgn, dtd)
             a_squared_norm = (α * wnorm_δgr)^2
             b_minus_a_squared_norm =
                   a_squared_norm - 2 * b_dot_a + wnorm_δgn^2
@@ -124,7 +124,7 @@ function optimize!{T, Tmethod <: Dogleg, Tsolve}(
             copy!(δx, δgn)
             scale!(δx, β)
             axpy!(α * (1 - β), δgr, δx)
-            wnorm_δx = wnorm(δx, damp)
+            wnorm_δx = wnorm(δx, dtd)
         end
 
 
