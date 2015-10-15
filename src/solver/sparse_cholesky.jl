@@ -25,14 +25,13 @@ function Sparse!{Tv<:VTypes,Ti<:ITypes}(A::SparseMatrixCSC{Tv,Ti}, B::Sparse{Tv}
     return B
 end
 
-
 ##############################################################################
 ## 
 ## Constructor
 ##
 ##############################################################################
 
-type SparseCholeskySolver{Tv, Ti <: Integer, Tx} <: AbstractSolver
+type SparseCholeskySolver{Tv, Ti <: Integer, Tx <: AbstractVector} <: AbstractSolver
     colptr::Vector{Ti}
     rowval::Vector{Ti}
     v::Tx
@@ -40,6 +39,14 @@ type SparseCholeskySolver{Tv, Ti <: Integer, Tx} <: AbstractSolver
     sparseJt::Sparse{Tv}
     F::Factor{Tv}
     cm::Array{UInt8, 1}
+    function SparseCholeskySolver(colptr, rowval, v, sparseJ, sparseJt, F, cm)
+        size(sparseJ) == (size(sparseJt, 2),  size(sparseJt, 1)) || throw(DimensionMismatch("J and Jt should have transposed dimension"))
+        new(colptr, rowval, v, sparseJ, sparseJt, F, cm)
+    end
+end
+
+function SparseCholeskySolver{Tv, Ti <: Integer, Tx <: AbstractVector}(colptr::Vector{Ti}, rowval::Vector{Ti}, v::Tx, sparseJ::Sparse{Tv}, sparseJt::Sparse{Tv}, F::Factor{Tv}, cm::Array{UInt8, 1})
+    SparseCholeskySolver{Tv, Ti, Tx}(colptr, rowval, v, sparseJ, sparseJt, F, cm)
 end
 
 function AbstractSolver(nls::SparseLeastSquaresProblem,
