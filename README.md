@@ -40,7 +40,7 @@ end
 x = [-1.2; 1.]
 fcur = Array(Float64, 2)
 J = Array(Float64, 2, 2)
-rosenbrock_problem = LeastSquaresProblem(x, fcur, rosenbrock_f!, J, rosenbrock_g!))
+rosenbrock_problem = LeastSquaresProblem(x, fcur, rosenbrock_f!, J, rosenbrock_g!)
 optimize!(rosenbrock_problem)
 ```
 
