@@ -2,7 +2,7 @@
 [![Coverage Status](https://coveralls.io/repos/matthieugomez/LeastSquaresOptim.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/matthieugomez/LeastSquaresOptim.jl?branch=master)
 ## Motivation
 
-This package solves non linear least squares optimization problems. It accepts dense jacobians, sparce jacobians, or any linear operator (any type that implements multiplications). It is inspired by the [Ceres library](http://ceres-solver.org/solving.html). 
+This package solves non linear least squares optimization problems. The jacobian can be a dense matrix, a sparse mamtrix, or any linear operator (any type that implements multiplications). The package is inspired by the [Ceres library](http://ceres-solver.org/solving.html). 
 
 To install the package,
 ```julia
