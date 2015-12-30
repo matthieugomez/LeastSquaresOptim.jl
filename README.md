@@ -1,5 +1,6 @@
-[![Build Status](https://travis-ci.org/matthieugomez/LeastSquaresOptim.jl.svg?branch=master)](https://travis-ci.org/matthieugomez/LeastSquaresOptim.jl)
+[![LeastSquaresOptim](http://pkg.julialang.org/badges/LeastSquaresOptim_0.4.svg)](http://pkg.julialang.org/?pkg=LeastSquaresOptim)
 [![Coverage Status](https://coveralls.io/repos/matthieugomez/LeastSquaresOptim.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/matthieugomez/LeastSquaresOptim.jl?branch=master)
+[![Build Status](https://travis-ci.org/matthieugomez/LeastSquaresOptim.jl.svg?branch=master)](https://travis-ci.org/matthieugomez/LeastSquaresOptim.jl)
 ## Motivation
 
 This package solves non linear least squares optimization problems. The jacobian can be a dense matrix, a sparse mamtrix, or any linear operator (any type that implements multiplications). The package is inspired by the [Ceres library](http://ceres-solver.org/solving.html). 
