@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/matthieugomez/LeastSquaresOptim.jl.svg?branch=master)](https://travis-ci.org/matthieugomez/LeastSquaresOptim.jl)
 ## Motivation
 
-This package solves non linear least squares optimization problems. The jacobian can be a dense matrix, a sparse mamtrix, or any linear operator (any type that implements multiplications). The package is inspired by the [Ceres library](http://ceres-solver.org/solving.html). 
+This package solves non linear least squares optimization problems. The package is inspired by the [Ceres library](http://ceres-solver.org/solving.html). 
 
 To install the package,
 ```julia
@@ -19,23 +19,25 @@ The main `optimize!` method accepts two main options : `method` and `solver`
 	- `method = :levenberg_marquardt`
 	- `method = :dogleg`
 
-2. Either method proceeds by successive linear least squares problems `min||Ax - b||^2`, where A is a modified Jacobian at the current set of parameters. `solver` indicates a least squares solver for the problem encountered at each iteration:
+2. solver indicates a least squares solver. Both methods proceed by solving successive linear least squares problems `min||Ax - b||^2`. The solvers available are:
 
 	- `solver = :qr`. Available for dense matrices
 	- `solver = :cholesky`. Available for dense matrices and sparse matrices. For sparse matrices, a symbolic factorization is computed at the first iteration from SuiteSparse and numerically updated at each iteration.
-	- `solve = :iterative` corresponds to a conjugate gradient method (more precisely [LSMR]([http://web.stanford.edu/group/SOL/software/lsmr/) with diagonal preconditioner). A custom type for the jacobian `A` may be specified. The following interface is expected to be defined on `A`:
+	- `solve = :iterative`. A conjugate gradient method (more precisely [LSMR]([http://web.stanford.edu/group/SOL/software/lsmr/) with diagonal preconditioner). A custom type for the jacobian `A` may be specified. The following interface is expected to be defined on `A`:
 		- `A_mul_B!(α::Number, A, x, β::Number, y)` updates y to αAx + βy
 		- `Ac_mul_B!(α::Number, A, y, β::Number, x)` updates x to αA'y + βx
 		- `colsumabs2!(x, A)` updates x to the sum of squared elements of each column
 		- `size(A, d)` returns the nominal dimensions along the dth axis in the equivalent matrix representation of A.
 		- `eltype(A)` returns the element type implicit in the equivalent matrix representation of A.
 
-		Similarly, `x` or `f(x)` don't need to be AbstractVectors. An example of the inteface to define can be found in the package [SparseFactorModels.jl](https://github.com/matthieugomez/SparseFactorModels.jl).
+		Similarly, `x` or `f(x)` may be custom types. An example of the interface to define can be found in the package [SparseFactorModels.jl](https://github.com/matthieugomez/SparseFactorModels.jl).
 
-These different `methods` and `solvers` are presented in more depth in the [Ceres documentation](http://ceres-solver.org/solving.html). 
 
-For dense Jacobians, default otpions are `method = :dogleg` and `solver = :qr`. For sparse Jacobians, default options are  `method = :levenberg_marquardt` and `solver = :iterative` 
+For dense Jacobians, the default options are `method = :dogleg` and `solver = :qr`. For sparse Jacobians, the default options are  `method = :levenberg_marquardt` and `solver = :iterative` 
 
+These `methods` and `solvers` are presented in more depth in the [Ceres documentation](http://ceres-solver.org/solving.html). 
+
+For all methods and solvers, `optimize!` accept the options : `method`, `solver`, `ftol`, `xtol`, `gr_tol`, `iterations` and `Δ` (initial radius).
 
 ## Syntax
 
@@ -68,32 +70,15 @@ rosenbrock_problem = LeastSquaresProblem(x = x, f! = rosenbrock_f!, output_lengt
 optimize!(rosenbrock_problem)
 ```
 
-For all methods and solvers, `optimize!` accept the options : `method`, `solver`, `ftol`, `xtol`, `gr_tol`, `iterations` and `Δ` (initial radius).
-
-
-
-You actually just need to specify `x`, `f!`, and `output_length`. 
-When calling `optimize!`, `x`, `fcur` and `J` are updated in place during the function
-
-
 ## Memory 
 The package has a particular emphasis on high dimensional problems. In particular, objects are updated in place at each method iteration: memory is allocated once and for all at the beginning of the function. 
 
-You can even avoid any initial allocation by passing a `LeastSquaresProblemAllocated` to the `optimize!` function. Such an object bundles a `LeastSquaresProblem` object with a few storage objects. Since the set of storage objects depends on the method and solver used, these options should be passed to the constructor rather than the `optimize!` function:
+You can avoid any initial allocation by directly passing a `LeastSquaresProblemAllocated` to the `optimize!` function. Such an object bundles a `LeastSquaresProblem` object with a few storage objects. This allows to repeteadly solve a non linear least square problems with minimal memory allocatin.
 ```julia
 rosenbrock = LeastSquaresProblemAllocated(x, fcur, rosenbrock_f!, J, rosenbrock_g!; 
                                           method = :dogleg, solver = :qr)
 optimize!(rosenbrock)
 ```
-
-## Automatic differentiation
-Automatic differenciation can be used for dense Jacobians thanks to the `ForwardDiff` package. 
-Just omit the `g!` function when constructing a `LeastSquaresProblem` object:
-
-```julia
-optimize!(LeastSquaresProblem(x, fcur, rosenbrock_f!, J))
-```
-
 
 ## Related packages
 Related:
