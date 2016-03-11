@@ -14,12 +14,12 @@ Pkg.add("LeastSquaresOptim")
 
 The main `optimize!` method accepts two main options : `method` and `solver`
 
-1. `method` indicates a least square optimization methods:
+1. `method` corresponds to a least square optimization methods:
 
 	- `method = :levenberg_marquardt`
 	- `method = :dogleg`
 
-2. solver indicates a least squares solver. Both methods proceed by solving successive linear least squares problems `min||Ax - b||^2`. The solvers available are:
+2. `solver` corresponds to a least squares solver. Least square optimization methods proceed by solving successively linear least squares problems `min||Ax - b||^2`. Available solvers are:
 
 	- `solver = :qr`. Available for dense matrices
 	- `solver = :cholesky`. Available for dense matrices and sparse matrices. For sparse matrices, a symbolic factorization is computed at the first iteration from SuiteSparse and numerically updated at each iteration.
@@ -33,11 +33,9 @@ The main `optimize!` method accepts two main options : `method` and `solver`
 		Similarly, `x` or `f(x)` may be custom types. An example of the interface to define can be found in the package [SparseFactorModels.jl](https://github.com/matthieugomez/SparseFactorModels.jl).
 
 
-For dense Jacobians, the default options are `method = :dogleg` and `solver = :qr`. For sparse Jacobians, the default options are  `method = :levenberg_marquardt` and `solver = :iterative` 
+For dense Jacobians, the default options are `method = :dogleg` and `solver = :qr`. For sparse Jacobians, the default options are  `method = :levenberg_marquardt` and `solver = :iterative`. Th `methods` and `solvers` are presented in more depth in the [Ceres documentation](http://ceres-solver.org/solving.html). 
 
-These `methods` and `solvers` are presented in more depth in the [Ceres documentation](http://ceres-solver.org/solving.html). 
-
-For all methods and solvers, `optimize!` accept the options : `method`, `solver`, `ftol`, `xtol`, `gr_tol`, `iterations` and `Δ` (initial radius).
+`optimize!` also accept the options : `ftol`, `xtol`, `gr_tol`, `iterations` and `Δ` (initial radius).
 
 ## Syntax
 
@@ -45,9 +43,10 @@ To find `x` that minimizes `f'(x)f(x)`, construct a `LeastSquaresProblem` object
  - `x` is an initial set of parameters.
  - `f!` a callable object such that `f!(x, out)` writes `f(x)` in `out`.
  - `output_length` the length of the output vector. 
- - (optionally) `g!` a function such that `g!(x, out)` writes the jacobian at x in `out`. Otherwise, the jacobian will be computed with `ForwardDiff.jl` package
- - (optionally) `y` a preallocation for `f`
- - (optionally) `J` a preallocation for the jacobian
+ And optionally
+ - `g!` a function such that `g!(x, out)` writes the jacobian at x in `out`. Otherwise, the jacobian will be computed with `ForwardDiff.jl` package
+ - `y` a preallocation for `f`
+ - `J` a preallocation for the jacobian
 
 
 A simple example:
