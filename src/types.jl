@@ -23,13 +23,23 @@ typealias DenseLeastSquaresProblem{Tx, Ty, Tf, TJ<:StridedVecOrMat, Tg} LeastSqu
 
 typealias SparseLeastSquaresProblem{Tx, Ty, Tf, TJ<:SparseMatrixCSC, Tg} LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}
 
-# Generate g! using ForwardDiff package
-function LeastSquaresProblem(x::Vector, y::Vector, f!::Function, J::Matrix; chunk_size = 1)
-    permf!(yp::Vector, xp::Vector) = f!(xp, yp)
-    permg! = jacobian(permf!, mutates = true, chunk_size = chunk_size, output_length = length(y))
-    g!(xp::Vector, Jp::Matrix) = permg!(Jp, xp)
-    LeastSquaresProblem(x, y, f!, J, g!)
+
+function LeastSquaresProblem(;x = error("initial x required"), y = Void, f! = exp, g! = nothing, J = nothing, output_length = 0, chunk_size = 1)
+    if (output_length > 0)
+        y = zeros(eltype(x), output_length)
+    end
+    if typeof(J) == Void
+        J = zeros(eltype(x), length(y), length(x))
+    end
+    newg! = g!
+    if typeof(g!) == Void
+        permf!(yp::Vector, xp::Vector) = f!(xp, yp)
+        permg! = jacobian(permf!, mutates = true, chunk_size = chunk_size, output_length = length(y))
+        newg! = (xp::Vector, Jp::Matrix) -> permg!(Jp, xp)
+    end
+    LeastSquaresProblem(x, y , f!, J, newg!)
 end
+
 
 ###############################################################################
 ##
@@ -116,13 +126,14 @@ type LeastSquaresResult{Tx}
     ftol::Real
     gr_converged::Bool
     grtol::Real
+    tr::OptimizationTrace
     f_calls::Int
     g_calls::Int
     mul_calls::Int
 end
 
-function LeastSquaresResult(method::ASCIIString, minimizer, ssr::Real, iterations::Int, converged::Bool, x_converged::Bool, xtol::Real, f_converged::Bool, ftol::Real, gr_converged::Bool, grtol::Real, f_calls::Int, g_calls::Int, mul_calls::Int)
-    LeastSquaresResult(method, minimizer, convert(Float64, ssr), iterations, converged, x_converged, convert(Float64, xtol), f_converged, convert(Float64, ftol), gr_converged, convert(Float64, grtol), f_calls, g_calls, mul_calls)
+function LeastSquaresResult(method::ASCIIString, minimizer, ssr::Real, iterations::Int, converged::Bool, x_converged::Bool, xtol::Real, f_converged::Bool, ftol::Real, gr_converged::Bool, grtol::Real, tr::OptimizationTrace, f_calls::Int, g_calls::Int, mul_calls::Int)
+    LeastSquaresResult(method, minimizer, convert(Float64, ssr), iterations, converged, x_converged, convert(Float64, xtol), f_converged, convert(Float64, ftol), gr_converged, convert(Float64, grtol), tr, f_calls, g_calls, mul_calls)
 end
 
 function converged(r::LeastSquaresResult)

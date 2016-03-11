@@ -31,6 +31,22 @@ end
 ## Method for LevenbergMarquardt
 ##
 ##############################################################################
+##############################################################################
+macro levenbergtrace()
+    quote
+        if tracing
+            dt = Dict()
+            update!(tr,
+                    iter,
+                    ssr,
+                    maxabs_gr,
+                    dt,
+                    store_trace,
+                    show_trace,
+                    show_every)
+        end
+    end
+end
 
 const MAX_Δ = 1e16 # minimum trust region radius
 const MIN_Δ = 1e-16 # maximum trust region radius
@@ -42,7 +58,7 @@ const MAX_DIAGONAL = 1e32
 function optimize!{T, Tmethod <: LevenbergMarquardt, Tsolve}(
         anls::LeastSquaresProblemAllocated{T, Tmethod, Tsolve};
             xtol::Number = 1e-8, ftol::Number = 1e-8, grtol::Number = 1e-8,
-            iterations::Integer = 1_000, Δ::Number = 10.0)
+            iterations::Integer = 1_000, Δ::Number = 10.0, store_trace = false, show_trace = false, show_every = 1)
 
     δx, dtd = anls.method.δx, anls.method.dtd
     ftrial, fpredict = anls.method.ftrial, anls.method.fpredict
@@ -57,11 +73,18 @@ function optimize!{T, Tmethod <: LevenbergMarquardt, Tsolve}(
     f!(x, fcur)
     f_calls += 1
     ssr = sumabs2(fcur)
+    maxabs_gr = Inf
     need_jacobian = true
 
     iter = 0
+
+    tr = OptimizationTrace()
+    tracing = store_trace || show_trace
+    @levenbergtrace
+
     while !converged && iter < iterations 
         iter += 1
+        check_isfinite(x)
 
         # compute step
         if need_jacobian
@@ -74,7 +97,6 @@ function optimize!{T, Tmethod <: LevenbergMarquardt, Tsolve}(
         scale!(dtd, 1/Δ)        
         δx, lmiter = A_ldiv_B!(δx, J, fcur, dtd,  anls.solver)
         mul_calls += lmiter
-
         #update x
         axpy!(-one(Tx), δx, x)
         f!(x, ftrial)
@@ -88,18 +110,17 @@ function optimize!{T, Tmethod <: LevenbergMarquardt, Tsolve}(
         mul_calls += 1
         axpy!(-one(Ty), fcur, fpredict)
         predicted_ssr = sumabs2(fpredict)
-
         ρ = (ssr - trial_ssr) / (ssr - predicted_ssr)
 
         Ac_mul_B!(one(Tx), J, fcur, zero(Tx), dtd)
         maxabs_gr = maxabs(dtd)
         mul_calls += 1
 
+
         x_converged, f_converged, gr_converged, converged =
             assess_convergence(δx, x, maxabs_gr, ssr, trial_ssr, xtol, ftol, grtol)
 
         if ρ > MIN_STEP_QUALITY
-
             copy!(fcur, ftrial)
             ssr = trial_ssr
             # increase trust region radius (from Ceres solver)
@@ -112,8 +133,9 @@ function optimize!{T, Tmethod <: LevenbergMarquardt, Tsolve}(
             Δ = max(Δ / decrease_factor , MIN_Δ)
             decrease_factor *= 2.0
         end
+        @levenbergtrace
     end
     LeastSquaresResult("levenberg_marquardt", x, ssr, iter, converged,
-                        x_converged, xtol, f_converged, ftol, gr_converged, grtol, 
+                        x_converged, xtol, f_converged, ftol, gr_converged, grtol, tr,
                         f_calls, g_calls, mul_calls)
 end

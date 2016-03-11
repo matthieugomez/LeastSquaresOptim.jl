@@ -35,6 +35,23 @@ end
 ## Method for Dogleg
 ##
 ##############################################################################
+macro doglegtrace()
+    quote
+        if tracing
+            dt = Dict()
+            update!(tr,
+                    iter,
+                    ssr,
+                    maxabs_gr,
+                    dt,
+                    store_trace,
+                    show_trace,
+                    show_every)
+        end
+    end
+end
+
+
 
 const MIN_Δ = 1e-16 # maximum trust region radius
 const MAX_Δ = 1e16 # minimum trust region radius
@@ -47,7 +64,7 @@ const INCREASE_THRESHOLD = 0.75
 function optimize!{T, Tmethod <: Dogleg, Tsolve}(
     anls::LeastSquaresProblemAllocated{T, Tmethod, Tsolve};
     xtol::Number = 1e-8, ftol::Number = 1e-8, grtol::Number = 1e-8,
-    iterations::Integer = 1_000, Δ::Number = 1.0)
+    iterations::Integer = 1_000, Δ::Number = 1.0, store_trace = false, show_trace = false, show_every = 1)
  
      δgn, δgr, δx, dtd = anls.method.δgn, anls.method.δgr, anls.method.δx, anls.method.dtd
      ftrial, fpredict = anls.method.ftrial, anls.method.fpredict
@@ -65,8 +82,13 @@ function optimize!{T, Tmethod <: Dogleg, Tsolve}(
     maxabs_gr = Inf
 
     iter = 0  
+
+    tr = OptimizationTrace()
+    tracing = store_trace || show_trace
+    @doglegtrace
     while !converged && iter < iterations 
         iter += 1
+        check_isfinite(x)
         # compute step
         if !reuse
             #update gradient
@@ -143,7 +165,6 @@ function optimize!{T, Tmethod <: Dogleg, Tsolve}(
         predicted_ssr = sumabs2(fpredict)
 
         ρ = (ssr - trial_ssr) / (ssr - predicted_ssr)
-
         x_converged, f_converged, gr_converged, converged = 
             assess_convergence(δx, x, maxabs_gr, ssr, trial_ssr, xtol, ftol, grtol)
 
@@ -162,9 +183,10 @@ function optimize!{T, Tmethod <: Dogleg, Tsolve}(
            Δ = max(MIN_Δ, Δ * 0.5)
         elseif ρ > INCREASE_THRESHOLD
            Δ = max(Δ, 3.0 * wnorm_δx)
-       end          
+       end  
+       @doglegtrace 
     end
     LeastSquaresResult("dogleg", x, ssr, iter, converged,
-                        x_converged, xtol, f_converged, ftol, gr_converged, grtol, 
+                        x_converged, xtol, f_converged, ftol, gr_converged, grtol, tr, 
                         f_calls, g_calls, mul_calls)
 end

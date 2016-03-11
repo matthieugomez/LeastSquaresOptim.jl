@@ -11,6 +11,7 @@ module LeastSquaresOptim
 import Base: A_mul_B!, Ac_mul_B!, A_ldiv_B!, copy!, fill!, scale!, norm, axpy!, eltype, length, size, call
 import Base.SparseMatrix.CHOLMOD: VTypes, ITypes, Sparse, Factor, C_Sparse, SuiteSparse_long, transpose_, @cholmod_name, common, defaults, set_print_level, common_final_ll, analyze, factorize_p!, check_sparse
 using ForwardDiff
+import Optim: OptimizationTrace, update!
 
 ##############################################################################
 ##

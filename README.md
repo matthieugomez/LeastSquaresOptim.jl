@@ -23,26 +23,29 @@ The main `optimize!` method accepts two main options : `method` and `solver`
 
 	- `solver = :qr`. Available for dense matrices
 	- `solver = :cholesky`. Available for dense matrices and sparse matrices. For sparse matrices, a symbolic factorization is computed at the first iteration from SuiteSparse and numerically updated at each iteration.
-	- `solve = :iterative` corresponds to a conjugate gradient method (more precisely [LSMR]([http://web.stanford.edu/group/SOL/software/lsmr/) with diagonal preconditioner). The jacobian can be a dense matrix, a sparse matrix, or any type implementing the following methods:
-		- `A_mul_B!(α::Number, A, x, β::Number, fcur)`that  updates fcur -> α Ax + βfcur
-		- `Ac_mul_B!(α::Number, A, fcur, β::Number, x)` that updates x -> α A'fcur + βx
-		- `colsumabs2!(x, A)`, `size(A, i::Integer)` and `eltype(A)`
-		
-		Similarly, neither `x` or `f(x)` need to be AbstractVectors. An example can be found in the package [SparseFactorModels.jl](https://github.com/matthieugomez/SparseFactorModels.jl).
+	- `solve = :iterative` corresponds to a conjugate gradient method (more precisely [LSMR]([http://web.stanford.edu/group/SOL/software/lsmr/) with diagonal preconditioner). A custom type for the jacobian `A` may be specified. The following interface is expected to be defined on `A`:
+		- `A_mul_B!(α::Number, A, x, β::Number, y)` updates y to αAx + βy
+		- `Ac_mul_B!(α::Number, A, y, β::Number, x)` updates x to αA'y + βx
+		- `colsumabs2!(x, A)` updates x to the sum of squared elements of each column
+		- `size(A, d)` returns the nominal dimensions along the dth axis in the equivalent matrix representation of A.
+		- `eltype(A)` returns the element type implicit in the equivalent matrix representation of A.
+
+		Similarly, `x` or `f(x)` don't need to be AbstractVectors. An example of the inteface to define can be found in the package [SparseFactorModels.jl](https://github.com/matthieugomez/SparseFactorModels.jl).
 
 These different `methods` and `solvers` are presented in more depth in the [Ceres documentation](http://ceres-solver.org/solving.html). 
 
-For dense Jacobians, option defaults are `method = :dogleg` and `solver = :qr`. For sparse Jacobians, defaults are  `method = :levenberg_marquardt` and `solver = :iterative` 
+For dense Jacobians, default otpions are `method = :dogleg` and `solver = :qr`. For sparse Jacobians, default options are  `method = :levenberg_marquardt` and `solver = :iterative` 
 
 
 ## Syntax
 
 To find `x` that minimizes `f'(x)f(x)`, construct a `LeastSquaresProblem` object with:
  - `x` is an initial set of parameters.
- - `y` is a pre-allocation for `f(x)`.
  - `f!` a callable object such that `f!(x, out)` writes `f(x)` in `out`.
- - `J` is a pre-allocation for the jacobian.
- - `g!` a callable object such that `g!(x, out)` writes the jacobian at x in `out`.
+ - `output_length` the length of the output vector. 
+ - (optionally) `g!` a function such that `g!(x, out)` writes the jacobian at x in `out`. Otherwise, the jacobian will be computed with `ForwardDiff.jl` package
+ - (optionally) `y` a preallocation for `f`
+ - (optionally) `J` a preallocation for the jacobian
 
 
 A simple example:
@@ -61,15 +64,17 @@ function rosenbrock_g!(x, J)
 end
 
 x = [-1.2; 1.]
-fcur = Array(Float64, 2)
-J = Array(Float64, 2, 2)
-rosenbrock_problem = LeastSquaresProblem(x, fcur, rosenbrock_f!, J, rosenbrock_g!)
+rosenbrock_problem = LeastSquaresProblem(x = x, f! = rosenbrock_f!, output_length = 2)
 optimize!(rosenbrock_problem)
 ```
 
+For all methods and solvers, `optimize!` accept the options : `method`, `solver`, `ftol`, `xtol`, `gr_tol`, `iterations` and `Δ` (initial radius).
+
+
+
+You actually just need to specify `x`, `f!`, and `output_length`. 
 When calling `optimize!`, `x`, `fcur` and `J` are updated in place during the function
 
-For all methods and solvers, `optimize!` accept the options : `method`, `solver`, `ftol`, `xtol`, `gr_tol`, `iterations` and `Δ` (initial radius).
 
 ## Memory 
 The package has a particular emphasis on high dimensional problems. In particular, objects are updated in place at each method iteration: memory is allocated once and for all at the beginning of the function. 

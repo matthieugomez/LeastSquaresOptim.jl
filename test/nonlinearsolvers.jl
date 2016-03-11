@@ -564,7 +564,7 @@ for (name, f!, g!, x) in alltests
         @test r.ssr <= 1e-3
         @printf("%-6s %4s %2s %30s %5d %5d   %5d   %10e\n", :sparse, :fact, :dl, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
     catch y
-        if !isa(y, ErrorException)
+        if !isa(y, Exception)
             throw(y)
         end
     end
@@ -610,9 +610,7 @@ for (method, method_abbr) in ((:dogleg, :dl), (:levenberg_marquardt, :lm))
     trigonometric(10); variably_dimensioned(10); 
     broyden_tridiagonal(10); broyden_banded(10)]
     for (name, f!, g!, x) in alltests
-        fcur = similar(x)
-        J = Array(Float64, length(x), length(x))
-        nls = LeastSquaresProblem(x, fcur, f!, J)
+        nls = LeastSquaresProblem(x = x, f! = f!, output_length = length(x))
         r = optimize!(nls, method = method)
         @printf("%-10s %4s %2s %30s %5d %5d   %5d   %10e\n", :autodiff, :fact, method_abbr, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
         @test r.converged
@@ -627,9 +625,9 @@ name, f!, g!, x = wood()
 fcur = similar(x)
 J = ones(length(x), length(x))
 nls = LeastSquaresProblem(x, fcur, f!, J, g!)
-result = optimize!(nls)
+result = optimize!(nls, show_trace = true)
 @test result.method == "dogleg"
 nls = LeastSquaresProblem(x, fcur, f!, sparse(J), g!)
-result = optimize!(nls)
+result = optimize!(nls, show_trace = true)
 @test result.method == "levenberg_marquardt"
 

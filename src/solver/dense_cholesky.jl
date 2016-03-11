@@ -45,7 +45,7 @@ function A_ldiv_B!(x::AbstractVector, J::StridedMatrix, y::AbstractVector,
     Ac_mul_B!(chol, J, J)
     # transform dammp
     size(chol, 1) == length(damp) || throw(DimensionMismatch("size(chol, 1) should equal length(damp)"))
-    @inbounds for i in 1:size(chol, 1)
+   for i in 1:size(chol, 1)
         chol[i, i] += damp[i]
     end
 
