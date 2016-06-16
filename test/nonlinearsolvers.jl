@@ -508,7 +508,7 @@ for matrix in (:dense, :sparse)
             # tests below
             continue
         else
-            for (method, method_abbr) in ((:dogleg, :dl), (:levenberg_marquardt, :lm))
+            for (optimizer, optimizer_abbr) in ((:dogleg, :dl), (:levenberg_marquardt, :lm))
                 alltests = [rosenbrock(); 
                 powell_singular(); powell_badly_scaled(); 
                 wood();
@@ -527,8 +527,8 @@ for matrix in (:dense, :sparse)
                         J = sparse(J)
                     end
                     nls = LeastSquaresProblem(x, fcur, f!, J, g!)
-                    r = optimize!(nls, method = method, solver = solver)
-                    @printf("%-6s %4s %2s %30s %5d %5d   %5d   %10e\n", matrix, solver_abbr, method_abbr, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
+                    r = optimize!(nls, optimizer = optimizer, solver = solver)
+                    @printf("%-6s %4s %2s %30s %5d %5d   %5d   %10e\n", matrix, solver_abbr, optimizer_abbr, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
                     @test r.converged
                     @test r.ssr <= 1e-3
                 end
@@ -559,7 +559,7 @@ for (name, f!, g!, x) in alltests
     nls = LeastSquaresProblem(x, fcur, f!, J, g!)
     # try because g! may change symbolic factorizations (see Julia issue #9906)
     try
-        r = optimize!(nls, method = :dogleg, solver = :cholesky)
+        r = optimize!(nls, optimizer = :dogleg, solver = :cholesky)
         @test r.converged
         @test r.ssr <= 1e-3
         @printf("%-6s %4s %2s %30s %5d %5d   %5d   %10e\n", :sparse, :fact, :dl, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
@@ -572,7 +572,7 @@ end
 
 
 # test dense cholesky
-for (method, method_abbr) in ((:levenberg_marquardt, :lm), (:dogleg, :dl))
+for (optimizer, optimizer_abbr) in ((:levenberg_marquardt, :lm), (:dogleg, :dl))
     alltests = [rosenbrock(); 
     powell_singular(); powell_badly_scaled(); 
     wood();
@@ -588,8 +588,8 @@ for (method, method_abbr) in ((:levenberg_marquardt, :lm), (:dogleg, :dl))
         fcur = similar(x)
         J = Array(Float64, length(x), length(x))
         nls = LeastSquaresProblem(x, fcur, f!, J, g!)
-        r = optimize!(nls, method = method, solver = :cholesky)
-        @printf("%-6s %4s %2s %30s %5d %5d   %5d   %10e\n", :dense, :chol, method_abbr, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
+        r = optimize!(nls, optimizer = optimizer, solver = :cholesky)
+        @printf("%-6s %4s %2s %30s %5d %5d   %5d   %10e\n", :dense, :chol, optimizer_abbr, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
         @test r.converged
         @test r.ssr <= 1e-3
     end
@@ -597,7 +597,7 @@ end
 
 
 #test autodiff
-for (method, method_abbr) in ((:dogleg, :dl), (:levenberg_marquardt, :lm))
+for (optimizer, optimizer_abbr) in ((:dogleg, :dl), (:levenberg_marquardt, :lm))
     alltests = [rosenbrock(); 
     powell_singular(); powell_badly_scaled(); 
     wood();
@@ -611,8 +611,8 @@ for (method, method_abbr) in ((:dogleg, :dl), (:levenberg_marquardt, :lm))
     broyden_tridiagonal(10); broyden_banded(10)]
     for (name, f!, g!, x) in alltests
         nls = LeastSquaresProblem(x = x, f! = f!, output_length = length(x))
-        r = optimize!(nls, method = method)
-        @printf("%-10s %4s %2s %30s %5d %5d   %5d   %10e\n", :autodiff, :fact, method_abbr, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
+        r = optimize!(nls, optimizer = optimizer)
+        @printf("%-10s %4s %2s %30s %5d %5d   %5d   %10e\n", :autodiff, :fact, optimizer_abbr, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
         @test r.converged
         @test r.ssr <= 1e-3
     end
@@ -626,8 +626,8 @@ fcur = similar(x)
 J = ones(length(x), length(x))
 nls = LeastSquaresProblem(x, fcur, f!, J, g!)
 result = optimize!(nls, show_trace = true)
-@test result.method == "dogleg"
+@test result.optimizer == "dogleg"
 nls = LeastSquaresProblem(x, fcur, f!, sparse(J), g!)
 result = optimize!(nls, show_trace = true)
-@test result.method == "levenberg_marquardt"
+@test result.optimizer == "levenberg_marquardt"
 

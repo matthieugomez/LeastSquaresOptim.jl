@@ -4,7 +4,7 @@
 ##
 ##############################################################################
 
-type Dogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2} <: AbstractMethod
+type Dogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2} <: AbstractOptimizer
     δgn::Tx1
     δgr::Tx2
     δx::Tx3
@@ -25,7 +25,7 @@ function Dogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2}(δgn::Tx1, δgr::Tx2, δx::Tx3, dt
     Dogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2}(δgn, δgr, δx, dtd, ftrial, fpredict)
 end
 
-function AbstractMethod(nls::LeastSquaresProblem, ::Type{Val{:dogleg}})
+function AbstractOptimizer(nls::LeastSquaresProblem, ::Type{Val{:dogleg}})
     Dogleg(_zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), 
     _zeros(nls.y), _zeros(nls.y))
 end
@@ -38,12 +38,10 @@ end
 macro doglegtrace()
     quote
         if tracing
-            dt = Dict()
             update!(tr,
                     iter,
                     ssr,
                     maxabs_gr,
-                    dt,
                     store_trace,
                     show_trace,
                     show_every)
@@ -61,13 +59,13 @@ const MAX_DIAGONAL = 1e32
 const DECREASE_THRESHOLD = 0.25
 const INCREASE_THRESHOLD = 0.75
 
-function optimize!{T, Tmethod <: Dogleg, Tsolve}(
-    anls::LeastSquaresProblemAllocated{T, Tmethod, Tsolve};
+function optimize!{T, Toptimizer <: Dogleg, Tsolver}(
+    anls::LeastSquaresProblemAllocated{T, Toptimizer, Tsolver};
     xtol::Number = 1e-8, ftol::Number = 1e-8, grtol::Number = 1e-8,
     iterations::Integer = 1_000, Δ::Number = 1.0, store_trace = false, show_trace = false, show_every = 1)
  
-     δgn, δgr, δx, dtd = anls.method.δgn, anls.method.δgr, anls.method.δx, anls.method.dtd
-     ftrial, fpredict = anls.method.ftrial, anls.method.fpredict
+     δgn, δgr, δx, dtd = anls.optimizer.δgn, anls.optimizer.δgr, anls.optimizer.δx, anls.optimizer.dtd
+     ftrial, fpredict = anls.optimizer.ftrial, anls.optimizer.fpredict
      x, fcur, f!, J, g! = anls.nls.x, anls.nls.y, anls.nls.f!, anls.nls.J, anls.nls.g!
 
     # initialize

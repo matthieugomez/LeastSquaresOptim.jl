@@ -5,7 +5,7 @@
 ##
 ##############################################################################
 
-type LevenbergMarquardt{Tx1, Tx2, Ty1, Ty2} <: AbstractMethod
+type LevenbergMarquardt{Tx1, Tx2, Ty1, Ty2} <: AbstractOptimizer
     δx::Tx1
     dtd::Tx2
     ftrial::Ty1
@@ -22,28 +22,27 @@ function LevenbergMarquardt{Tx1, Tx2, Ty1, Ty2}(δx::Tx1, dtd::Tx2, ftrial::Ty1,
     LevenbergMarquardt{Tx1, Tx2, Ty1, Ty2}(δx, dtd, ftrial, fpredict)
 end
 
-function AbstractMethod(nls::LeastSquaresProblem, ::Type{Val{:levenberg_marquardt}})
+function AbstractOptimizer(nls::LeastSquaresProblem, ::Type{Val{:levenberg_marquardt}})
    LevenbergMarquardt(_zeros(nls.x), _zeros(nls.x), _zeros(nls.y), _zeros(nls.y))
 end
 
 ##############################################################################
 ## 
-## Method for LevenbergMarquardt
+## Optimizer for LevenbergMarquardt
 ##
 ##############################################################################
 ##############################################################################
 macro levenbergtrace()
     quote
         if tracing
-            dt = Dict()
             update!(tr,
                     iter,
                     ssr,
                     maxabs_gr,
-                    dt,
                     store_trace,
                     show_trace,
-                    show_every)
+                    show_every
+                    )
         end
     end
 end
@@ -55,13 +54,13 @@ const GOOD_STEP_QUALITY = 0.75
 const MIN_DIAGONAL = 1e-6
 const MAX_DIAGONAL = 1e32
 
-function optimize!{T, Tmethod <: LevenbergMarquardt, Tsolve}(
-        anls::LeastSquaresProblemAllocated{T, Tmethod, Tsolve};
+function optimize!{T, Toptimizer <: LevenbergMarquardt, Tsolver}(
+        anls::LeastSquaresProblemAllocated{T, Toptimizer, Tsolver};
             xtol::Number = 1e-8, ftol::Number = 1e-8, grtol::Number = 1e-8,
             iterations::Integer = 1_000, Δ::Number = 10.0, store_trace = false, show_trace = false, show_every = 1)
 
-    δx, dtd = anls.method.δx, anls.method.dtd
-    ftrial, fpredict = anls.method.ftrial, anls.method.fpredict
+    δx, dtd = anls.optimizer.δx, anls.optimizer.dtd
+    ftrial, fpredict = anls.optimizer.ftrial, anls.optimizer.fpredict
     x, fcur, f!, J, g! = anls.nls.x, anls.nls.y, anls.nls.f!, anls.nls.J, anls.nls.g!
 
     decrease_factor = 2.0

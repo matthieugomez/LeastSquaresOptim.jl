@@ -14,10 +14,10 @@ Pkg.add("LeastSquaresOptim")
 
 The main `optimize!` method accepts two main options : `method` and `solver`
 
-1. `method` corresponds to a least square optimization methods:
+1. `optimizer` corresponds to a least square optimization optimizers:
 
-	- `method = :levenberg_marquardt`
-	- `method = :dogleg`
+	- `optimizer = :levenberg_marquardt`
+	- `optimizer = :dogleg`
 
 2. `solver` corresponds to a least squares solver. Least square optimization methods proceed by solving successively linear least squares problems `min||Ax - b||^2`. Available solvers are:
 
@@ -33,7 +33,7 @@ The main `optimize!` method accepts two main options : `method` and `solver`
 		Similarly, `x` or `f(x)` may be custom types. An example of the interface to define can be found in the package [SparseFactorModels.jl](https://github.com/matthieugomez/SparseFactorModels.jl).
 
 
-For dense Jacobians, the default options are `method = :dogleg` and `solver = :qr`. For sparse Jacobians, the default options are  `method = :levenberg_marquardt` and `solver = :iterative`. Th `methods` and `solvers` are presented in more depth in the [Ceres documentation](http://ceres-solver.org/solving.html). 
+For dense Jacobians, the default options are `optimizer = :dogleg` and `solver = :qr`. For sparse Jacobians, the default options are  `optimizer = :levenberg_marquardt` and `solver = :iterative`. Th `optimizers` and `solvers` are presented in more depth in the [Ceres documentation](http://ceres-solver.org/solving.html). 
 
 `optimize!` also accept the options : `ftol`, `xtol`, `gr_tol`, `iterations` and `Δ` (initial radius).
 
@@ -75,7 +75,7 @@ The package has a particular emphasis on high dimensional problems. In particula
 You can avoid any initial allocation by directly passing a `LeastSquaresProblemAllocated` to the `optimize!` function. Such an object bundles a `LeastSquaresProblem` object with a few storage objects. This allows to repeteadly solve a non linear least square problems with minimal memory allocatin.
 ```julia
 rosenbrock = LeastSquaresProblemAllocated(x, fcur, rosenbrock_f!, J, rosenbrock_g!; 
-                                          method = :dogleg, solver = :qr)
+                                          optimizer = :dogleg, solver = :qr)
 optimize!(rosenbrock)
 ```
 

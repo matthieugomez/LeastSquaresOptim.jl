@@ -12,14 +12,6 @@ import Base: A_mul_B!, Ac_mul_B!, A_ldiv_B!, copy!, fill!, scale!, norm, axpy!, 
 import Base.SparseMatrix.CHOLMOD: VTypes, ITypes, Sparse, Factor, C_Sparse, SuiteSparse_long, transpose_, @cholmod_name, common, defaults, set_print_level, common_final_ll, analyze, factorize_p!, check_sparse
 using ForwardDiff
 
-if Pkg.installed("Optim") >= v"0.5.0"
-	import Optim: Optimizer, OptimizationTrace, update!
-    immutable MyOptimizer <: Optimizer end
-    OptimizationTrace() = OptimizationTrace(MyOptimizer)
-else
-	import Optim: Optimizer, OptimizationTrace
-end
-
 ##############################################################################
 ##
 ## Exported methods and types 
@@ -41,9 +33,8 @@ include("utils/lsmr.jl")
 include("utils/utils.jl")
 
 include("types.jl")
-include("method/levenberg_marquardt.jl")
-include("method/dogleg.jl")
-include("method/assess_convergence.jl")
+include("optimizer/levenberg_marquardt.jl")
+include("optimizer/dogleg.jl")
 
 include("solver/dense_qr.jl")
 include("solver/dense_cholesky.jl")

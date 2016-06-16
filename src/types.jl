@@ -68,28 +68,28 @@ end
 ##
 ##############################################################################
 
-# allocation for method
-abstract AbstractMethod
+# allocation for optimizer
+abstract AbstractOptimizer
 
 # allocation for solver
 abstract AbstractSolver
 
-type LeastSquaresProblemAllocated{T <: LeastSquaresProblem, Tmethod <: AbstractMethod, Tsolver <: AbstractSolver}
+type LeastSquaresProblemAllocated{T <: LeastSquaresProblem, Toptimizer <: AbstractOptimizer, Tsolver <: AbstractSolver}
      nls::T
-     method::Tmethod
+     optimizer::Toptimizer
      solver::Tsolver
 end
 
 # Constructor
 function LeastSquaresProblemAllocated{Tx, Ty, Tf, TJ, Tg}(
     nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}; 
-    method::Union{Void, Symbol} = nothing, solver::Union{Void, Symbol} = nothing)
+    optimizer::Union{Void, Symbol} = nothing, solver::Union{Void, Symbol} = nothing)
     valsolver = default_solver(solver, TJ)
-    valmethod = default_method(method, valsolver)
+    valoptimizer = default_optimizer(optimizer, valsolver)
     LeastSquaresProblemAllocated(
         nls,
-        AbstractMethod(nls, valmethod),
-        AbstractSolver(nls, valmethod, valsolver))
+        AbstractOptimizer(nls, valoptimizer),
+        AbstractSolver(nls, valoptimizer, valsolver))
 end
 
 ## for dense matrices, default to cholesky ; otherwise iterative
@@ -106,14 +106,14 @@ default_solver{T<:StridedVecOrMat}(::Void, ::Type{T}) = Val{:qr}
 default_solver(::Void, ::Type) = Val{:iterative}
 
 ## for iterative, default to levenberg_marquardt ; otherwise dogleg
-function default_method(x::Symbol, ::Type)
+function default_optimizer(x::Symbol, ::Type)
     if x ∉ (:levenberg_marquardt, :dogleg)
-        throw("$x is not a valid method. Choose between :levenberg_marquardt and :dogleg.")
+        throw("$x is not a valid optimizer. Choose between :levenberg_marquardt and :dogleg.")
     end
     Val{x}
 end
-default_method(::Void, ::Type{Val{:iterative}}) = Val{:levenberg_marquardt}
-default_method(::Void, ::Type) = Val{:dogleg}
+default_optimizer(::Void, ::Type{Val{:iterative}}) = Val{:levenberg_marquardt}
+default_optimizer(::Void, ::Type) = Val{:dogleg}
 
 
 function LeastSquaresProblemAllocated(args...; kwargs...)
@@ -122,12 +122,13 @@ end
 
 # optimize
 function optimize!(nls::LeastSquaresProblem; 
-    method::Union{Void, Symbol} = nothing, 
+    optimizer::Union{Void, Symbol} = nothing, 
     solver::Union{Void, Symbol} = nothing, 
     kwargs...)
-    nlsp = LeastSquaresProblemAllocated(nls ; method = method, solver = solver)
+    nlsp = LeastSquaresProblemAllocated(nls ; optimizer = optimizer, solver = solver)
     optimize!(nlsp; kwargs...)
 end
+
 
 ###############################################################################
 ##
@@ -136,7 +137,7 @@ end
 ##############################################################################
 
 type LeastSquaresResult{Tx}
-    method::ASCIIString
+    optimizer::ASCIIString
     minimizer::Tx
     ssr::Float64
     iterations::Int
@@ -153,8 +154,8 @@ type LeastSquaresResult{Tx}
     mul_calls::Int
 end
 
-function LeastSquaresResult(method::ASCIIString, minimizer, ssr::Real, iterations::Int, converged::Bool, x_converged::Bool, xtol::Real, f_converged::Bool, ftol::Real, gr_converged::Bool, grtol::Real, tr::OptimizationTrace, f_calls::Int, g_calls::Int, mul_calls::Int)
-    LeastSquaresResult(method, minimizer, convert(Float64, ssr), iterations, converged, x_converged, convert(Float64, xtol), f_converged, convert(Float64, ftol), gr_converged, convert(Float64, grtol), tr, f_calls, g_calls, mul_calls)
+function LeastSquaresResult(optimizer::ASCIIString, minimizer, ssr::Real, iterations::Int, converged::Bool, x_converged::Bool, xtol::Real, f_converged::Bool, ftol::Real, gr_converged::Bool, grtol::Real, tr::OptimizationTrace, f_calls::Int, g_calls::Int, mul_calls::Int)
+    LeastSquaresResult(optimizer, minimizer, convert(Float64, ssr), iterations, converged, x_converged, convert(Float64, xtol), f_converged, convert(Float64, ftol), gr_converged, convert(Float64, grtol), tr, f_calls, g_calls, mul_calls)
 end
 
 function converged(r::LeastSquaresResult)
@@ -164,7 +165,7 @@ end
 
 function Base.show(io::IO, r::LeastSquaresResult)
     @printf io "Results of Optimization Algorithm\n"
-    @printf io " * Algorithm: %s\n" r.method
+    @printf io " * Algorithm: %s\n" r.optimizer
     @printf io " * Minimizer: [%s]\n" join(r.minimizer, ",")
     @printf io " * Sum of squares at Minimum: %f\n" r.ssr
     @printf io " * Iterations: %d\n" r.iterations
