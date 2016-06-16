@@ -135,7 +135,7 @@ end
 ##
 ##############################################################################
 if Pkg.installed("Optim") >= v"0.5.0"
-    immutable MyOptimizer <: Optim.Optimizer
+    immutable MyOptimizer <: Optim.Optimizer end
     OptimizationTrace() = OptimizationTrace(MyOptimizer)
 end
 
