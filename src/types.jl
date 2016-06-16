@@ -24,21 +24,41 @@ typealias DenseLeastSquaresProblem{Tx, Ty, Tf, TJ<:StridedVecOrMat, Tg} LeastSqu
 typealias SparseLeastSquaresProblem{Tx, Ty, Tf, TJ<:SparseMatrixCSC, Tg} LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}
 
 
-function LeastSquaresProblem(;x = error("initial x required"), y = Void, f! = exp, g! = nothing, J = nothing, output_length = 0, chunk_size = 1)
-    if (output_length > 0)
-        y = zeros(eltype(x), output_length)
+if Pkg.installed("ForwardDiff") >= v"0.2.0"
+    function LeastSquaresProblem(;x = error("initial x required"), y = Void, f! = exp, g! = nothing, J = nothing, output_length = 0, chunk_size = 1)
+        if (output_length > 0)
+            y = zeros(eltype(x), output_length)
+        end
+        if typeof(J) == Void
+            J = zeros(eltype(x), length(y), length(x))
+        end
+        newg! = g!
+        if typeof(g!) == Void
+            permf!(yp::Vector, xp::Vector) = f!(xp, yp)
+            permg! = jacobian!(out, permf!, y, x)
+            y0 = deepcopy(y)
+            newg! = (xp::Vector, Jp::Matrix) -> permg!(Jp, permg!, y0, x ; chunk_size = chunk_size)
+        end
+        LeastSquaresProblem(x, y , f!, J, newg!)
     end
-    if typeof(J) == Void
-        J = zeros(eltype(x), length(y), length(x))
-    end
-    newg! = g!
-    if typeof(g!) == Void
-        permf!(yp::Vector, xp::Vector) = f!(xp, yp)
-        permg! = jacobian(permf!, mutates = true, chunk_size = chunk_size, output_length = length(y))
-        newg! = (xp::Vector, Jp::Matrix) -> permg!(Jp, xp)
-    end
-    LeastSquaresProblem(x, y , f!, J, newg!)
+else
+   function LeastSquaresProblem(;x = error("initial x required"), y = Void, f! = exp, g! = nothing, J = nothing, output_length = 0, chunk_size = 1)
+       if (output_length > 0)
+           y = zeros(eltype(x), output_length)
+       end
+       if typeof(J) == Void
+           J = zeros(eltype(x), length(y), length(x))
+       end
+       newg! = g!
+       if typeof(g!) == Void
+           permf!(yp::Vector, xp::Vector) = f!(xp, yp)
+           permg! = jacobian(permf!, mutates = true, chunk_size = chunk_size, output_length = length(y))
+           newg! = (xp::Vector, Jp::Matrix) -> permg!(Jp, xp)
+       end
+       LeastSquaresProblem(x, y , f!, J, newg!)
+   end
 end
+
 
 
 ###############################################################################
@@ -108,6 +128,18 @@ function optimize!(nls::LeastSquaresProblem;
     nlsp = LeastSquaresProblemAllocated(nls ; method = method, solver = solver)
     optimize!(nlsp; kwargs...)
 end
+
+###############################################################################
+##
+## Optimization Trace
+##
+##############################################################################
+if Pkg.installed("Optim") >= v"0.5.0"
+    immutable type MyOptimizer <: Optim.Optimizer
+    OptimizationTrace() = OptimizationTrace(MyOptimizer)
+end
+
+
 ###############################################################################
 ##
 ## Result of Non Linear Least Squares
