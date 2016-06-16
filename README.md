@@ -3,7 +3,7 @@
 [![Coverage Status](https://coveralls.io/repos/matthieugomez/LeastSquaresOptim.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/matthieugomez/LeastSquaresOptim.jl?branch=master)
 ## Motivation
 
-This package solves non linear least squares optimization problems. The package is inspired by the [Ceres library](http://ceres-solver.org/solving.html). 
+This package solves large non linear least squares problems. The package is inspired by the [Ceres library](http://ceres-solver.org/solving.html). 
 
 To install the package,
 ```julia
@@ -70,7 +70,7 @@ optimize!(rosenbrock_problem)
 ```
 
 ## Memory 
-The package has a particular emphasis on high dimensional problems. In particular, objects are updated in place at each method iteration: memory is allocated once and for all at the beginning of the function. 
+The package has a particular emphasis on large problems. In particular, objects are updated in place at each method iteration: memory is allocated once and for all at the start of the function call. 
 
 You can avoid any initial allocation by directly passing a `LeastSquaresProblemAllocated` to the `optimize!` function. Such an object bundles a `LeastSquaresProblem` object with a few storage objects. This allows to repeteadly solve a non linear least square problems with minimal memory allocatin.
 ```julia

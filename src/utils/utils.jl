@@ -27,7 +27,12 @@ function assess_convergence(δx,
     return x_converged, f_converged, gr_converged, converged
 end
 
-# From NLSolve
+###############################################################################
+##
+## Finite Exception
+##
+##############################################################################
+
 type IsFiniteException <: Exception
   indices::Vector{Int}
 end
@@ -42,6 +47,8 @@ function check_isfinite(x::Vector)
     end
 end
 
+function check_isfinite(x)
+end
 
 ###############################################################################
 ##
