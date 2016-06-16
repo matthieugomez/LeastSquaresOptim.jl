@@ -35,9 +35,8 @@ if Pkg.installed("ForwardDiff") >= v"0.2.0"
         newg! = g!
         if typeof(g!) == Void
             permf!(yp::Vector, xp::Vector) = f!(xp, yp)
-            permg! = ForwardDiff.jacobian!(out, permf!, y, x)
             y0 = deepcopy(y)
-            newg! = (xp::Vector, Jp::Matrix) -> permg!(Jp, permg!, y0, x ; chunk_size = chunk_size)
+            newg! = (xp::Vector, Jp::Matrix) -> ForwardDiff.jacobian!(Jp, permf!, y0, x, Chunk{chunk_size}())
         end
         LeastSquaresProblem(x, y , f!, J, newg!)
     end
