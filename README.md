@@ -3,11 +3,43 @@
 [![Coverage Status](https://coveralls.io/repos/matthieugomez/LeastSquaresOptim.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/matthieugomez/LeastSquaresOptim.jl?branch=master)
 ## Motivation
 
-This package solves large non linear least squares problems. The package is inspired by the [Ceres library](http://ceres-solver.org/solving.html). 
+This package solves non linear least squares problems. The package is inspired by the [Ceres library](http://ceres-solver.org/solving.html). 
 
 To install the package,
 ```julia
 Pkg.add("LeastSquaresOptim")
+```
+## Syntax
+
+To find `x` that minimizes `f'(x)f(x)`, construct a `LeastSquaresProblem` object with:
+ - `x` an initial set of parameters.
+ - `f!` a callable object such that `f!(x, out)` writes `f(x)` in `out`.
+ - `output_length` the length of the output vector. 
+
+ And optionally
+ - `g!` a function such that `g!(x, out)` writes the jacobian at x in `out`. Otherwise, the jacobian will be computed with the `ForwardDiff.jl` package
+ - `y` a preallocation for `f`
+ - `J` a preallocation for the jacobian
+
+
+A simple example:
+```julia
+using LeastSquaresOptim
+
+function rosenbrock_f!(x, fcur)
+	fcur[1] = 1 - x[1]
+	fcur[2] = 100 * (x[2]-x[1]^2)
+end
+function rosenbrock_g!(x, J)
+	J[1, 1] = -1
+	J[1, 2] = 0
+	J[2, 1] = -200 * x[1]
+	J[2, 2] = 109
+end
+
+x = [-1.2; 1.]
+rosenbrock_problem = LeastSquaresProblem(x = x, f! = rosenbrock_f!, output_length = 2)
+optimize!(rosenbrock_problem)
 ```
 
 ## Optimizer and Solver
@@ -35,38 +67,7 @@ The `optimizers` and `solvers` are presented in more depth in the [Ceres documen
 
 `optimize!` also accept the options : `ftol`, `xtol`, `gr_tol`, `iterations` and `Δ` (initial radius).
 
-## Syntax
 
-To find `x` that minimizes `f'(x)f(x)`, construct a `LeastSquaresProblem` object with:
- - `x` is an initial set of parameters.
- - `f!` a callable object such that `f!(x, out)` writes `f(x)` in `out`.
- - `output_length` the length of the output vector. 
-
- And optionally
- - `g!` a function such that `g!(x, out)` writes the jacobian at x in `out`. Otherwise, the jacobian will be computed with `ForwardDiff.jl` package
- - `y` a preallocation for `f`
- - `J` a preallocation for the jacobian
-
-
-A simple example:
-```julia
-using LeastSquaresOptim
-
-function rosenbrock_f!(x, fcur)
-	fcur[1] = 1 - x[1]
-	fcur[2] = 100 * (x[2]-x[1]^2)
-end
-function rosenbrock_g!(x, J)
-	J[1, 1] = -1
-	J[1, 2] = 0
-	J[2, 1] = -200 * x[1]
-	J[2, 2] = 109
-end
-
-x = [-1.2; 1.]
-rosenbrock_problem = LeastSquaresProblem(x = x, f! = rosenbrock_f!, output_length = 2)
-optimize!(rosenbrock_problem)
-```
 
 ## Memory 
 The package is written with large scale problems in mind. In particular, memory is allocated once and for all at the start of the function call ; objects are updated in place at each method iteration. 
