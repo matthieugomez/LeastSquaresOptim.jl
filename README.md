@@ -10,20 +10,19 @@ To install the package,
 Pkg.add("LeastSquaresOptim")
 ```
 
-## Methods
+## Optimizer and Solver
 
-The main `optimize!` method accepts two main options : `method` and `solver`
+The main `optimize!` method accepts two main options : `optimizer` and `solver`
 
-1. `optimizer` corresponds to a least square optimization optimizers:
+1. The `optimizer` option allows to choose a particular optimization method:
 
 	- `optimizer = :levenberg_marquardt`
 	- `optimizer = :dogleg`
 
-2. `solver` corresponds to a least squares solver. Least square optimization methods proceed by solving successively linear least squares problems `min||Ax - b||^2`. Available solvers are:
-
-	- `solver = :qr`. Available for dense matrices
-	- `solver = :cholesky`. Available for dense matrices and sparse matrices. For sparse matrices, a symbolic factorization is computed at the first iteration from SuiteSparse and numerically updated at each iteration.
-	- `solve = :iterative`. A conjugate gradient method (more precisely [LSMR]([http://web.stanford.edu/group/SOL/software/lsmr/) with diagonal preconditioner). A custom type for the jacobian `A` may be specified. The following interface is expected to be defined on `A`:
+2. The `solver` option allows to choose a particular least square solver (a least square optimization method proceeds by solving successively linear least squares problems `min||Ax - b||^2`). 
+	- `solver = :qr`. Available for dense jacobians
+	- `solver = :cholesky`. Available for dense jacobians and sparse jacobians. For sparse jacobians, a symbolic factorization is computed at the first iteration from SuiteSparse and numerically updated at each iteration.
+	- `solve = :iterative`. A conjugate gradient method ([LSMR]([http://web.stanford.edu/group/SOL/software/lsmr/) with diagonal preconditioner). The jacobian can be of any type that defines the following interface is defined:
 		- `A_mul_B!(α::Number, A, x, β::Number, y)` updates y to αAx + βy
 		- `Ac_mul_B!(α::Number, A, y, β::Number, x)` updates x to αA'y + βx
 		- `colsumabs2!(x, A)` updates x to the sum of squared elements of each column
@@ -32,8 +31,7 @@ The main `optimize!` method accepts two main options : `method` and `solver`
 
 		Similarly, `x` or `f(x)` may be custom types. An example of the interface to define can be found in the package [SparseFactorModels.jl](https://github.com/matthieugomez/SparseFactorModels.jl).
 
-
-For dense Jacobians, the default options are `optimizer = :dogleg` and `solver = :qr`. For sparse Jacobians, the default options are  `optimizer = :levenberg_marquardt` and `solver = :iterative`. Th `optimizers` and `solvers` are presented in more depth in the [Ceres documentation](http://ceres-solver.org/solving.html). 
+The `optimizers` and `solvers` are presented in more depth in the [Ceres documentation](http://ceres-solver.org/solving.html). For dense jacobians, the default options are `optimizer = :dogleg` and `solver = :qr`. For sparse jacobians, the default options are  `optimizer = :levenberg_marquardt` and `solver = :iterative`. 
 
 `optimize!` also accept the options : `ftol`, `xtol`, `gr_tol`, `iterations` and `Δ` (initial radius).
 
@@ -43,6 +41,7 @@ To find `x` that minimizes `f'(x)f(x)`, construct a `LeastSquaresProblem` object
  - `x` is an initial set of parameters.
  - `f!` a callable object such that `f!(x, out)` writes `f(x)` in `out`.
  - `output_length` the length of the output vector. 
+
  And optionally
  - `g!` a function such that `g!(x, out)` writes the jacobian at x in `out`. Otherwise, the jacobian will be computed with `ForwardDiff.jl` package
  - `y` a preallocation for `f`
@@ -70,9 +69,9 @@ optimize!(rosenbrock_problem)
 ```
 
 ## Memory 
-The package has a particular emphasis on large problems. In particular, objects are updated in place at each method iteration: memory is allocated once and for all at the start of the function call. 
+The package is written with large scale problems in mind. In particular, memory is allocated once and for all at the start of the function call ; objects are updated in place at each method iteration. 
 
-You can avoid any initial allocation by directly passing a `LeastSquaresProblemAllocated` to the `optimize!` function. Such an object bundles a `LeastSquaresProblem` object with a few storage objects. This allows to repeteadly solve a non linear least square problems with minimal memory allocatin.
+You can even avoid initial allocations by directly passing a `LeastSquaresProblemAllocated` to the `optimize!` function. Such an object bundles a `LeastSquaresProblem` object with a few storage objects. This may be useful when repeatedly solving non linear least square problems.
 ```julia
 rosenbrock = LeastSquaresProblemAllocated(x, fcur, rosenbrock_f!, J, rosenbrock_g!; 
                                           optimizer = :dogleg, solver = :qr)
