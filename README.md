@@ -30,16 +30,15 @@ function rosenbrock_f!(x, fcur)
 	fcur[1] = 1 - x[1]
 	fcur[2] = 100 * (x[2]-x[1]^2)
 end
+x = [-1.2; 1.]
+optimize!(LeastSquaresProblem(x = x, f! = rosenbrock_f!, output_length = 2))
 function rosenbrock_g!(x, J)
 	J[1, 1] = -1
 	J[1, 2] = 0
 	J[2, 1] = -200 * x[1]
 	J[2, 2] = 109
 end
-
-x = [-1.2; 1.]
-rosenbrock_problem = LeastSquaresProblem(x = x, f! = rosenbrock_f!, output_length = 2)
-optimize!(rosenbrock_problem)
+optimize!(LeastSquaresProblem(x = x, f! = rosenbrock_f!, g! = rosenbrock_g!, output_length = 2))
 ```
 
 ## Optimizer and Solver
