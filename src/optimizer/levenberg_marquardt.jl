@@ -1,34 +1,34 @@
 
 ##############################################################################
 ## 
-## Allocations for LevenbergMarquardt
+## Allocations for AllocatedLevenbergMarquardt
 ##
 ##############################################################################
 
-type LevenbergMarquardt{Tx1, Tx2, Ty1, Ty2} <: AbstractOptimizer
+type AllocatedLevenbergMarquardt{Tx1, Tx2, Ty1, Ty2} <: AbstractAllocatedOptimizer
     δx::Tx1
     dtd::Tx2
     ftrial::Ty1
     fpredict::Ty2
 
-    function LevenbergMarquardt(δx, dtd, ftrial, fpredict)
+    function AllocatedLevenbergMarquardt(δx, dtd, ftrial, fpredict)
         length(δx) == length(dtd) || throw(DimensionMismatch("The lengths of δx and dtd must match."))
         length(ftrial) == length(fpredict) || throw(DimensionMismatch("The lengths of ftrial and fpredict must match."))
         new(δx, dtd, ftrial, fpredict)
     end
 end
 
-function LevenbergMarquardt{Tx1, Tx2, Ty1, Ty2}(δx::Tx1, dtd::Tx2, ftrial::Ty1, fpredict::Ty2)
-    LevenbergMarquardt{Tx1, Tx2, Ty1, Ty2}(δx, dtd, ftrial, fpredict)
+function AllocatedLevenbergMarquardt{Tx1, Tx2, Ty1, Ty2}(δx::Tx1, dtd::Tx2, ftrial::Ty1, fpredict::Ty2)
+    AllocatedLevenbergMarquardt{Tx1, Tx2, Ty1, Ty2}(δx, dtd, ftrial, fpredict)
 end
 
-function AbstractOptimizer(nls::LeastSquaresProblem, ::Type{Val{:levenberg_marquardt}})
-   LevenbergMarquardt(_zeros(nls.x), _zeros(nls.x), _zeros(nls.y), _zeros(nls.y))
+function AbstractAllocatedOptimizer{Tx, Ty, Tf, TJ, Tg}(nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}, optimizer::LevenbergMarquardt)
+   AllocatedLevenbergMarquardt(_zeros(nls.x), _zeros(nls.x), _zeros(nls.y), _zeros(nls.y))
 end
 
 ##############################################################################
 ## 
-## Optimizer for LevenbergMarquardt
+## Optimizer for AllocatedLevenbergMarquardt
 ##
 ##############################################################################
 ##############################################################################
@@ -54,18 +54,17 @@ const GOOD_STEP_QUALITY = 0.75
 const MIN_DIAGONAL = 1e-6
 const MAX_DIAGONAL = 1e32
 
-function optimize!{T, Toptimizer <: LevenbergMarquardt, Tsolver}(
-        anls::LeastSquaresProblemAllocated{T, Toptimizer, Tsolver};
+function optimize!{Tx, Ty, Tf, TJ, Tg, Toptimizer <: AllocatedLevenbergMarquardt, Tsolver}(
+    anls::LeastSquaresProblemAllocated{Tx, Ty, Tf, TJ, Tg, Toptimizer, Tsolver};
             xtol::Number = 1e-8, ftol::Number = 1e-8, grtol::Number = 1e-8,
             iterations::Integer = 1_000, Δ::Number = 10.0, store_trace = false, show_trace = false, show_every = 1)
 
     δx, dtd = anls.optimizer.δx, anls.optimizer.dtd
     ftrial, fpredict = anls.optimizer.ftrial, anls.optimizer.fpredict
-    x, fcur, f!, J, g! = anls.nls.x, anls.nls.y, anls.nls.f!, anls.nls.J, anls.nls.g!
+    x, fcur, f!, J, g! = anls.x, anls.y, anls.f!, anls.J, anls.g!
 
     decrease_factor = 2.0
     # initialize
-    Tx, Ty = eltype(x), eltype(ftrial)
     f_calls,  g_calls, mul_calls = 0, 0, 0
     converged, x_converged, f_converged, gr_converged, converged =
         false, false, false, false, false
@@ -74,6 +73,8 @@ function optimize!{T, Toptimizer <: LevenbergMarquardt, Tsolver}(
     ssr = sumabs2(fcur)
     maxabs_gr = Inf
     need_jacobian = true
+
+    eTx, eTy = eltype(x), eltype(fcur)
 
     iter = 0
 
@@ -97,7 +98,7 @@ function optimize!{T, Toptimizer <: LevenbergMarquardt, Tsolver}(
         δx, lmiter = A_ldiv_B!(δx, J, fcur, dtd,  anls.solver)
         mul_calls += lmiter
         #update x
-        axpy!(-one(Tx), δx, x)
+        axpy!(-one(eTx), δx, x)
         f!(x, ftrial)
         f_calls += 1
 
@@ -105,13 +106,13 @@ function optimize!{T, Toptimizer <: LevenbergMarquardt, Tsolver}(
         trial_ssr = sumabs2(ftrial)
 
         # predicted ssr
-        A_mul_B!(one(Tx), J, δx, zero(Tx), fpredict)
+        A_mul_B!(one(eTx), J, δx, zero(eTx), fpredict)
         mul_calls += 1
-        axpy!(-one(Ty), fcur, fpredict)
+        axpy!(-one(eTy), fcur, fpredict)
         predicted_ssr = sumabs2(fpredict)
         ρ = (ssr - trial_ssr) / (ssr - predicted_ssr)
 
-        Ac_mul_B!(one(Tx), J, fcur, zero(Tx), dtd)
+        Ac_mul_B!(one(eTx), J, fcur, zero(eTx), dtd)
         maxabs_gr = maxabs(dtd)
         mul_calls += 1
 
@@ -128,13 +129,13 @@ function optimize!{T, Toptimizer <: LevenbergMarquardt, Tsolver}(
             need_jacobian = true
         else
             # revert update
-            axpy!(one(Tx), δx, x)
+            axpy!(one(eTx), δx, x)
             Δ = max(Δ / decrease_factor , MIN_Δ)
             decrease_factor *= 2.0
         end
         @levenbergtrace
     end
-    LeastSquaresResult("levenberg_marquardt", x, ssr, iter, converged,
+    LeastSquaresResult("LevenbergMarquardt", x, ssr, iter, converged,
                         x_converged, xtol, f_converged, ftol, gr_converged, grtol, tr,
                         f_calls, g_calls, mul_calls)
 end

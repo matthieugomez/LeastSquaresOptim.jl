@@ -4,17 +4,17 @@
 ##
 ##############################################################################
 
-type DenseCholeskySolver{Tc <: StridedMatrix} <: AbstractSolver
+type DenseCholeskyAllocatedSolver{Tc <: StridedMatrix} <: AbstractAllocatedSolver
     chol::Tc
-    function DenseCholeskySolver(chol)
+    function DenseCholeskyAllocatedSolver(chol)
         size(chol, 1) == size(chol, 2) || throw(DimensionMismatch("chol must be square"))
         new(chol)
     end
 end
 
-DenseCholeskySolver{Tc}(chol::Tc) = DenseCholeskySolver{Tc}(chol)
-function AbstractSolver(nls:: DenseLeastSquaresProblem, ::Type, ::Type{Val{:cholesky}})
-    return DenseCholeskySolver(Array(eltype(nls.J), length(nls.x), length(nls.x)))
+DenseCholeskyAllocatedSolver{Tc}(chol::Tc) = DenseCholeskyAllocatedSolver{Tc}(chol)
+function AbstractAllocatedSolver{Tx, Ty, Tf, TJ <: StridedVecOrMat, Tg}(nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}, optimizer, ::Cholesky)
+    return DenseCholeskyAllocatedSolver(Array(eltype(nls.J), length(nls.x), length(nls.x)))
 end
 
 ##############################################################################
@@ -23,7 +23,7 @@ end
 ##
 ##############################################################################
 
-function A_ldiv_B!(x::AbstractVector, J::StridedMatrix, y::AbstractVector, A::DenseCholeskySolver)
+function A_ldiv_B!(x::AbstractVector, J::StridedMatrix, y::AbstractVector, A::DenseCholeskyAllocatedSolver)
     chol = A.chol
     Ac_mul_B!(chol, J,  J)
     Ac_mul_B!(x, J,  y)
@@ -38,7 +38,7 @@ end
 ##############################################################################
 
 function A_ldiv_B!(x::AbstractVector, J::StridedMatrix, y::AbstractVector, 
-            damp::AbstractVector, A::DenseCholeskySolver)
+            damp::AbstractVector, A::DenseCholeskyAllocatedSolver)
     chol = A.chol
     
     # update chol as J'J + λdtd

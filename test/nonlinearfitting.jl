@@ -1448,7 +1448,7 @@ end
 
 tests =  [misra1a, Chwirut2, Chwitrut1, Lanczos3, Gauss1, Gauss2, DanWood, Misra1b, MGH09, Thurber, BoxBOD, Rat42, MGH10, Eckerle4, Rat43, Bennett5]
 
-for (optimizer, optimizer_abbr) in ((:dogleg, :dl), (:levenberg_marquardt, :lm))
+for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg(), :dl), (LeastSquaresOptim.LevenbergMarquardt(), :lm))
     n = 0
     N = 0
     for test in tests
@@ -1458,10 +1458,11 @@ for (optimizer, optimizer_abbr) in ((:dogleg, :dl), (:levenberg_marquardt, :lm))
                 fcur[i] = data[i, 1] - f(data[i, 2], x)
             end
         end
-        r = optimize!(LeastSquaresProblem(parameters[:, 1], ones(size(data, 1)), f!, ones(size(data, 1), size(parameters, 1))), optimizer = optimizer, xtol = 1e-50, ftol = 1e-36, grtol = 1e-50)
+        nls = LeastSquaresProblem(x = parameters[:, 1], f! = f!, output_length = size(data, 1), optimizer = optimizer)
+        r = optimize!(nls, xtol = 1e-50, ftol = 1e-36, grtol = 1e-50)
       #  @show solution
         for j in 1:size(parameters, 2)
-            r = optimize!(LeastSquaresProblem(parameters[:, j], ones(size(data, 1)), f!, ones(size(data, 1), size(parameters, 1))), optimizer = optimizer)
+            nls = LeastSquaresProblem(x = parameters[:, j], f! = f!, output_length = size(data, 1), optimizer = optimizer)
             n += norm(r.minimizer - solution) <= 1e-3
             N += 1
             @test !isnan(mean(r.minimizer) )

@@ -3,17 +3,18 @@
 ## Type with stored qr
 ##
 ##############################################################################
-
-type DenseQRSolver{Tqr <: StridedMatrix, Tu <: AbstractVector} <: AbstractSolver
+type DenseQRAllocatedSolver{Tqr <: StridedMatrix, Tu <: AbstractVector} <: AbstractAllocatedSolver
     qr::Tqr
     u::Tu
-    function DenseQRSolver(qr, u)
+    function DenseQRAllocatedSolver(qr, u)
         length(u) == size(qr, 1) || throw(DimensionMismatch("u must have length size(J, 1)"))
         new(qr, u)
     end
 end
 
-DenseQRSolver{Tqr, Tu <: AbstractVector}(qr::Tqr, u::Tu) = DenseQRSolver{Tqr, Tu}(qr, u)
+function DenseQRAllocatedSolver{Tqr, Tu <: AbstractVector}(qr::Tqr, u::Tu)
+    DenseQRAllocatedSolver{Tqr, Tu}(qr, u)
+end
 
 ##############################################################################
 ## 
@@ -21,17 +22,15 @@ DenseQRSolver{Tqr, Tu <: AbstractVector}(qr::Tqr, u::Tu) = DenseQRSolver{Tqr, Tu
 ##
 ##############################################################################
 
-function AbstractSolver(nls::DenseLeastSquaresProblem,
-    ::Type{Val{:dogleg}}, ::Type{Val{:qr}})
-    return DenseQRSolver(similar(nls.J), _zeros(nls.y))
+function AbstractAllocatedSolver{Tx, Ty, Tf, TJ <: StridedVecOrMat, Tg}(nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}, optimizer::Dogleg, solver::QR)
+    return DenseQRAllocatedSolver(similar(nls.J), _zeros(nls.y))
 end
 
-function A_ldiv_B!(x::AbstractVector, J::StridedMatrix,  y::AbstractVector, A::DenseQRSolver)
+function A_ldiv_B!(x::AbstractVector, J::StridedMatrix,  y::AbstractVector, A::DenseQRAllocatedSolver)
     u, qr = A.u, A.qr
     copy!(qr, J)
     copy!(u, y)
     A_ldiv_B!(qrfact!(qr, Val{true}), u)
-
     for i in 1:length(x)
         x[i] = u[i]
     end
@@ -44,15 +43,14 @@ end
 ##
 ##############################################################################
 
-function AbstractSolver(nls:: DenseLeastSquaresProblem,
-    ::Type{Val{:levenberg_marquardt}}, ::Type{Val{:qr}})
+function AbstractAllocatedSolver{Tx, Ty, Tf, TJ <: StridedVecOrMat, Tg}(nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}, optimizer::LevenbergMarquardt, solver::QR)
     qr = zeros(eltype(nls.J), length(nls.y) + length(nls.x), length(nls.x))
     u = zeros(length(nls.y) + length(nls.x))
-    return DenseQRSolver(qr, u)
+    return DenseQRAllocatedSolver(qr, u)
 end
 
 function A_ldiv_B!(x::AbstractVector, J::StridedMatrix, y::AbstractVector, 
-                damp::AbstractVector, A::DenseQRSolver, verbose::Bool = false)
+                damp::AbstractVector, A::DenseQRAllocatedSolver, verbose::Bool = false)
     u, qr = A.u, A.qr
     
     # transform dammp

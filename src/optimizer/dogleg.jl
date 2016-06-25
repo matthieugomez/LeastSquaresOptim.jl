@@ -1,10 +1,10 @@
 ##############################################################################
 ## 
-## Allocations for Dogleg
+## Allocations for AllocatedDogleg
 ##
 ##############################################################################
 
-type Dogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2} <: AbstractOptimizer
+type AllocatedDogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2} <: AbstractAllocatedOptimizer
     δgn::Tx1
     δgr::Tx2
     δx::Tx3
@@ -12,7 +12,7 @@ type Dogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2} <: AbstractOptimizer
     ftrial::Ty1
     fpredict::Ty2
 
-    function Dogleg(δgn, δgr, δx, dtd, ftrial, fpredict)
+    function AllocatedDogleg(δgn, δgr, δx, dtd, ftrial, fpredict)
         length(δgn) == length(δgr) || throw(DimensionMismatch("The lengths of δgn and δgr must match."))
         length(δgn) == length(δx) || throw(DimensionMismatch("The lengths of δgn and δx must match."))
         length(δgn) == length(dtd) || throw(DimensionMismatch("The lengths of δgn and dtd must match."))
@@ -21,21 +21,21 @@ type Dogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2} <: AbstractOptimizer
     end
 end
 
-function Dogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2}(δgn::Tx1, δgr::Tx2, δx::Tx3, dtd::Tx4, ftrial::Ty1, fpredict::Ty2)
-    Dogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2}(δgn, δgr, δx, dtd, ftrial, fpredict)
+function AllocatedDogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2}(δgn::Tx1, δgr::Tx2, δx::Tx3, dtd::Tx4, ftrial::Ty1, fpredict::Ty2)
+    AllocatedDogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2}(δgn, δgr, δx, dtd, ftrial, fpredict)
 end
 
-function AbstractOptimizer(nls::LeastSquaresProblem, ::Type{Val{:dogleg}})
-    Dogleg(_zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), 
+function AbstractAllocatedOptimizer{Tx, Ty, Tf, TJ, Tg}(nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}, optimizer::Dogleg)
+    AllocatedDogleg(_zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), 
     _zeros(nls.y), _zeros(nls.y))
 end
 
 ##############################################################################
 ## 
-## Method for Dogleg
+## Method for AllocatedDogleg
 ##
 ##############################################################################
-macro doglegtrace()
+macro Allocateddoglegtrace()
     quote
         if tracing
             update!(tr,
@@ -59,17 +59,16 @@ const MAX_DIAGONAL = 1e32
 const DECREASE_THRESHOLD = 0.25
 const INCREASE_THRESHOLD = 0.75
 
-function optimize!{T, Toptimizer <: Dogleg, Tsolver}(
-    anls::LeastSquaresProblemAllocated{T, Toptimizer, Tsolver};
+function optimize!{Tx, Ty, Tf, TJ, Tg, Toptimizer <: AllocatedDogleg, Tsolver}(
+    anls::LeastSquaresProblemAllocated{Tx, Ty, Tf, TJ, Tg, Toptimizer, Tsolver};
     xtol::Number = 1e-8, ftol::Number = 1e-8, grtol::Number = 1e-8,
     iterations::Integer = 1_000, Δ::Number = 1.0, store_trace = false, show_trace = false, show_every = 1)
  
      δgn, δgr, δx, dtd = anls.optimizer.δgn, anls.optimizer.δgr, anls.optimizer.δx, anls.optimizer.dtd
      ftrial, fpredict = anls.optimizer.ftrial, anls.optimizer.fpredict
-     x, fcur, f!, J, g! = anls.nls.x, anls.nls.y, anls.nls.f!, anls.nls.J, anls.nls.g!
+     x, fcur, f!, J, g! = anls.x, anls.y, anls.f!, anls.J, anls.g!
 
     # initialize
-    Tx, Ty = eltype(x), eltype(fcur)
     reuse = false
     f_calls,  g_calls, mul_calls = 0, 0, 0
     converged, x_converged, f_converged, gr_converged, converged =
@@ -80,10 +79,11 @@ function optimize!{T, Toptimizer <: Dogleg, Tsolver}(
     maxabs_gr = Inf
 
     iter = 0  
+    eTx, eTy = eltype(x), eltype(fcur)
 
     tr = OptimizationTrace()
     tracing = store_trace || show_trace
-    @doglegtrace
+    @Allocateddoglegtrace
     while !converged && iter < iterations 
         iter += 1
         check_isfinite(x)
@@ -102,19 +102,19 @@ function optimize!{T, Toptimizer <: Dogleg, Tsolver}(
                 end
             end
             # compute (opposite) gradient
-            Ac_mul_B!(one(Tx), J, fcur, zero(Tx), δgr)
+            Ac_mul_B!(one(eTx), J, fcur, zero(eTx), δgr)
             mul_calls += 1
             maxabs_gr = maxabs(δgr)
             wnorm_δgr = wnorm(δgr, dtd)
 
             # compute Cauchy point
             map!((x, y) -> x * sqrt(y), δgn, δgr, dtd)
-            A_mul_B!(one(Ty), J, δgn, zero(Ty), fpredict)
+            A_mul_B!(one(eTy), J, δgn, zero(eTy), fpredict)
             mul_calls += 1
             α = wnorm_δgr^2 / sumabs2(fpredict)
 
             # compute Gauss Newton step δgn
-            fill!(δgn, zero(Tx))
+            fill!(δgn, zero(eTx))
             δgn, ls_iter = A_ldiv_B!(δgn, J, fcur, anls.solver)
             mul_calls += ls_iter
             wnorm_δgn = wnorm(δgn, dtd)
@@ -149,7 +149,7 @@ function optimize!{T, Toptimizer <: Dogleg, Tsolver}(
 
 
         #update x
-        axpy!(-one(Tx), δx, x)
+        axpy!(-one(eTx), δx, x)
         f!(x, ftrial)
         f_calls += 1
 
@@ -157,9 +157,9 @@ function optimize!{T, Toptimizer <: Dogleg, Tsolver}(
         trial_ssr = sumabs2(ftrial)
 
         # predicted ssr
-        A_mul_B!(one(Tx), J, δx, zero(Tx), fpredict)
+        A_mul_B!(one(eTx), J, δx, zero(eTx), fpredict)
         mul_calls += 1
-        axpy!(-one(Ty), fcur, fpredict)
+        axpy!(-one(eTy), fcur, fpredict)
         predicted_ssr = sumabs2(fpredict)
 
         ρ = (ssr - trial_ssr) / (ssr - predicted_ssr)
@@ -174,7 +174,7 @@ function optimize!{T, Toptimizer <: Dogleg, Tsolver}(
         else
             # unsucessful iteration
             reuse = true
-            axpy!(one(Tx), δx, x)
+            axpy!(one(eTx), δx, x)
         end
 
         if ρ < DECREASE_THRESHOLD
@@ -182,9 +182,9 @@ function optimize!{T, Toptimizer <: Dogleg, Tsolver}(
         elseif ρ > INCREASE_THRESHOLD
            Δ = max(Δ, 3.0 * wnorm_δx)
        end  
-       @doglegtrace 
+       @Allocateddoglegtrace 
     end
-    LeastSquaresResult("dogleg", x, ssr, iter, converged,
+    LeastSquaresResult("Dogleg", x, ssr, iter, converged,
                         x_converged, xtol, f_converged, ftol, gr_converged, grtol, tr, 
                         f_calls, g_calls, mul_calls)
 end

@@ -3,7 +3,6 @@
 ## Non Linear Least Squares
 ##
 ##############################################################################
-
 type LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}
     x::Tx
     y::Ty
@@ -17,16 +16,15 @@ type LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}
         new(x, y, f!, J, g!)
     end
 end
+
 LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}(x::Tx, y::Ty, f!::Tf, J::TJ, g!::Tg) = LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}(x, y, f!, J, g!) 
 
-typealias DenseLeastSquaresProblem{Tx, Ty, Tf, TJ<:StridedVecOrMat, Tg} LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}
-
-typealias SparseLeastSquaresProblem{Tx, Ty, Tf, TJ<:SparseMatrixCSC, Tg} LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}
-
-
 if Pkg.installed("ForwardDiff") >= v"0.2.0"
-    function LeastSquaresProblem(;x = error("initial x required"), y = Void, f! = exp, g! = nothing, J = nothing, output_length = 0, chunk_size = 1)
-        if (output_length > 0)
+    function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! = error("initial f! required"), g! = nothing, J = nothing, output_length = 0, chunk_size = 1)
+        if typeof(y) == Void
+            if output_length == 0
+                output_length = size(J, 2)
+            end
             y = zeros(eltype(x), output_length)
         end
         if typeof(J) == Void
@@ -41,10 +39,13 @@ if Pkg.installed("ForwardDiff") >= v"0.2.0"
         LeastSquaresProblem(x, y , f!, J, newg!)
     end
 else
-   function LeastSquaresProblem(;x = error("initial x required"), y = Void, f! = exp, g! = nothing, J = nothing, output_length = 0, chunk_size = 1)
-       if (output_length > 0)
-           y = zeros(eltype(x), output_length)
-       end
+    function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! = error("initial f! required"), g! = nothing, J = nothing, output_length = 0, chunk_size = 1)
+       if typeof(y) == Void
+            if output_length == 0
+                output_length = size(J, 2)
+            end
+            y = zeros(eltype(x), output_length)
+        end
        if typeof(J) == Void
            J = zeros(eltype(x), length(y), length(x))
        end
@@ -60,71 +61,73 @@ end
 
 
 
+
 ###############################################################################
 ##
 ## Non Linear Least Squares Allocated
 ## groups a LeastSquaresProblem with allocations
 ##
 ##############################################################################
-
-# allocation for optimizer
+# optimizer
 abstract AbstractOptimizer
+immutable Dogleg <: AbstractOptimizer end
+immutable LevenbergMarquardt <: AbstractOptimizer end
 
-# allocation for solver
+
+# solver
 abstract AbstractSolver
+immutable QR <: AbstractSolver end
+immutable Cholesky <: AbstractSolver end
+type LSMR{T1, T2} <: AbstractSolver
+    preconditioner!::T1
+    preconditioner::T2
+end
+LSMR() = LSMR(nothing, nothing)
 
-type LeastSquaresProblemAllocated{T <: LeastSquaresProblem, Toptimizer <: AbstractOptimizer, Tsolver <: AbstractSolver}
-     nls::T
-     optimizer::Toptimizer
-     solver::Tsolver
+## for dense matrices, default to cholesky ; otherwise LSMR
+function default_solver(x::AbstractSolver, J)
+    if (typeof(x) <: QR) && (typeof(J) <: SparseMatrixCSC)
+        throw("solver QR() is not available for sparse Jacobians. Choose between Cholesky() and LSMR()")
+    end
+    x
+end
+default_solver(::Void, J::StridedVecOrMat) = QR()
+default_solver(::Void, J) = LSMR()
+
+## for LSMR, default to levenberg_marquardt ; otherwise dogleg
+default_optimizer(x::AbstractOptimizer, y) = x
+default_optimizer(::Void, ::LSMR) = LevenbergMarquardt()
+default_optimizer(::Void, ::AbstractSolver) = Dogleg()
+
+
+
+abstract AbstractAllocatedOptimizer
+abstract AbstractAllocatedSolver
+
+type LeastSquaresProblemAllocated{Tx, Ty, Tf, TJ, Tg, Toptimizer <: AbstractAllocatedOptimizer, Tsolver <: AbstractAllocatedSolver}
+    x::Tx
+    y::Ty
+    f!::Tf
+    J::TJ
+    g!::Tg
+    optimizer::Toptimizer
+    solver::Tsolver
 end
 
 # Constructor
-function LeastSquaresProblemAllocated{Tx, Ty, Tf, TJ, Tg}(
-    nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}; 
-    optimizer::Union{Void, Symbol} = nothing, solver::Union{Void, Symbol} = nothing)
-    valsolver = default_solver(solver, TJ)
-    valoptimizer = default_optimizer(optimizer, valsolver)
+function LeastSquaresProblemAllocated(nls::LeastSquaresProblem, optimizer::Union{Void, AbstractOptimizer}, solver::Union{Void, AbstractSolver})
+    solver = default_solver(solver, nls.J)
+    optimizer = default_optimizer(optimizer, solver)
     LeastSquaresProblemAllocated(
-        nls,
-        AbstractOptimizer(nls, valoptimizer),
-        AbstractSolver(nls, valoptimizer, valsolver))
+        nls.x, nls.y, nls.f!, nls.J, nls.g!, AbstractAllocatedOptimizer(nls, optimizer), AbstractAllocatedSolver(nls, optimizer, solver))
 end
-
-## for dense matrices, default to cholesky ; otherwise iterative
-function default_solver(x::Symbol, t::Type)
-    if x ∉ (:qr, :cholesky, :iterative)
-        throw("$x is not a valid solver. Choose between :qr, :cholesky, and :iterative.")
-    end
-    if x == :qr && t <: SparseMatrixCSC
-        throw("solver = :qr is not available for sparse Jacobians. Choose between :cholesky and :iterative.")
-    end
-    Val{x}
-end
-default_solver{T<:StridedVecOrMat}(::Void, ::Type{T}) = Val{:qr}
-default_solver(::Void, ::Type) = Val{:iterative}
-
-## for iterative, default to levenberg_marquardt ; otherwise dogleg
-function default_optimizer(x::Symbol, ::Type)
-    if x ∉ (:levenberg_marquardt, :dogleg)
-        throw("$x is not a valid optimizer. Choose between :levenberg_marquardt and :dogleg.")
-    end
-    Val{x}
-end
-default_optimizer(::Void, ::Type{Val{:iterative}}) = Val{:levenberg_marquardt}
-default_optimizer(::Void, ::Type) = Val{:dogleg}
-
-
 function LeastSquaresProblemAllocated(args...; kwargs...)
     LeastSquaresProblemAllocated(LeastSquaresProblem(args...); kwargs...)
 end
 
 # optimize
-function optimize!(nls::LeastSquaresProblem; 
-    optimizer::Union{Void, Symbol} = nothing, 
-    solver::Union{Void, Symbol} = nothing, 
-    kwargs...)
-    nlsp = LeastSquaresProblemAllocated(nls ; optimizer = optimizer, solver = solver)
+function optimize!(nls::LeastSquaresProblem, optimizer::Union{Void, AbstractOptimizer} = nothing, solver::Union{Void, AbstractSolver} = nothing; kwargs...)
+    nlsp = LeastSquaresProblemAllocated(nls, optimizer, solver)
     optimize!(nlsp; kwargs...)
 end
 

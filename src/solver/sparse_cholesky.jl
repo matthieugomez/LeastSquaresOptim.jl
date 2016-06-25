@@ -31,7 +31,7 @@ end
 ##
 ##############################################################################
 
-type SparseCholeskySolver{Tv, Ti <: Integer, Tx <: AbstractVector} <: AbstractSolver
+type SparseCholeskyAllocatedSolver{Tv, Ti <: Integer, Tx <: AbstractVector} <: AbstractAllocatedSolver
     colptr::Vector{Ti}
     rowval::Vector{Ti}
     v::Tx
@@ -39,18 +39,17 @@ type SparseCholeskySolver{Tv, Ti <: Integer, Tx <: AbstractVector} <: AbstractSo
     sparseJt::Sparse{Tv}
     F::Factor{Tv}
     cm::Array{UInt8, 1}
-    function SparseCholeskySolver(colptr, rowval, v, sparseJ, sparseJt, F, cm)
+    function SparseCholeskyAllocatedSolver(colptr, rowval, v, sparseJ, sparseJt, F, cm)
         size(sparseJ) == (size(sparseJt, 2),  size(sparseJt, 1)) || throw(DimensionMismatch("J and Jt should have transposed dimension"))
         new(colptr, rowval, v, sparseJ, sparseJt, F, cm)
     end
 end
 
-function SparseCholeskySolver{Tv, Ti <: Integer, Tx <: AbstractVector}(colptr::Vector{Ti}, rowval::Vector{Ti}, v::Tx, sparseJ::Sparse{Tv}, sparseJt::Sparse{Tv}, F::Factor{Tv}, cm::Array{UInt8, 1})
-    SparseCholeskySolver{Tv, Ti, Tx}(colptr, rowval, v, sparseJ, sparseJt, F, cm)
+function SparseCholeskyAllocatedSolver{Tv, Ti <: Integer, Tx <: AbstractVector}(colptr::Vector{Ti}, rowval::Vector{Ti}, v::Tx, sparseJ::Sparse{Tv}, sparseJt::Sparse{Tv}, F::Factor{Tv}, cm::Array{UInt8, 1})
+    SparseCholeskyAllocatedSolver{Tv, Ti, Tx}(colptr, rowval, v, sparseJ, sparseJt, F, cm)
 end
 
-function AbstractSolver(nls::SparseLeastSquaresProblem,
-    ::Type{Val{:dogleg}}, ::Type{Val{:cholesky}})
+function AbstractAllocatedSolver{Tx, Ty, Tf, TJ <: SparseMatrixCSC , Tg}(nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}, optimizer::Dogleg, solver::Cholesky)
     colptr = deepcopy(nls.J.colptr)
     rowval = deepcopy(nls.J.rowval)
     sparseJ = Sparse(nls.J)
@@ -59,7 +58,7 @@ function AbstractSolver(nls::SparseLeastSquaresProblem,
     set_print_level(cm, 0)
     unsafe_store!(common_final_ll, 1)
     F = analyze(sparseJt, cm)
-    return SparseCholeskySolver(colptr, rowval, _zeros(nls.x), sparseJ, sparseJt, F, cm)
+    return SparseCholeskyAllocatedSolver(colptr, rowval, _zeros(nls.x), sparseJ, sparseJt, F, cm)
 end
 
 ##############################################################################
@@ -68,7 +67,7 @@ end
 ##
 ##############################################################################
 
-function A_ldiv_B!(x::AbstractVector, J::SparseMatrixCSC, y::AbstractVector, A::SparseCholeskySolver)
+function A_ldiv_B!(x::AbstractVector, J::SparseMatrixCSC, y::AbstractVector, A::SparseCholeskyAllocatedSolver)
     colptr, rowval, v, sparseJ, sparseJt, F, cm = 
     A.colptr, A.rowval, A.v, A.sparseJ, A.sparseJt, A.F, A.cm
 

@@ -43,17 +43,17 @@ optimize!(LeastSquaresProblem(x = x, f! = rosenbrock_f!, g! = rosenbrock_g!, out
 
 ## Optimizer and Solver
 
-The main `optimize!` method accepts two main options : `optimizer` and `solver`
+The main `optimize!` method accepts two main arguments : `optimizer` and `solver`
 
-1. The `optimizer` option allows to choose a particular optimization method:
+1. Choose an optimization method:
 
-	- `optimizer = :levenberg_marquardt`
-	- `optimizer = :dogleg`
+	- `LeastSquaresOptim.LevenbergMarquardt()`
+	- `LeastSquaresOptim.Dogleg()`
 
-2. The `solver` option allows to choose a particular least square solver (a least square optimization method proceeds by solving successively linear least squares problems `min||Ax - b||^2`). 
-	- `solver = :qr`. Available for dense jacobians
-	- `solver = :cholesky`. Available for dense jacobians and sparse jacobians. For sparse jacobians, a symbolic factorization is computed at the first iteration from SuiteSparse and numerically updated at each iteration.
-	- `solve = :iterative`. A conjugate gradient method ([LSMR]([http://web.stanford.edu/group/SOL/software/lsmr/) with diagonal preconditioner). The jacobian can be of any type that defines the following interface is defined:
+2. Choose a least square solver (a least square optimization method proceeds by solving successively linear least squares problems `min||Ax - b||^2`). 
+	- `LeastSquaresOptim.QR()`. Available for dense jacobians
+	- `LeastSquaresOptim.Cholesky()`. Available for dense jacobians and sparse jacobians. For sparse jacobians, a symbolic factorization is computed at the first iteration from SuiteSparse and numerically updated at each iteration.
+	- `LeastSquaresOptim.LSMR()`. A conjugate gradient method ([LSMR]([http://web.stanford.edu/group/SOL/software/lsmr/) with diagonal preconditioner). The jacobian can be of any type that defines the following interface is defined:
 		- `A_mul_B!(α::Number, A, x, β::Number, y)` updates y to αAx + βy
 		- `Ac_mul_B!(α::Number, A, y, β::Number, x)` updates x to αA'y + βx
 		- `colsumabs2!(x, A)` updates x to the sum of squared elements of each column
@@ -62,7 +62,9 @@ The main `optimize!` method accepts two main options : `optimizer` and `solver`
 
 		Similarly, `x` or `f(x)` may be custom types. An example of the interface to define can be found in the package [SparseFactorModels.jl](https://github.com/matthieugomez/SparseFactorModels.jl).
 
-The `optimizers` and `solvers` are presented in more depth in the [Ceres documentation](http://ceres-solver.org/solving.html). For dense jacobians, the default options are `optimizer = :dogleg` and `solver = :qr`. For sparse jacobians, the default options are  `optimizer = :levenberg_marquardt` and `solver = :iterative`. 
+		For the `LSMR` solver, you can optionally specifying a function `preconditioner!` and a matrix `P` such that `preconditioner(x, J, P)` updates `P` as a preconditioner for `J'J` in the case of a Dogleg optimization method, and such that `preconditioner(x, J, λ, P)` updates `P` as a preconditioner for `J'J + λ` in the case of LevenbergMarquardt optimization method. By default, the preconditioner is chosen as the diagonal of of the matrix `J'J`. The preconditioner can be any type that supports `A_ldiv_B!(x, P, y)`
+
+The `optimizers` and `solvers` are presented in more depth in the [Ceres documentation](http://ceres-solver.org/solving.html). For dense jacobians, the default options are `Dogle()` and `QR()`. For sparse jacobians, the default options are  `LevenbergMarquardt` and `LSMR()`. 
 
 `optimize!` also accept the options : `ftol`, `xtol`, `gr_tol`, `iterations` and `Δ` (initial radius).
 
@@ -74,7 +76,7 @@ The package is written with large scale problems in mind. In particular, memory 
 You can even avoid initial allocations by directly passing a `LeastSquaresProblemAllocated` to the `optimize!` function. Such an object bundles a `LeastSquaresProblem` object with a few storage objects. This may be useful when repeatedly solving non linear least square problems.
 ```julia
 rosenbrock = LeastSquaresProblemAllocated(x, fcur, rosenbrock_f!, J, rosenbrock_g!; 
-                                          optimizer = :dogleg, solver = :qr)
+                                          LeastSquaresOptim.Dogleg(), LeastSquaresOptim.QR())
 optimize!(rosenbrock)
 ```
 

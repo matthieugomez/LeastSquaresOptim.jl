@@ -503,12 +503,12 @@ end
 
 
 for matrix in (:dense, :sparse)
-    for (solver, solver_abbr) in ((:qr, :qr), (:iterative, :iter))
-        if (matrix == :sparse && solver == :qr)
+    for (solver, solver_abbr) in ((LeastSquaresOptim.QR(), :qr), (LeastSquaresOptim.LSMR(), :lsmr))
+        if (matrix == :sparse && typeof(solver) <: LeastSquaresOptim.QR)
             # tests below
             continue
         else
-            for (optimizer, optimizer_abbr) in ((:dogleg, :dl), (:levenberg_marquardt, :lm))
+            for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg(), :dl), (LeastSquaresOptim.LevenbergMarquardt(), :lm))
                 alltests = [rosenbrock(); 
                 powell_singular(); powell_badly_scaled(); 
                 wood();
@@ -526,8 +526,8 @@ for matrix in (:dense, :sparse)
                     if matrix == :sparse
                         J = sparse(J)
                     end
-                    nls = LeastSquaresProblem(x, fcur, f!, J, g!)
-                    r = optimize!(nls, optimizer = optimizer, solver = solver)
+                    nls = LeastSquaresProblem(x = x, y = fcur, f! = f!, J = J, g! = g!)
+                    r = optimize!(nls, optimizer, solver)
                     @printf("%-6s %4s %2s %30s %5d %5d   %5d   %10e\n", matrix, solver_abbr, optimizer_abbr, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
                     @test r.converged
                     @test r.ssr <= 1e-3
@@ -556,10 +556,10 @@ for (name, f!, g!, x) in alltests
     J = sparse(J)
     fill!(J.nzval, 0)     
     g!(x, J)
-    nls = LeastSquaresProblem(x, fcur, f!, J, g!)
     # try because g! may change symbolic factorizations (see Julia issue #9906)
     try
-        r = optimize!(nls, optimizer = :dogleg, solver = :cholesky)
+        nls = LeastSquaresProblem(x = x, y = fcur, f! = f!, J = J, g! = g!)
+        r = optimize!(nls, optimizer, solver)
         @test r.converged
         @test r.ssr <= 1e-3
         @printf("%-6s %4s %2s %30s %5d %5d   %5d   %10e\n", :sparse, :fact, :dl, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
@@ -572,7 +572,7 @@ end
 
 
 # test dense cholesky
-for (optimizer, optimizer_abbr) in ((:levenberg_marquardt, :lm), (:dogleg, :dl))
+for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg(), :dl), (LeastSquaresOptim.LevenbergMarquardt(), :lm))
     alltests = [rosenbrock(); 
     powell_singular(); powell_badly_scaled(); 
     wood();
@@ -587,8 +587,8 @@ for (optimizer, optimizer_abbr) in ((:levenberg_marquardt, :lm), (:dogleg, :dl))
     for (name, f!, g!, x) in alltests
         fcur = similar(x)
         J = Array(Float64, length(x), length(x))
-        nls = LeastSquaresProblem(x, fcur, f!, J, g!)
-        r = optimize!(nls, optimizer = optimizer, solver = :cholesky)
+        nls = LeastSquaresProblem(x = x, y = fcur, f! = f!, J = J, g! = g!)
+        r = optimize!(nls, optimizer, LeastSquaresOptim.Cholesky())
         @printf("%-6s %4s %2s %30s %5d %5d   %5d   %10e\n", :dense, :chol, optimizer_abbr, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
         @test r.converged
         @test r.ssr <= 1e-3
@@ -597,7 +597,7 @@ end
 
 
 #test autodiff
-for (optimizer, optimizer_abbr) in ((:dogleg, :dl), (:levenberg_marquardt, :lm))
+for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg(), :dl), (LeastSquaresOptim.LevenbergMarquardt(), :lm))
     alltests = [rosenbrock(); 
     powell_singular(); powell_badly_scaled(); 
     wood();
@@ -611,7 +611,7 @@ for (optimizer, optimizer_abbr) in ((:dogleg, :dl), (:levenberg_marquardt, :lm))
     broyden_tridiagonal(10); broyden_banded(10)]
     for (name, f!, g!, x) in alltests
         nls = LeastSquaresProblem(x = x, f! = f!, output_length = length(x))
-        r = optimize!(nls, optimizer = optimizer)
+        r = optimize!(nls, optimizer)
         @printf("%-10s %4s %2s %30s %5d %5d   %5d   %10e\n", :autodiff, :fact, optimizer_abbr, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
         @test r.converged
         @test r.ssr <= 1e-3
@@ -624,10 +624,10 @@ end
 name, f!, g!, x = wood()
 fcur = similar(x)
 J = ones(length(x), length(x))
-nls = LeastSquaresProblem(x, fcur, f!, J, g!)
+nls = LeastSquaresProblem(x = x, y = fcur, f! = f!, J = J, g! = g!)
 result = optimize!(nls, show_trace = true)
-@test result.optimizer == "dogleg"
-nls = LeastSquaresProblem(x, fcur, f!, sparse(J), g!)
+@test result.optimizer == "Dogleg"
+nls = LeastSquaresProblem(x = x, y = fcur, f! = f!, J = sparse(J), g! = g!)
 result = optimize!(nls, show_trace = true)
-@test result.optimizer == "levenberg_marquardt"
+@test result.optimizer == "LevenbergMarquardt"
 

@@ -90,11 +90,11 @@ end
 
 iter = 0
 for matrix in (:dense, :sparse)
-    for (optimizer, optimizer_abbr) in ((:levenberg_marquardt, :lm), (:dogleg, :dl))
-        factorization = matrix == :dense ? :qr : :cholesky
-        for (solver, solver_abbr) in ((factorization, :fact), (:iterative, :iter))
+    for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg(), :dl), (LeastSquaresOptim.LevenbergMarquardt(), :lm))
+        factorization = matrix == :dense ? LeastSquaresOptim.QR() : LeastSquaresOptim.Cholesky()
+        for (solver, solver_abbr) in ((factorization, :fact), (LeastSquaresOptim.LSMR(), :iter))
             iter += 1
-            if matrix == :sparse && optimizer == :levenberg_marquardt
+            if matrix == :sparse && optimizer == LeastSquaresOptim.LevenbergMarquardt()
                 continue
             else
                 name, f!, g!, x = factor()
@@ -104,8 +104,8 @@ for matrix in (:dense, :sparse)
                 if matrix == :sparse
                     J = sparse(J)
                 end
-                nls = LeastSquaresProblem(x, fcur, f!, J, g!)
-                r = optimize!(nls, optimizer = optimizer, solver = solver)
+                nls = LeastSquaresProblem(x = x, y = fcur, f! = f!, J = J, g! = g!)
+                r = optimize!(nls, optimizer, solver)
                 if iter == 1
                     show(r)
                 end

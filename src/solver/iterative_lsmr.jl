@@ -1,34 +1,34 @@
-#############################################################################
-## 
-## solve J'J \ J'y
-##
-## we use LSMR on Ax = y
-## with A = J / sqrt(diag(J'J)) (diagonal preconditioner)
-##
 ## LSMR works on any matrix with the following methods:
 ## eltype, size, A_mul_B!, Ac_mul_B!
-##
-##############################################################################
+## LSMR works on any vector with the following methods:
+## eltype, length, scale!, norm
 
-type PreconditionedMatrix{TA, Tx}
+#############################################################################
+## 
+## Define preconditioned matrix
+##
+#############################################################################
+
+type PreconditionedMatrix{TA, Tp, Tx}
     A::TA
-    normalization::Tx 
+    preconditioner::Tp
     tmp::Tx
+    tmp2::Tx
 end
 eltype(A::PreconditionedMatrix) = eltype(A.A)
 size(A::PreconditionedMatrix, i::Integer) = size(A.A, i)
-function A_mul_B!{TA, Tx}(α::Number, pm::PreconditionedMatrix{TA, Tx}, a::Tx, 
+function A_mul_B!{TA, Tp, Tx}(α::Number, pm::PreconditionedMatrix{TA, Tp, Tx}, a::Tx, 
                 β::Number, b)
-    map!(*, pm.tmp, a, pm.normalization)
+    A_ldiv_B!(a, pm.preconditioner, pm.tmp)
     A_mul_B!(α, pm.A, pm.tmp, β, b)
     return b
 end
-function Ac_mul_B!{TA, Tx}(α::Number, pm::PreconditionedMatrix{TA, Tx}, a, 
+function Ac_mul_B!{TA, Tp, Tx}(α::Number, pm::PreconditionedMatrix{TA, Tp, Tx}, a, 
                 β::Number, b::Tx)
     T = eltype(b)
     β = convert(T, β)
     Ac_mul_B!(one(T), pm.A, a, zero(T), pm.tmp)
-    map!(*, pm.tmp, pm.tmp, pm.normalization)
+    A_ldiv_B!(pm.tmp, pm.preconditioner, pm.tmp2)
     if β != one(T)
         if β == zero(T)
             fill!(b, β)
@@ -36,73 +36,17 @@ function Ac_mul_B!{TA, Tx}(α::Number, pm::PreconditionedMatrix{TA, Tx}, a,
             scale!(b, β)
         end
     end
-    axpy!(α, pm.tmp, b)
+    axpy!(α, pm.tmp2, b)
     return b
 end
 
-type LSMRSolver{Tx1, Tx2, Tx3, Tx4, Tx5, Ty} <: AbstractSolver
-    normalization::Tx1
-    tmp::Tx2
-    v::Tx3
-    h::Tx4
-    hbar::Tx5
-    u::Ty
-    function LSMRSolver(normalization, tmp, v, h, hbar, u)
-        length(normalization) == length(tmp) || throw(DimensionMismatch("normalization and tmp must have the same length"))
-        length(normalization) == length(v) || throw(DimensionMismatch("normalization and v must have the same length"))
-        length(normalization) == length(h) || throw(DimensionMismatch("normalization and h must have the same length"))
-        length(normalization) == length(hbar) || throw(DimensionMismatch("normalization and hbar must have the same length"))
-        new(normalization, tmp, v, h, hbar, u)
-    end
-end
-function LSMRSolver{Tx1, Tx2, Tx3, Tx4, Tx5, Ty}(normalization::Tx1, tmp::Tx2, v::Tx3, h::Tx4, hbar::Tx5, u::Ty)
-    LSMRSolver{Tx1, Tx2, Tx3, Tx4, Tx5, Ty}(normalization, tmp, v, h, hbar, u)
-end
-function AbstractSolver(nls::LeastSquaresProblem, ::Type{Val{:dogleg}},
-     ::Type{Val{:iterative}})
-    LSMRSolver(_zeros(nls.x), _zeros(nls.x), _zeros(nls.x), 
-        _zeros(nls.x), _zeros(nls.x), _zeros(nls.y))
-end
-
-function A_ldiv_B!(x, J, y, A::LSMRSolver)
-    normalization, tmp, v, h, hbar, u = A.normalization, A.tmp, A.v, A.h, A.hbar, A.u
-
-    # prepare x
-    fill!(x, 0)
-
-    # prepare b
-    copy!(u, y)
-
-    # prepare A
-    colsumabs2!(normalization, J)
-    Tx = eltype(normalization)
-    map!(x -> x > zero(Tx) ? 1 / sqrt(x) : zero(Tx), normalization, normalization)
-    A = PreconditionedMatrix(J, normalization, tmp)
-
-    # solve
-    x, ch = lsmr!(x, A, u, v, h, hbar)
-    map!(*, x, x, A.normalization)
-    return x, ch.mvps
-end
-
-##############################################################################
+#############################################################################
 ## 
-## solve (J'J + diagm(damp)) \ J'y (used in LevenbergMarquardt)
-## No need to solve exactly :
-## "An Inexact Levenberg-Marquardt Method for Large Sparse Nonlinear Least Squares"
-## Weight Holt (1985)
+## Define dampened matrix
 ##
-## We use LSMR on A x = b with
-## A = |J          |  + diagonal preconditioner
-##     |diag(damp) |
-## b = vcat(y, zeros(damp))
-##
-## LSMR works on any matrix with the following methods:
-## eltype, size, A_mul_B!, Ac_mul_B!
-## LSMR works on any vector with the following methods:
-## eltype, length, scale!, norm
-##
-##############################################################################
+#############################################################################
+
+
 type DampenedVector{Ty, Tx}
     y::Ty # dimension of f(x)
     x::Tx # dimension of x
@@ -152,36 +96,148 @@ function Ac_mul_B!{TA, Tx, Ty}(α::Number, mw::DampenedMatrix{TA, Tx}, a::Dampen
     return b
 end
 
-type LSMRDampenedSolver{Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty} <: AbstractSolver
-    normalization::Tx1
+#############################################################################
+## 
+## Define inverse preconditioner
+##
+##############################################################################
+
+type InverseDiagonal{Tx}
+    _::Tx
+end
+function A_ldiv_B!(x, ID::InverseDiagonal, y)
+    map!(*, y, x, ID._)
+end
+
+#############################################################################
+## 
+## solve J'J \ J'y
+##
+## we use LSMR on Ax = y
+## with A = J / sqrt(diag(J'J)) (diagonal preconditioner)
+##
+## LSMR works on any matrix with the following methods:
+## eltype, size, A_mul_B!, Ac_mul_B!
+##
+##############################################################################
+function getpreconditioner(nls::LeastSquaresProblem, optimizer::Dogleg, solver::LSMR{Void, Void})
+    preconditioner! = function(x, J, out)
+        colsumabs2!(out._, J)
+        Tout = eltype(out._)
+        map!(x -> x > zero(Tout) ? 1 / sqrt(x) : zero(Tout), out._, out._)
+        return out
+    end
+    preconditioner = InverseDiagonal(_zeros(nls.x))
+    return preconditioner!, preconditioner
+end
+function getpreconditioner(nls::LeastSquaresProblem, optimizer::Dogleg, solver::LSMR)
+    return solver.preconditioner!, solver.preconditioner
+end
+
+type LSMRAllocatedSolver{Tx0, Tx1, Tx2, Tx22, Tx3, Tx4, Tx5, Ty} <: AbstractAllocatedSolver
+    preconditioner!::Tx0
+    preconditioner::Tx1
     tmp::Tx2
+    tmp2::Tx22
+    v::Tx3
+    h::Tx4
+    hbar::Tx5
+    u::Ty
+    function LSMRAllocatedSolver(preconditioner!, preconditioner, tmp, tmp2, v, h, hbar, u)
+        new(preconditioner!, preconditioner, tmp, tmp2, v, h, hbar, u)
+    end
+end
+
+
+function LSMRAllocatedSolver{Tx0, Tx1, Tx2, Tx22, Tx3, Tx4, Tx5, Ty}(preconditioner!::Tx0, preconditioner::Tx1, tmp::Tx2, tmp2::Tx22, v::Tx3, h::Tx4, hbar::Tx5, u::Ty)
+    LSMRAllocatedSolver{Tx0, Tx1, Tx2, Tx22, Tx3, Tx4, Tx5, Ty}(preconditioner!, preconditioner, tmp, tmp2, v, h, hbar, u)
+end
+
+
+
+function AbstractAllocatedSolver(nls::LeastSquaresProblem, optimizer::Dogleg, solver::LSMR)
+    preconditioner!, preconditioner = getpreconditioner(nls, optimizer, solver)
+    LSMRAllocatedSolver(preconditioner!, preconditioner, _zeros(nls.x), _zeros(nls.x), 
+        _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.y))
+end
+
+function A_ldiv_B!(x, J, y, A::LSMRAllocatedSolver)
+    preconditioner!, preconditioner, tmp, tmp2, v, h, hbar, u = A.preconditioner!, A.preconditioner, A.tmp, A.tmp2, A.v, A.h, A.hbar, A.u
+
+    # prepare x
+    fill!(x, 0)
+
+    # prepare b
+    copy!(u, y)
+
+    # prepare A
+    fill!(tmp, 0)
+    preconditioner!(x, J, preconditioner)
+    A = PreconditionedMatrix(J, preconditioner, tmp, tmp2)
+
+    # solve
+    x, ch = lsmr!(x, A, u, v, h, hbar)
+    A_ldiv_B!(x, preconditioner, tmp)
+    copy!(x, tmp)
+    return x, ch.mvps
+end
+
+##############################################################################
+## 
+## solve (J'J + diagm(damp)) \ J'y (used in LevenbergMarquardt)
+## No need to solve exactly :
+## "An Inexact Levenberg-Marquardt Method for Large Sparse Nonlinear Least Squares"
+## Weight Holt (1985)
+##
+## We use LSMR on A x = b with
+## A = |J          |  + diagonal preconditioner
+##     |diag(damp) |
+## b = vcat(y, zeros(damp))
+##
+
+##
+##############################################################################
+function getpreconditioner(nls::LeastSquaresProblem, optimizer::LevenbergMarquardt, ::LSMR{Void, Void})
+    preconditioner! = function(x, J, damp, out)
+        colsumabs2!(out._, J)
+        Tout = eltype(out._)
+        axpy!(one(Tout), damp, out._)
+        map!(x -> x > zero(Tout) ? 1 / sqrt(x) : zero(Tout), out._, out._)
+        return out
+    end
+    preconditioner = InverseDiagonal(_zeros(nls.x))
+    return preconditioner!, preconditioner
+end
+
+function getpreconditioner(nls::LeastSquaresProblem, optimizer::LevenbergMarquardt, solver::LSMR)
+    return solver.preconditioner!, solver.preconditioner
+end
+
+type LSMRDampenedAllocatedSolver{Tx0, Tx1, Tx2, Tx22, Tx3, Tx4, Tx5, Tx6, Ty} <: AbstractAllocatedSolver
+    preconditioner!::Tx0
+    preconditioner::Tx1
+    tmp::Tx2
+    tmp2::Tx22
     v::Tx3
     h::Tx4
     hbar::Tx5
     zerosvector::Tx6
     u::Ty
-    function LSMRDampenedSolver(normalization, tmp, v, h, hbar, zerosvector, u)
-        length(normalization) == length(tmp) || throw(DimensionMismatch("normalization and tmp must have the same length"))
-        length(normalization) == length(v) || throw(DimensionMismatch("normalization and v must have the same length"))
-        length(normalization) == length(h) || throw(DimensionMismatch("normalization and h must have the same length"))
-        length(normalization) == length(hbar) || throw(DimensionMismatch("normalization and hbar must have the same length"))
-        length(normalization) == length(zerosvector) || throw(DimensionMismatch("normalization and zerosvector must have the same length"))
-        new(normalization, tmp, v, h, hbar, zerosvector, u)
+    function LSMRDampenedAllocatedSolver(preconditioner!, preconditioner, tmp, tmp2, v, h, hbar, zerosvector, u)
+        new(preconditioner!, preconditioner, tmp, tmp2, v, h, hbar, zerosvector, u)
     end
 end
-function LSMRDampenedSolver{Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty}(normalization::Tx1, tmp::Tx2, v::Tx3, h::Tx4, hbar::Tx5, zerosvector::Tx6, u::Ty)
-    LSMRDampenedSolver{Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Ty}(normalization, tmp, v, h, hbar, zerosvector, u)
+function LSMRDampenedAllocatedSolver{Tx0, Tx1, Tx2, Tx22, Tx3, Tx4, Tx5, Tx6, Ty}(preconditioner!::Tx0, preconditioner::Tx1, tmp::Tx2, tmp2::Tx22, v::Tx3, h::Tx4, hbar::Tx5, zerosvector::Tx6, u::Ty)
+    LSMRDampenedAllocatedSolver{Tx0, Tx1, Tx2, Tx22, Tx3, Tx4, Tx5, Tx6, Ty}(preconditioner!, preconditioner, tmp, tmp2, v, h, hbar, zerosvector, u)
 end
-function AbstractSolver(nls::LeastSquaresProblem, ::Type{Val{:levenberg_marquardt}},
-     ::Type{Val{:iterative}})
-    LSMRDampenedSolver(_zeros(nls.x), _zeros(nls.x), _zeros(nls.x), 
-        _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.y))
+function AbstractAllocatedSolver{Tx, Ty, Tf, TJ, Tg}(nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}, optimizer::LevenbergMarquardt, solver::LSMR)
+    preconditioner!, preconditioner = getpreconditioner(nls, optimizer, solver)
+    LSMRDampenedAllocatedSolver(preconditioner!, preconditioner, _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.x),  _zeros(nls.x), _zeros(nls.y))
 end
 
-function A_ldiv_B!(x, J, y, damp, A::LSMRDampenedSolver)
-    normalization, tmp, v, h, hbar, zerosvector, u = 
-            A.normalization, A.tmp, A.v, A.h, A.hbar, A.zerosvector, A.u
-    
+function A_ldiv_B!(x, J, y, damp, A::LSMRDampenedAllocatedSolver)
+    preconditioner!, preconditioner, tmp, tmp2, v, h, hbar, zerosvector, u = 
+            A.preconditioner!, A.preconditioner, A.tmp, A.tmp2, A.v, A.h, A.hbar, A.zerosvector, A.u
     # prepare x
     fill!(x, 0)
 
@@ -192,15 +248,12 @@ function A_ldiv_B!(x, J, y, damp, A::LSMRDampenedSolver)
 
     # prepare A
     fill!(tmp, 0)
-    colsumabs2!(normalization, J)
-    Tx = eltype(normalization)
-    axpy!(one(Tx), damp, normalization)
-    map!(x -> x > zero(Tx) ? 1 / sqrt(x) : zero(Tx), normalization, normalization)
+    preconditioner!(x, J, damp, preconditioner)
     map!(sqrt, damp, damp)
-    A = PreconditionedMatrix(DampenedMatrix(J, damp), normalization, tmp)
-
+    A = PreconditionedMatrix(DampenedMatrix(J, damp), preconditioner, tmp, tmp2)
     # solve
     x, ch = lsmr!(x, A, b, v, h, hbar, btol = 0.5)
-    map!(*, x, x, A.normalization)
+    A_ldiv_B!(x, preconditioner, tmp)
+    copy!(x, tmp)
     return x, ch.mvps
 end
