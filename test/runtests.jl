@@ -1,6 +1,6 @@
 using LeastSquaresOptim
 
-tests = ["nonlinearsolvers.jl", "nonlinearleastsquares.jl"]
+tests = ["nonlinearsolvers.jl", "nonlinearleastsquares.jl", "nonlinearfitting.jl"]
 
 println("Running tests:")
 
