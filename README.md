@@ -1,4 +1,4 @@
-[![LeastSquaresOptim](http://pkg.julialang.org/badges/LeastSquaresOptim_0.4.svg)](http://pkg.julialang.org/?pkg=LeastSquaresOptim)
+[![LeastSquaresOptim](http://pkg.julialang.org/badges/LeastSquaresOptim_0.5.svg)](http://pkg.julialang.org/?pkg=LeastSquaresOptim)
 [![Build Status](https://travis-ci.org/matthieugomez/LeastSquaresOptim.jl.svg?branch=master)](https://travis-ci.org/matthieugomez/LeastSquaresOptim.jl)
 [![Coverage Status](https://coveralls.io/repos/matthieugomez/LeastSquaresOptim.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/matthieugomez/LeastSquaresOptim.jl?branch=master)
 ## Motivation
