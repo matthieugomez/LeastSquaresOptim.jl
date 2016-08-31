@@ -119,11 +119,11 @@ end
 function colsumabs2!(v::AbstractVector, A::StridedVecOrMat)
     length(v) == size(A, 2) || error("v should have length size(A, 2)")
     @inbounds for j in 1:length(v)
-        v[j] = sumabs2(slice(A, :, j))
+        v[j] = sumabs2(view(A, :, j))
     end
 end
 
-function colsumabs2!(v::AbstractVector, A::Base.SparseMatrix.SparseMatrixCSC)
+function colsumabs2!(v::AbstractVector, A::SparseMatrixCSC)
     length(v) == size(A, 2) || error("v should have length size(A, 2)")
     @inbounds for j in 1:length(v)
         v[j] = sumabs2(sub(nonzeros(A), nzrange(A, j)))

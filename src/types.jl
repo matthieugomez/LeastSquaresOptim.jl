@@ -139,7 +139,7 @@ end
 ##############################################################################
 
 type LeastSquaresResult{Tx}
-    optimizer::ASCIIString
+    optimizer::String
     minimizer::Tx
     ssr::Float64
     iterations::Int
@@ -156,7 +156,7 @@ type LeastSquaresResult{Tx}
     mul_calls::Int
 end
 
-function LeastSquaresResult(optimizer::ASCIIString, minimizer, ssr::Real, iterations::Int, converged::Bool, x_converged::Bool, xtol::Real, f_converged::Bool, ftol::Real, gr_converged::Bool, grtol::Real, tr::OptimizationTrace, f_calls::Int, g_calls::Int, mul_calls::Int)
+function LeastSquaresResult(optimizer::String, minimizer, ssr::Real, iterations::Int, converged::Bool, x_converged::Bool, xtol::Real, f_converged::Bool, ftol::Real, gr_converged::Bool, grtol::Real, tr::OptimizationTrace, f_calls::Int, g_calls::Int, mul_calls::Int)
     LeastSquaresResult(optimizer, minimizer, convert(Float64, ssr), iterations, converged, x_converged, convert(Float64, xtol), f_converged, convert(Float64, ftol), gr_converged, convert(Float64, grtol), tr, f_calls, g_calls, mul_calls)
 end
 
