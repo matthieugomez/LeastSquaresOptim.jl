@@ -19,45 +19,25 @@ end
 
 LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}(x::Tx, y::Ty, f!::Tf, J::TJ, g!::Tg) = LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}(x, y, f!, J, g!) 
 
-if Pkg.installed("ForwardDiff") >= v"0.2.0"
-    function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! = error("initial f! required"), g! = nothing, J = nothing, output_length = 0, chunk_size = 1)
-        if typeof(y) == Void
-            if output_length == 0
-                output_length = size(J, 2)
-            end
-            y = zeros(eltype(x), output_length)
+function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! = error("initial f! required"), g! = nothing, J = nothing, output_length = 0, chunk_size = 1)
+    if typeof(y) == Void
+        if output_length == 0
+            output_length = size(J, 2)
         end
-        if typeof(J) == Void
-            J = zeros(eltype(x), length(y), length(x))
-        end
-        newg! = g!
-        if typeof(g!) == Void
-            permf!(yp::Vector, xp::Vector) = f!(xp, yp)
-            y0 = deepcopy(y)
-            newg! = (xp::Vector, Jp::Matrix) -> ForwardDiff.jacobian!(Jp, permf!, y0, x, Chunk{chunk_size}())
-        end
-        LeastSquaresProblem(x, y , f!, J, newg!)
+        y = zeros(eltype(x), output_length)
     end
-else
-    function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! = error("initial f! required"), g! = nothing, J = nothing, output_length = 0, chunk_size = 1)
-       if typeof(y) == Void
-            if output_length == 0
-                output_length = size(J, 2)
-            end
-            y = zeros(eltype(x), output_length)
-        end
-       if typeof(J) == Void
-           J = zeros(eltype(x), length(y), length(x))
-       end
-       newg! = g!
-       if typeof(g!) == Void
-           permf!(yp::Vector, xp::Vector) = f!(xp, yp)
-           permg! = jacobian(permf!, mutates = true, chunk_size = chunk_size, output_length = length(y))
-           newg! = (xp::Vector, Jp::Matrix) -> permg!(Jp, xp)
-       end
-       LeastSquaresProblem(x, y , f!, J, newg!)
-   end
+    if typeof(J) == Void
+        J = zeros(eltype(x), length(y), length(x))
+    end
+    newg! = g!
+    if typeof(g!) == Void
+        permf!(yp::Vector, xp::Vector) = f!(xp, yp)
+        y0 = deepcopy(y)
+        newg! = (xp::Vector, Jp::Matrix) -> ForwardDiff.jacobian!(Jp, permf!, y0, x, Chunk{chunk_size}())
+    end
+    LeastSquaresProblem(x, y , f!, J, newg!)
 end
+
 
 
 
