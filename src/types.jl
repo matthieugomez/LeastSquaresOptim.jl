@@ -19,7 +19,7 @@ end
 
 LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}(x::Tx, y::Ty, f!::Tf, J::TJ, g!::Tg) = LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}(x, y, f!, J, g!) 
 
-function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! = error("initial f! required"), g! = nothing, J = nothing, output_length = 0, chunk_size = 1)
+function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! = error("initial f! required"), g! = nothing, J = nothing, output_length = 0)
     if typeof(y) == Void
         if output_length == 0
             output_length = size(J, 2)
@@ -33,7 +33,7 @@ function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! =
     if typeof(g!) == Void
         permf!(yp::Vector, xp::Vector) = f!(xp, yp)
         y0 = deepcopy(y)
-        newg! = (xp::Vector, Jp::Matrix) -> ForwardDiff.jacobian!(Jp, permf!, y0, x,  ForwardDiff.JacobianConfig{chunk_size}(x))
+        newg! = (xp::Vector, Jp::Matrix) -> ForwardDiff.jacobian!(Jp, permf!, y0, x)
     end
     LeastSquaresProblem(x, y , f!, J, newg!)
 end
