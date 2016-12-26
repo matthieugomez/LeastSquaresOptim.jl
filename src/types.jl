@@ -33,7 +33,7 @@ function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! =
     if typeof(g!) == Void
         permf!(yp::Vector, xp::Vector) = f!(xp, yp)
         y0 = deepcopy(y)
-        newg! = (xp::Vector, Jp::Matrix) -> ForwardDiff.jacobian!(Jp, permf!, y0, x, Chunk{chunk_size}())
+        newg! = (xp::Vector, Jp::Matrix) -> ForwardDiff.jacobian!(Jp, permf!, y0, x,  ForwardDiff.JacobianConfig{N}(x))
     end
     LeastSquaresProblem(x, y , f!, J, newg!)
 end
