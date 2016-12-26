@@ -66,7 +66,7 @@ The main `optimize!` method accepts two main arguments : `optimizer` and `solver
 
 The `optimizers` and `solvers` are presented in more depth in the [Ceres documentation](http://ceres-solver.org/solving.html). For dense jacobians, the default options are `Dogle()` and `QR()`. For sparse jacobians, the default options are  `LevenbergMarquardt` and `LSMR()`. 
 
-`optimize!` also accept the options : `ftol`, `xtol`, `gr_tol`, `iterations` and `Δ` (initial radius).
+`optimize!` also accept the options : `ftol`, `xtol`, `grtol`, `iterations` and `Δ` (initial radius).
 
 
 
