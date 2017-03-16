@@ -596,7 +596,7 @@ for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg(), :dl), (LeastSqu
 end
 
 
-#test autodiff
+#test forwarddiff
 for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg(), :dl), (LeastSquaresOptim.LevenbergMarquardt(), :lm))
     alltests = [rosenbrock(); 
     powell_singular(); powell_badly_scaled(); 
@@ -612,7 +612,7 @@ for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg(), :dl), (LeastSqu
     for (name, f!, g!, x) in alltests
         nls = LeastSquaresProblem(x = x, f! = f!, output_length = length(x))
         r = optimize!(nls, optimizer)
-        @printf("%-10s %4s %2s %30s %5d %5d   %5d   %10e\n", :autodiff, :fact, optimizer_abbr, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
+        @printf("%-10s %4s %2s %30s %5d %5d   %5d   %10e\n", :forwarddiff, :fact, optimizer_abbr, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
         @test r.converged
         @test r.ssr <= 1e-3
     end
