@@ -3,27 +3,27 @@
 ## Utils
 ##
 ##############################################################################
+if VERSION < v"0.6.0-"
 
-macro isok(A)
-    :($A ==  Int32(1) || throw(CHOLMODException("")))
+    # Update B as Sparse(A)
+    function sparse!{Tv<:VTypes,Ti<:ITypes}(A::SparseMatrixCSC{Tv,Ti}, B::Sparse{Tv})
+        s = unsafe_load(B.p)
+        unsafe_copy!(s.x, pointer(A.nzval), length(A.nzval))
+        check_sparse(B) == Int32(1) || throw(CHOLMODException(""))
+        return B
+    end
+
+    # Update B as A'
+    function transpose!{Tv<: VTypes}(A::Sparse{Tv}, B::Sparse{Tv})
+        out = ccall((@cholmod_name("transpose_unsym", SuiteSparse_long),:libcholmod),
+            Cint,
+                (Ptr{C_Sparse{Tv}}, Cint, Ptr{SuiteSparse_long}, Ptr{SuiteSparse_long}, Csize_t, Ptr{C_Sparse{Tv}}, Ptr{UInt8}),   
+                A.p, 2, C_NULL, C_NULL, 0, B.p, common())
+        out == Int32(1) || throw(CHOLMODException(""))
+        return B
+    end
 end
 
-# Update B as A'
-function transpose_unsym_!{Tv<: VTypes}(A::Sparse{Tv}, values::Integer, B::Sparse{Tv})
-    @isok ccall((@cholmod_name("transpose_unsym", SuiteSparse_long),:libcholmod),
-        Cint,
-            (Ptr{C_Sparse{Tv}}, Cint, Ptr{SuiteSparse_long}, Ptr{SuiteSparse_long}, Csize_t, Ptr{C_Sparse{Tv}}, Ptr{UInt8}),   
-            A.p, values, C_NULL, C_NULL, 0, B.p, common())
-    return B
-end
-
-# Update B as Sparse(A)
-function Sparse!{Tv<:VTypes,Ti<:ITypes}(A::SparseMatrixCSC{Tv,Ti}, B::Sparse{Tv})
-    s = unsafe_load(B.p)
-    unsafe_copy!(s.x, pointer(A.nzval), length(A.nzval))
-    @isok check_sparse(B)
-    return B
-end
 
 ##############################################################################
 ## 
@@ -76,8 +76,8 @@ function A_ldiv_B!(x::AbstractVector, J::SparseMatrixCSC, y::AbstractVector, A::
         error("The symbolic structure of the Jacobian has been changed. Either (i) rewrite g! so that it does not modify the structure of J (see Julia issue #9906) (ii) use solver = :iterative rather than solver = :cholesky")
     end
 
-    Sparse!(J, sparseJ)
-    transpose_unsym_!(sparseJ, 2, sparseJt)
+    sparse!(J, sparseJ)
+    transpose!(sparseJ, sparseJt)
     factorize_p!(sparseJt, 0, F, cm)
     Ac_mul_B!(v, J, y)
     # !! there is a memory allocation here
