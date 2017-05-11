@@ -57,7 +57,7 @@ function optimize!{Tx, Ty, Tf, TJ, Tg, Toptimizer <: AllocatedLevenbergMarquardt
         false, false, false, false, false
     f!(x, fcur)
     f_calls += 1
-    ssr = sum(abs2, fcur)
+    ssr = norm(fcur, 2)
     maxabs_gr = Inf
     need_jacobian = true
 
@@ -90,17 +90,17 @@ function optimize!{Tx, Ty, Tf, TJ, Tg, Toptimizer <: AllocatedLevenbergMarquardt
         f_calls += 1
 
         # trial ssr
-        trial_ssr = sum(abs2, ftrial)
+        trial_ssr = norm(ftrial, 2)
 
         # predicted ssr
         A_mul_B!(one(eTx), J, δx, zero(eTx), fpredict)
         mul_calls += 1
         axpy!(-one(eTy), fcur, fpredict)
-        predicted_ssr = sum(abs2, fpredict)
+        predicted_ssr = norm(fpredict, 2)
         ρ = (ssr - trial_ssr) / (ssr - predicted_ssr)
 
         Ac_mul_B!(one(eTx), J, fcur, zero(eTx), dtd)
-        maxabs_gr = maximum(abs, dtd)
+        maxabs_gr = norm(dtd, Inf)
         mul_calls += 1
 
 

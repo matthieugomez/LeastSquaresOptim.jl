@@ -91,7 +91,7 @@ default_optimizer(::Void, ::AbstractSolver) = Dogleg()
 abstract type AbstractAllocatedOptimizer end
 abstract type AbstractAllocatedSolver end
 
-struct LeastSquaresProblemAllocated{Tx, Ty, Tf, TJ, Tg, Toptimizer <: AbstractAllocatedOptimizer, Tsolver <: AbstractAllocatedSolver}
+mutable struct LeastSquaresProblemAllocated{Tx, Ty, Tf, TJ, Tg, Toptimizer <: AbstractAllocatedOptimizer, Tsolver <: AbstractAllocatedSolver}
     x::Tx
     y::Ty
     f!::Tf

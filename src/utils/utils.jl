@@ -15,10 +15,10 @@ function assess_convergence(δx,
 
 
     x_converged, f_converged, gr_converged = false, false, false
-    maxabs_x = maximum(abs, x)
+    maxabs_x = norm(x, Inf)
     if abs(trial_ssr - ssr) <= ftol * (abs(ssr) + ftol) 
         f_converged = true
-    elseif maximum(abs, δx) <= xtol
+    elseif norm(δx, Inf) <= xtol
             x_converged = true
     elseif maxabs_gr <= grtol
             gr_converged = true
@@ -144,3 +144,4 @@ end
 # can be user written
 wdot(x, y, w) = dot(x, y, w)
 wnorm(x, w) = sqrt(wdot(x, x, w))
+
