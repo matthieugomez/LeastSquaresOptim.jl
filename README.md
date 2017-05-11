@@ -52,7 +52,7 @@ The main `optimize!` method accepts two main arguments : `optimizer` and `solver
 
 2. Choose a least square solver (a least square optimization method proceeds by solving successively linear least squares problems `min||Ax - b||^2`). 
 	- `LeastSquaresOptim.QR()`. Available for dense jacobians
-	- `LeastSquaresOptim.Cholesky()`. Available for dense jacobians and sparse jacobians. For sparse jacobians, a symbolic factorization is computed at the first iteration from SuiteSparse and numerically updated at each iteration.
+	- `LeastSquaresOptim.Cholesky()`. Available for dense jacobians
 	- `LeastSquaresOptim.LSMR()`. A conjugate gradient method ([LSMR]([http://web.stanford.edu/group/SOL/software/lsmr/) with diagonal preconditioner). The jacobian can be of any type that defines the following interface is defined:
 		- `A_mul_B!(α::Number, A, x, β::Number, y)` updates y to αAx + βy
 		- `Ac_mul_B!(α::Number, A, y, β::Number, x)` updates x to αA'y + βx

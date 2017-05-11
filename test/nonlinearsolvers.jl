@@ -522,7 +522,7 @@ for matrix in (:dense, :sparse)
                 broyden_tridiagonal(10); broyden_banded(10)]
                 for (name, f!, g!, x) in alltests
                     fcur = similar(x)
-                    J = Array(Float64, length(x), length(x))
+                    J = Array{Float64}(length(x), length(x))
                     if matrix == :sparse
                         J = sparse(J)
                     end
@@ -586,7 +586,7 @@ for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg(), :dl), (LeastSqu
     broyden_tridiagonal(10); broyden_banded(10)]
     for (name, f!, g!, x) in alltests
         fcur = similar(x)
-        J = Array(Float64, length(x), length(x))
+        J = Array{Float64}(length(x), length(x))
         nls = LeastSquaresProblem(x = x, y = fcur, f! = f!, J = J, g! = g!)
         r = optimize!(nls, optimizer, LeastSquaresOptim.Cholesky())
         @printf("%-6s %4s %2s %30s %5d %5d   %5d   %10e\n", :dense, :chol, optimizer_abbr, name, r.iterations, r.f_calls, r.g_calls, r.ssr)

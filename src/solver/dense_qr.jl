@@ -3,16 +3,16 @@
 ## Type with stored qr
 ##
 ##############################################################################
-type DenseQRAllocatedSolver{Tqr <: StridedMatrix, Tu <: AbstractVector} <: AbstractAllocatedSolver
+struct DenseQRAllocatedSolver{Tqr <: StridedMatrix, Tu <: AbstractVector} <: AbstractAllocatedSolver
     qr::Tqr
     u::Tu
-    function DenseQRAllocatedSolver(qr, u)
+    function DenseQRAllocatedSolver{Tqr, Tu}(qr, u) where {Tqr <: StridedMatrix, Tu <: AbstractVector}
         length(u) == size(qr, 1) || throw(DimensionMismatch("u must have length size(J, 1)"))
         new(qr, u)
     end
 end
 
-function DenseQRAllocatedSolver{Tqr, Tu <: AbstractVector}(qr::Tqr, u::Tu)
+function DenseQRAllocatedSolver(qr::Tqr, u::Tu) where {Tqr <: StridedMatrix, Tu <: AbstractVector}
     DenseQRAllocatedSolver{Tqr, Tu}(qr, u)
 end
 

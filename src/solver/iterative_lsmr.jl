@@ -9,7 +9,7 @@
 ##
 #############################################################################
 
-type PreconditionedMatrix{TA, Tp, Tx}
+struct PreconditionedMatrix{TA, Tp, Tx}
     A::TA
     preconditioner::Tp
     tmp::Tx
@@ -47,7 +47,7 @@ end
 #############################################################################
 
 
-type DampenedVector{Ty, Tx}
+struct DampenedVector{Ty, Tx}
     y::Ty # dimension of f(x)
     x::Tx # dimension of x
 end
@@ -60,7 +60,7 @@ function scale!(a::DampenedVector, α::Number)
 end
 norm(a::DampenedVector) = sqrt(norm(a.y)^2 + norm(a.x)^2)
 
-type DampenedMatrix{TA, Tx}
+struct DampenedMatrix{TA, Tx}
     A::TA
     diagonal::Tx 
 end
@@ -102,7 +102,7 @@ end
 ##
 ##############################################################################
 
-type InverseDiagonal{Tx}
+struct InverseDiagonal{Tx}
     _::Tx
 end
 function A_ldiv_B!(x, ID::InverseDiagonal, y)
@@ -134,7 +134,7 @@ function getpreconditioner(nls::LeastSquaresProblem, optimizer::Dogleg, solver::
     return solver.preconditioner!, solver.preconditioner
 end
 
-type LSMRAllocatedSolver{Tx0, Tx1, Tx2, Tx22, Tx3, Tx4, Tx5, Ty} <: AbstractAllocatedSolver
+struct LSMRAllocatedSolver{Tx0, Tx1, Tx2, Tx22, Tx3, Tx4, Tx5, Ty} <: AbstractAllocatedSolver
     preconditioner!::Tx0
     preconditioner::Tx1
     tmp::Tx2
@@ -143,16 +143,7 @@ type LSMRAllocatedSolver{Tx0, Tx1, Tx2, Tx22, Tx3, Tx4, Tx5, Ty} <: AbstractAllo
     h::Tx4
     hbar::Tx5
     u::Ty
-    function LSMRAllocatedSolver(preconditioner!, preconditioner, tmp, tmp2, v, h, hbar, u)
-        new(preconditioner!, preconditioner, tmp, tmp2, v, h, hbar, u)
-    end
 end
-
-
-function LSMRAllocatedSolver{Tx0, Tx1, Tx2, Tx22, Tx3, Tx4, Tx5, Ty}(preconditioner!::Tx0, preconditioner::Tx1, tmp::Tx2, tmp2::Tx22, v::Tx3, h::Tx4, hbar::Tx5, u::Ty)
-    LSMRAllocatedSolver{Tx0, Tx1, Tx2, Tx22, Tx3, Tx4, Tx5, Ty}(preconditioner!, preconditioner, tmp, tmp2, v, h, hbar, u)
-end
-
 
 
 function AbstractAllocatedSolver(nls::LeastSquaresProblem, optimizer::Dogleg, solver::LSMR)
@@ -213,7 +204,7 @@ function getpreconditioner(nls::LeastSquaresProblem, optimizer::LevenbergMarquar
     return solver.preconditioner!, solver.preconditioner
 end
 
-type LSMRDampenedAllocatedSolver{Tx0, Tx1, Tx2, Tx22, Tx3, Tx4, Tx5, Tx6, Ty} <: AbstractAllocatedSolver
+struct LSMRDampenedAllocatedSolver{Tx0, Tx1, Tx2, Tx22, Tx3, Tx4, Tx5, Tx6, Ty} <: AbstractAllocatedSolver
     preconditioner!::Tx0
     preconditioner::Tx1
     tmp::Tx2
@@ -223,13 +214,8 @@ type LSMRDampenedAllocatedSolver{Tx0, Tx1, Tx2, Tx22, Tx3, Tx4, Tx5, Tx6, Ty} <:
     hbar::Tx5
     zerosvector::Tx6
     u::Ty
-    function LSMRDampenedAllocatedSolver(preconditioner!, preconditioner, tmp, tmp2, v, h, hbar, zerosvector, u)
-        new(preconditioner!, preconditioner, tmp, tmp2, v, h, hbar, zerosvector, u)
-    end
 end
-function LSMRDampenedAllocatedSolver{Tx0, Tx1, Tx2, Tx22, Tx3, Tx4, Tx5, Tx6, Ty}(preconditioner!::Tx0, preconditioner::Tx1, tmp::Tx2, tmp2::Tx22, v::Tx3, h::Tx4, hbar::Tx5, zerosvector::Tx6, u::Ty)
-    LSMRDampenedAllocatedSolver{Tx0, Tx1, Tx2, Tx22, Tx3, Tx4, Tx5, Tx6, Ty}(preconditioner!, preconditioner, tmp, tmp2, v, h, hbar, zerosvector, u)
-end
+
 function AbstractAllocatedSolver{Tx, Ty, Tf, TJ, Tg}(nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}, optimizer::LevenbergMarquardt, solver::LSMR)
     preconditioner!, preconditioner = getpreconditioner(nls, optimizer, solver)
     LSMRDampenedAllocatedSolver(preconditioner!, preconditioner, _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.x),  _zeros(nls.x), _zeros(nls.y))

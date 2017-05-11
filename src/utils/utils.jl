@@ -15,10 +15,10 @@ function assess_convergence(δx,
 
 
     x_converged, f_converged, gr_converged = false, false, false
-    maxabs_x = maxabs(x)
+    maxabs_x = maximum(abs, x)
     if abs(trial_ssr - ssr) <= ftol * (abs(ssr) + ftol) 
         f_converged = true
-    elseif maxabs(δx) <= xtol
+    elseif maximum(abs, δx) <= xtol
             x_converged = true
     elseif maxabs_gr <= grtol
             gr_converged = true
@@ -33,7 +33,7 @@ end
 ##
 ##############################################################################
 
-type IsFiniteException <: Exception
+struct IsFiniteException <: Exception
   indices::Vector{Int}
 end
 Base.show(io::IO, e::IsFiniteException) = print(io,
@@ -41,7 +41,7 @@ Base.show(io::IO, e::IsFiniteException) = print(io,
   " of the following equation(s) resulted in a non-finite number: $(e.indices)")
 
 function check_isfinite(x::Vector)
-    i = find(!isfinite(x))
+    i = find(.!isfinite.(x))
     if !isempty(i)
         throw(IsFiniteException(i))
     end
@@ -56,13 +56,13 @@ end
 ##
 ##############################################################################
 
-immutable OptimizationState
+struct OptimizationState
     iteration::Int
     value::Float64
     g_norm::Float64
 end
 
-immutable OptimizationTrace
+struct OptimizationTrace
     states::Vector{OptimizationState}
 end
 
@@ -119,14 +119,14 @@ end
 function colsumabs2!(v::AbstractVector, A::StridedVecOrMat)
     length(v) == size(A, 2) || error("v should have length size(A, 2)")
     @inbounds for j in 1:length(v)
-        v[j] = sumabs2(view(A, :, j))
+        v[j] = sum(abs2, view(A, :, j))
     end
 end
 
 function colsumabs2!(v::AbstractVector, A::SparseMatrixCSC)
     length(v) == size(A, 2) || error("v should have length size(A, 2)")
     @inbounds for j in 1:length(v)
-        v[j] = sumabs2(view(nonzeros(A), nzrange(A, j)))
+        v[j] = sum(abs2, view(nonzeros(A), nzrange(A, j)))
     end
 end
 
@@ -143,5 +143,4 @@ end
 
 # can be user written
 wdot(x, y, w) = dot(x, y, w)
-wsumabs2(x, w) = wdot(x, x, w)
-wnorm(x, w) = sqrt(wsumabs2(x, w))
+wnorm(x, w) = sqrt(wdot(x, x, w))

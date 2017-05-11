@@ -3,21 +3,28 @@
 ## Non Linear Least Squares
 ##
 ##############################################################################
-type LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}
+
+struct LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}
     x::Tx
     y::Ty
     f!::Tf
     J::TJ
     g!::Tg
-    function LeastSquaresProblem(x, y, f!, J, g!)
+    function LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}(x, y, f!, J, g!) where {Tx, Ty, Tf, TJ, Tg}
         length(x) == size(J, 2) || throw(DimensionMismatch("x must have length size(J, 2)"))
         length(y) == size(J, 1) || throw(DimensionMismatch("y must have length size(J, 1)"))
         size(J, 1) >= size(J, 2) || throw(DimensionMismatch("size(J, 1) must be greater than size(J, 2)"))
-        new(x, y, f!, J, g!)
+        new(x, y, f!, J, g!) 
     end
 end
 
-LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}(x::Tx, y::Ty, f!::Tf, J::TJ, g!::Tg) = LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}(x, y, f!, J, g!) 
+
+function LeastSquaresProblem(x::Tx, y::Ty, f!::Tf, J::TJ, g!::Tg) where {Tx, Ty, Tf, TJ, Tg}
+    LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}(x, y, f!, J, g!)
+end
+
+
+
 
 function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! = error("initial f! required"), g! = nothing, J = nothing, output_length = 0)
     if typeof(y) == Void
@@ -49,16 +56,16 @@ end
 ##
 ##############################################################################
 # optimizer
-abstract AbstractOptimizer
-immutable Dogleg <: AbstractOptimizer end
-immutable LevenbergMarquardt <: AbstractOptimizer end
+abstract type AbstractOptimizer end
+struct Dogleg <: AbstractOptimizer end
+struct LevenbergMarquardt <: AbstractOptimizer end
 
 
 # solver
-abstract AbstractSolver
-immutable QR <: AbstractSolver end
-immutable Cholesky <: AbstractSolver end
-type LSMR{T1, T2} <: AbstractSolver
+abstract type AbstractSolver end
+struct QR <: AbstractSolver end
+struct Cholesky <: AbstractSolver end
+struct LSMR{T1, T2} <: AbstractSolver
     preconditioner!::T1
     preconditioner::T2
 end
@@ -81,10 +88,10 @@ default_optimizer(::Void, ::AbstractSolver) = Dogleg()
 
 
 
-abstract AbstractAllocatedOptimizer
-abstract AbstractAllocatedSolver
+abstract type AbstractAllocatedOptimizer end
+abstract type AbstractAllocatedSolver end
 
-type LeastSquaresProblemAllocated{Tx, Ty, Tf, TJ, Tg, Toptimizer <: AbstractAllocatedOptimizer, Tsolver <: AbstractAllocatedSolver}
+struct LeastSquaresProblemAllocated{Tx, Ty, Tf, TJ, Tg, Toptimizer <: AbstractAllocatedOptimizer, Tsolver <: AbstractAllocatedSolver}
     x::Tx
     y::Ty
     f!::Tf
@@ -118,7 +125,7 @@ end
 ##
 ##############################################################################
 
-type LeastSquaresResult{Tx}
+struct LeastSquaresResult{Tx}
     optimizer::String
     minimizer::Tx
     ssr::Float64

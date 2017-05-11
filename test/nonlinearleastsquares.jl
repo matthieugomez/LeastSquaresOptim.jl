@@ -89,31 +89,24 @@ function factor()
 end
 
 iter = 0
-for matrix in (:dense, :sparse)
-    for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg(), :dl), (LeastSquaresOptim.LevenbergMarquardt(), :lm))
-        factorization = matrix == :dense ? LeastSquaresOptim.QR() : LeastSquaresOptim.Cholesky()
-        for (solver, solver_abbr) in ((factorization, :fact), (LeastSquaresOptim.LSMR(), :iter))
-            iter += 1
-            if matrix == :sparse && optimizer == LeastSquaresOptim.LevenbergMarquardt()
-                continue
-            else
-                name, f!, g!, x = factor()
-                fcur = ones(9)
-                J = ones(9, 6)
-                g!(x, J)
-                if matrix == :sparse
-                    J = sparse(J)
-                end
-                nls = LeastSquaresProblem(x = x, y = fcur, f! = f!, J = J, g! = g!)
-                r = optimize!(nls, optimizer, solver)
-                if iter == 1
-                    show(r)
-                end
-                @printf("%-6s %4s %2s %30s %5d %5d   %5d   %10e\n", matrix, solver_abbr, optimizer_abbr, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
-                @test r.ssr <= 12
-                @test r.converged
-                end
-            end
+for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg(), :dl), (LeastSquaresOptim.LevenbergMarquardt(), :lm))
+    for (solver, solver_abbr) in ((LeastSquaresOptim.QR(), :qr), (LeastSquaresOptim.LSMR(), :iter))
+        iter += 1
+        name, f!, g!, x = factor()
+        fcur = ones(9)
+        J = ones(9, 6)
+        g!(x, J)
+        if solver == LeastSquaresOptim.LSMR()
+            J = sparse(J)
+        end
+        nls = LeastSquaresProblem(x = x, y = fcur, f! = f!, J = J, g! = g!)
+        r = optimize!(nls, optimizer, solver)
+        if iter == 1
+            show(r)
+        end
+        @printf("%4s %2s %30s %5d %5d   %5d   %10e\n", solver_abbr, optimizer_abbr, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
+        @test r.ssr <= 12
+        @test r.converged
     end
 end
 

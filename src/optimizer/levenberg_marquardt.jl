@@ -5,22 +5,22 @@
 ##
 ##############################################################################
 
-type AllocatedLevenbergMarquardt{Tx1, Tx2, Ty1, Ty2} <: AbstractAllocatedOptimizer
+struct AllocatedLevenbergMarquardt{Tx1, Tx2, Ty1, Ty2} <: AbstractAllocatedOptimizer
     δx::Tx1
     dtd::Tx2
     ftrial::Ty1
     fpredict::Ty2
-
-    function AllocatedLevenbergMarquardt(δx, dtd, ftrial, fpredict)
+    function AllocatedLevenbergMarquardt{Tx1, Tx2, Ty1, Ty2}(δx, dtd, ftrial, fpredict) where {Tx1, Tx2, Ty1, Ty2}
         length(δx) == length(dtd) || throw(DimensionMismatch("The lengths of δx and dtd must match."))
         length(ftrial) == length(fpredict) || throw(DimensionMismatch("The lengths of ftrial and fpredict must match."))
         new(δx, dtd, ftrial, fpredict)
     end
 end
 
-function AllocatedLevenbergMarquardt{Tx1, Tx2, Ty1, Ty2}(δx::Tx1, dtd::Tx2, ftrial::Ty1, fpredict::Ty2)
+function AllocatedLevenbergMarquardt(δx::Tx1, dtd::Tx2, ftrial::Ty1, fpredict::Ty2) where {Tx1, Tx2, Ty1, Ty2}
     AllocatedLevenbergMarquardt{Tx1, Tx2, Ty1, Ty2}(δx, dtd, ftrial, fpredict)
 end
+
 
 function AbstractAllocatedOptimizer{Tx, Ty, Tf, TJ, Tg}(nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}, optimizer::LevenbergMarquardt)
    AllocatedLevenbergMarquardt(_zeros(nls.x), _zeros(nls.x), _zeros(nls.y), _zeros(nls.y))
@@ -32,20 +32,7 @@ end
 ##
 ##############################################################################
 ##############################################################################
-macro levenbergtrace()
-    quote
-        if tracing
-            update!(tr,
-                    iter,
-                    ssr,
-                    maxabs_gr,
-                    store_trace,
-                    show_trace,
-                    show_every
-                    )
-        end
-    end
-end
+
 
 const MAX_Δ = 1e16 # minimum trust region radius
 const MIN_Δ = 1e-16 # maximum trust region radius
@@ -70,7 +57,7 @@ function optimize!{Tx, Ty, Tf, TJ, Tg, Toptimizer <: AllocatedLevenbergMarquardt
         false, false, false, false, false
     f!(x, fcur)
     f_calls += 1
-    ssr = sumabs2(fcur)
+    ssr = sum(abs2, fcur)
     maxabs_gr = Inf
     need_jacobian = true
 
@@ -80,7 +67,7 @@ function optimize!{Tx, Ty, Tf, TJ, Tg, Toptimizer <: AllocatedLevenbergMarquardt
 
     tr = OptimizationTrace()
     tracing = store_trace || show_trace
-    @levenbergtrace
+    tracing && update!(tr, iter, ssr, maxabs_gr, store_trace, show_trace, show_every)
 
     while !converged && iter < iterations 
         iter += 1
@@ -103,17 +90,17 @@ function optimize!{Tx, Ty, Tf, TJ, Tg, Toptimizer <: AllocatedLevenbergMarquardt
         f_calls += 1
 
         # trial ssr
-        trial_ssr = sumabs2(ftrial)
+        trial_ssr = sum(abs2, ftrial)
 
         # predicted ssr
         A_mul_B!(one(eTx), J, δx, zero(eTx), fpredict)
         mul_calls += 1
         axpy!(-one(eTy), fcur, fpredict)
-        predicted_ssr = sumabs2(fpredict)
+        predicted_ssr = sum(abs2, fpredict)
         ρ = (ssr - trial_ssr) / (ssr - predicted_ssr)
 
         Ac_mul_B!(one(eTx), J, fcur, zero(eTx), dtd)
-        maxabs_gr = maxabs(dtd)
+        maxabs_gr = maximum(abs, dtd)
         mul_calls += 1
 
 
@@ -133,7 +120,7 @@ function optimize!{Tx, Ty, Tf, TJ, Tg, Toptimizer <: AllocatedLevenbergMarquardt
             Δ = max(Δ / decrease_factor , MIN_Δ)
             decrease_factor *= 2.0
         end
-        @levenbergtrace
+        tracing && update!(tr, iter, ssr, maxabs_gr, store_trace, show_trace, show_every)
     end
     LeastSquaresResult("LevenbergMarquardt", x, ssr, iter, converged,
                         x_converged, xtol, f_converged, ftol, gr_converged, grtol, tr,

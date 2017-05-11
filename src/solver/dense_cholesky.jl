@@ -4,17 +4,20 @@
 ##
 ##############################################################################
 
-type DenseCholeskyAllocatedSolver{Tc <: StridedMatrix} <: AbstractAllocatedSolver
+struct DenseCholeskyAllocatedSolver{Tc <: StridedMatrix} <: AbstractAllocatedSolver
     chol::Tc
-    function DenseCholeskyAllocatedSolver(chol)
+    function DenseCholeskyAllocatedSolver{Tc}(chol) where {Tc <: StridedMatrix}
         size(chol, 1) == size(chol, 2) || throw(DimensionMismatch("chol must be square"))
         new(chol)
     end
 end
+function DenseCholeskyAllocatedSolver(chol::Tc) where {Tc <: StridedMatrix}
+    DenseCholeskyAllocatedSolver{Tc}(chol)
+end
 
-DenseCholeskyAllocatedSolver{Tc}(chol::Tc) = DenseCholeskyAllocatedSolver{Tc}(chol)
+
 function AbstractAllocatedSolver{Tx, Ty, Tf, TJ <: StridedVecOrMat, Tg}(nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}, optimizer, ::Cholesky)
-    return DenseCholeskyAllocatedSolver(Array(eltype(nls.J), length(nls.x), length(nls.x)))
+    return DenseCholeskyAllocatedSolver(Array{eltype(nls.J)}(length(nls.x), length(nls.x)))
 end
 
 ##############################################################################

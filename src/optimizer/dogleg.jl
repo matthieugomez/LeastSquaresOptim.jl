@@ -4,15 +4,14 @@
 ##
 ##############################################################################
 
-type AllocatedDogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2} <: AbstractAllocatedOptimizer
+struct AllocatedDogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2} <: AbstractAllocatedOptimizer
     δgn::Tx1
     δgr::Tx2
     δx::Tx3
     dtd::Tx4
     ftrial::Ty1
     fpredict::Ty2
-
-    function AllocatedDogleg(δgn, δgr, δx, dtd, ftrial, fpredict)
+    function AllocatedDogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2}(δgn, δgr, δx, dtd, ftrial, fpredict) where {Tx1, Tx2, Tx3, Tx4, Ty1, Ty2}
         length(δgn) == length(δgr) || throw(DimensionMismatch("The lengths of δgn and δgr must match."))
         length(δgn) == length(δx) || throw(DimensionMismatch("The lengths of δgn and δx must match."))
         length(δgn) == length(dtd) || throw(DimensionMismatch("The lengths of δgn and dtd must match."))
@@ -21,7 +20,7 @@ type AllocatedDogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2} <: AbstractAllocatedOptimizer
     end
 end
 
-function AllocatedDogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2}(δgn::Tx1, δgr::Tx2, δx::Tx3, dtd::Tx4, ftrial::Ty1, fpredict::Ty2)
+function AllocatedDogleg(δgn::Tx1, δgr::Tx2, δx::Tx3, dtd::Tx4, ftrial::Ty1, fpredict::Ty2) where {Tx1, Tx2, Tx3, Tx4, Ty1, Ty2}
     AllocatedDogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2}(δgn, δgr, δx, dtd, ftrial, fpredict)
 end
 
@@ -35,21 +34,6 @@ end
 ## Method for AllocatedDogleg
 ##
 ##############################################################################
-macro Allocateddoglegtrace()
-    quote
-        if tracing
-            update!(tr,
-                    iter,
-                    ssr,
-                    maxabs_gr,
-                    store_trace,
-                    show_trace,
-                    show_every)
-        end
-    end
-end
-
-
 
 const MIN_Δ = 1e-16 # maximum trust region radius
 const MAX_Δ = 1e16 # minimum trust region radius
@@ -75,7 +59,7 @@ function optimize!{Tx, Ty, Tf, TJ, Tg, Toptimizer <: AllocatedDogleg, Tsolver}(
         false, false, false, false, false
     f!(x, fcur)
     f_calls += 1
-    ssr = sumabs2(fcur)
+    ssr = sum(abs2, fcur)
     maxabs_gr = Inf
 
     iter = 0  
@@ -83,7 +67,7 @@ function optimize!{Tx, Ty, Tf, TJ, Tg, Toptimizer <: AllocatedDogleg, Tsolver}(
 
     tr = OptimizationTrace()
     tracing = store_trace || show_trace
-    @Allocateddoglegtrace
+    tracing && update!(tr, iter, ssr, maxabs_gr, store_trace, show_trace, show_every)
     while !converged && iter < iterations 
         iter += 1
         check_isfinite(x)
@@ -104,14 +88,14 @@ function optimize!{Tx, Ty, Tf, TJ, Tg, Toptimizer <: AllocatedDogleg, Tsolver}(
             # compute (opposite) gradient
             Ac_mul_B!(one(eTx), J, fcur, zero(eTx), δgr)
             mul_calls += 1
-            maxabs_gr = maxabs(δgr)
+            maxabs_gr = maximum(abs, δgr)
             wnorm_δgr = wnorm(δgr, dtd)
 
             # compute Cauchy point
             map!((x, y) -> x * sqrt(y), δgn, δgr, dtd)
             A_mul_B!(one(eTy), J, δgn, zero(eTy), fpredict)
             mul_calls += 1
-            α = wnorm_δgr^2 / sumabs2(fpredict)
+            α = wnorm_δgr^2 / sum(abs2, fpredict)
 
             # compute Gauss Newton step δgn
             fill!(δgn, zero(eTx))
@@ -154,13 +138,13 @@ function optimize!{Tx, Ty, Tf, TJ, Tg, Toptimizer <: AllocatedDogleg, Tsolver}(
         f_calls += 1
 
         # trial ssr
-        trial_ssr = sumabs2(ftrial)
+        trial_ssr = sum(abs2, ftrial)
 
         # predicted ssr
         A_mul_B!(one(eTx), J, δx, zero(eTx), fpredict)
         mul_calls += 1
         axpy!(-one(eTy), fcur, fpredict)
-        predicted_ssr = sumabs2(fpredict)
+        predicted_ssr = sum(abs2, fpredict)
 
         ρ = (ssr - trial_ssr) / (ssr - predicted_ssr)
         x_converged, f_converged, gr_converged, converged = 
@@ -182,7 +166,7 @@ function optimize!{Tx, Ty, Tf, TJ, Tg, Toptimizer <: AllocatedDogleg, Tsolver}(
         elseif ρ > INCREASE_THRESHOLD
            Δ = max(Δ, 3.0 * wnorm_δx)
        end  
-       @Allocateddoglegtrace 
+       tracing && update!(tr, iter, ssr, maxabs_gr, store_trace, show_trace, show_every) 
     end
     LeastSquaresResult("Dogleg", x, ssr, iter, converged,
                         x_converged, xtol, f_converged, ftol, gr_converged, grtol, tr, 
