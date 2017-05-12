@@ -59,7 +59,7 @@ function optimize!{Tx, Ty, Tf, TJ, Tg, Toptimizer <: AllocatedDogleg, Tsolver}(
         false, false, false, false, false
     f!(x, fcur)
     f_calls += 1
-    ssr = norm(fcur, 2)^2
+    ssr = sum(abs2, fcur)
     maxabs_gr = Inf
 
     iter = 0  
@@ -88,14 +88,14 @@ function optimize!{Tx, Ty, Tf, TJ, Tg, Toptimizer <: AllocatedDogleg, Tsolver}(
             # compute (opposite) gradient
             Ac_mul_B!(one(eTx), J, fcur, zero(eTx), δgr)
             mul_calls += 1
-            maxabs_gr = norm(δgr, Inf)
+            maxabs_gr = maximum(abs, δgr)
             wnorm_δgr = wnorm(δgr, dtd)
 
             # compute Cauchy point
             map!((x, y) -> x * sqrt(y), δgn, δgr, dtd)
             A_mul_B!(one(eTy), J, δgn, zero(eTy), fpredict)
             mul_calls += 1
-            α = wnorm_δgr^2 / norm(fpredict, 2)^2
+            α = wnorm_δgr^2 / sum(abs2, fpredict)
 
             # compute Gauss Newton step δgn
             fill!(δgn, zero(eTx))
@@ -138,13 +138,13 @@ function optimize!{Tx, Ty, Tf, TJ, Tg, Toptimizer <: AllocatedDogleg, Tsolver}(
         f_calls += 1
 
         # trial ssr
-        trial_ssr = norm(ftrial, 2)^2
+        trial_ssr = sum(abs2, ftrial)
 
         # predicted ssr
         A_mul_B!(one(eTx), J, δx, zero(eTx), fpredict)
         mul_calls += 1
         axpy!(-one(eTy), fcur, fpredict)
-        predicted_ssr = norm(fpredict, 2)^2
+        predicted_ssr = sum(abs2, fpredict)
 
         ρ = (ssr - trial_ssr) / (ssr - predicted_ssr)
         x_converged, f_converged, gr_converged, converged = 

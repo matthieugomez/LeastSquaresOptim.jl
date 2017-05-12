@@ -15,10 +15,10 @@ function assess_convergence(δx,
 
 
     x_converged, f_converged, gr_converged = false, false, false
-    maxabs_x = norm(x, Inf)
+    maxabs_x = maximum(abs, x)
     if abs(trial_ssr - ssr) <= ftol * (abs(ssr) + ftol) 
         f_converged = true
-    elseif norm(δx, Inf) <= xtol
+    elseif maximum(abs, δx) <= xtol
             x_converged = true
     elseif maxabs_gr <= grtol
             gr_converged = true
