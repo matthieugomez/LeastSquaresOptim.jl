@@ -24,7 +24,7 @@ function AllocatedDogleg(δgn::Tx1, δgr::Tx2, δx::Tx3, dtd::Tx4, ftrial::Ty1, 
     AllocatedDogleg{Tx1, Tx2, Tx3, Tx4, Ty1, Ty2}(δgn, δgr, δx, dtd, ftrial, fpredict)
 end
 
-function AbstractAllocatedOptimizer{Tx, Ty, Tf, TJ, Tg}(nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}, optimizer::Dogleg)
+function AbstractAllocatedOptimizer(nls::LeastSquaresProblem, optimizer::Dogleg)
     AllocatedDogleg(_zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), 
     _zeros(nls.y), _zeros(nls.y))
 end
@@ -43,10 +43,10 @@ const MAX_DIAGONAL = 1e32
 const DECREASE_THRESHOLD = 0.25
 const INCREASE_THRESHOLD = 0.75
 
-function optimize!{Tx, Ty, Tf, TJ, Tg, Toptimizer <: AllocatedDogleg, Tsolver}(
+function optimize!(
     anls::LeastSquaresProblemAllocated{Tx, Ty, Tf, TJ, Tg, Toptimizer, Tsolver};
     xtol::Number = 1e-8, ftol::Number = 1e-8, grtol::Number = 1e-8,
-    iterations::Integer = 1_000, Δ::Number = 1.0, store_trace = false, show_trace = false, show_every = 1)
+    iterations::Integer = 1_000, Δ::Number = 1.0, store_trace = false, show_trace = false, show_every = 1) where {Tx, Ty, Tf, TJ, Tg, Toptimizer <: AllocatedDogleg, Tsolver}
  
      δgn, δgr, δx, dtd = anls.optimizer.δgn, anls.optimizer.δgr, anls.optimizer.δx, anls.optimizer.dtd
      ftrial, fpredict = anls.optimizer.ftrial, anls.optimizer.fpredict

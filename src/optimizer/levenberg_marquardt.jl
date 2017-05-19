@@ -22,7 +22,7 @@ function AllocatedLevenbergMarquardt(δx::Tx1, dtd::Tx2, ftrial::Ty1, fpredict::
 end
 
 
-function AbstractAllocatedOptimizer{Tx, Ty, Tf, TJ, Tg}(nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}, optimizer::LevenbergMarquardt)
+function AbstractAllocatedOptimizer(nls::LeastSquaresProblem, optimizer::LevenbergMarquardt)
    AllocatedLevenbergMarquardt(_zeros(nls.x), _zeros(nls.x), _zeros(nls.y), _zeros(nls.y))
 end
 
@@ -41,10 +41,10 @@ const GOOD_STEP_QUALITY = 0.75
 const MIN_DIAGONAL = 1e-6
 const MAX_DIAGONAL = 1e32
 
-function optimize!{Tx, Ty, Tf, TJ, Tg, Toptimizer <: AllocatedLevenbergMarquardt, Tsolver}(
+function optimize!(
     anls::LeastSquaresProblemAllocated{Tx, Ty, Tf, TJ, Tg, Toptimizer, Tsolver};
             xtol::Number = 1e-8, ftol::Number = 1e-8, grtol::Number = 1e-8,
-            iterations::Integer = 1_000, Δ::Number = 10.0, store_trace = false, show_trace = false, show_every = 1)
+            iterations::Integer = 1_000, Δ::Number = 10.0, store_trace = false, show_trace = false, show_every = 1) where {Tx, Ty, Tf, TJ, Tg, Toptimizer <: AllocatedLevenbergMarquardt, Tsolver}
 
     δx, dtd = anls.optimizer.δx, anls.optimizer.dtd
     ftrial, fpredict = anls.optimizer.ftrial, anls.optimizer.fpredict

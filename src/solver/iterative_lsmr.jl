@@ -17,14 +17,14 @@ struct PreconditionedMatrix{TA, Tp, Tx}
 end
 eltype(A::PreconditionedMatrix) = eltype(A.A)
 size(A::PreconditionedMatrix, i::Integer) = size(A.A, i)
-function A_mul_B!{TA, Tp, Tx}(α::Number, pm::PreconditionedMatrix{TA, Tp, Tx}, a::Tx, 
-                β::Number, b)
+function A_mul_B!(α::Number, pm::PreconditionedMatrix{TA, Tp, Tx}, a::Tx, 
+                β::Number, b) where {TA, Tp, Tx}
     A_ldiv_B!(a, pm.preconditioner, pm.tmp)
     A_mul_B!(α, pm.A, pm.tmp, β, b)
     return b
 end
-function Ac_mul_B!{TA, Tp, Tx}(α::Number, pm::PreconditionedMatrix{TA, Tp, Tx}, a, 
-                β::Number, b::Tx)
+function Ac_mul_B!(α::Number, pm::PreconditionedMatrix{TA, Tp, Tx}, a, 
+                β::Number, b::Tx) where {TA, Tp, Tx}
     T = eltype(b)
     β = convert(T, β)
     Ac_mul_B!(one(T), pm.A, a, zero(T), pm.tmp)
@@ -71,8 +71,8 @@ function size(A::DampenedMatrix, dim::Integer)
     dim == 1 ? (m + l) : 
     dim == 2 ? n : 1
 end
-function A_mul_B!{TA, Tx, Ty}(α::Number, mw::DampenedMatrix{TA, Tx}, a::Tx, 
-                β::Number, b::DampenedVector{Ty, Tx})
+function A_mul_B!(α::Number, mw::DampenedMatrix, a, 
+                β::Number, b::DampenedVector)
     if β != 1
         scale!(b, β)
     end
@@ -80,8 +80,8 @@ function A_mul_B!{TA, Tx, Ty}(α::Number, mw::DampenedMatrix{TA, Tx}, a::Tx,
     map!((z, x, y)-> z + α * x * y, b.x, b.x, a, mw.diagonal)
     return b
 end
-function Ac_mul_B!{TA, Tx, Ty}(α::Number, mw::DampenedMatrix{TA, Tx}, a::DampenedVector{Ty, Tx}, 
-                β::Number, b::Tx)
+function Ac_mul_B!(α::Number, mw::DampenedMatrix, a::DampenedVector, 
+                β::Number, b)
     T = eltype(b)
     β = convert(T, β)
     if β != one(T)
@@ -216,7 +216,7 @@ struct LSMRDampenedAllocatedSolver{Tx0, Tx1, Tx2, Tx22, Tx3, Tx4, Tx5, Tx6, Ty} 
     u::Ty
 end
 
-function AbstractAllocatedSolver{Tx, Ty, Tf, TJ, Tg}(nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}, optimizer::LevenbergMarquardt, solver::LSMR)
+function AbstractAllocatedSolver(nls::LeastSquaresProblem, optimizer::LevenbergMarquardt, solver::LSMR)
     preconditioner!, preconditioner = getpreconditioner(nls, optimizer, solver)
     LSMRDampenedAllocatedSolver(preconditioner!, preconditioner, _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.x),  _zeros(nls.x), _zeros(nls.y))
 end

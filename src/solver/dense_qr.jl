@@ -22,7 +22,7 @@ end
 ##
 ##############################################################################
 
-function AbstractAllocatedSolver{Tx, Ty, Tf, TJ <: StridedVecOrMat, Tg}(nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}, optimizer::Dogleg, solver::QR)
+function AbstractAllocatedSolver(nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}, optimizer::Dogleg, solver::QR) where {Tx, Ty, Tf, TJ <: StridedVecOrMat, Tg}
     return DenseQRAllocatedSolver(similar(nls.J), _zeros(nls.y))
 end
 
@@ -43,7 +43,7 @@ end
 ##
 ##############################################################################
 
-function AbstractAllocatedSolver{Tx, Ty, Tf, TJ <: StridedVecOrMat, Tg}(nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}, optimizer::LevenbergMarquardt, solver::QR)
+function AbstractAllocatedSolver(nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}, optimizer::LevenbergMarquardt, solver::QR) where {Tx, Ty, Tf, TJ <: StridedVecOrMat, Tg}
     qr = zeros(eltype(nls.J), length(nls.y) + length(nls.x), length(nls.x))
     u = zeros(length(nls.y) + length(nls.x))
     return DenseQRAllocatedSolver(qr, u)
