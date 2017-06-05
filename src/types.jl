@@ -14,6 +14,15 @@ struct LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}
         length(x) == size(J, 2) || throw(DimensionMismatch("x must have length size(J, 2)"))
         length(y) == size(J, 1) || throw(DimensionMismatch("y must have length size(J, 1)"))
         size(J, 1) >= size(J, 2) || throw(DimensionMismatch("size(J, 1) must be greater than size(J, 2)"))
+        # test argument order
+        g!(J, x)
+
+        try 
+            g!(J, x)
+        catch
+            throw("The order of argument and allocation arrays has been switched: use f!(fvec, x) and g!(J, x)")
+        end
+        # end test argument order
         new(x, y, f!, J, g!) 
     end
 end
@@ -38,9 +47,13 @@ function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! =
     end
     newg! = g!
     if typeof(g!) == Void
-        permf!(yp::Vector, xp::Vector) = f!(xp, yp)
+        # test argument order
+        x0 = deepcopy(x)
+        f!(y, x0)
+        all(x0 .≈ x) || throw("The order of argument and allocation arrays has been switched: use f!(fvec, x)")
+        # end test argument order
         y0 = deepcopy(y)
-        newg! = (xp::Vector, Jp::Matrix) -> ForwardDiff.jacobian!(Jp, permf!, y0, x)
+        newg! = (Jp::Matrix, xp::Vector) -> ForwardDiff.jacobian!(Jp, f!, y0, x)
     end
     LeastSquaresProblem(x, y , f!, J, newg!)
 end

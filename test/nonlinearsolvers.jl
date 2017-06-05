@@ -6,11 +6,11 @@ using LeastSquaresOptim, Base.Test
 
 function rosenbrock()
     name = "rosenbrock"
-    function f!(x, fvec)
+    function f!(fvec, x)
         fvec[1] = 1 - x[1]
         fvec[2] = 10(x[2]-x[1]^2)
     end
-    function g!(x, fjac)
+    function g!(fjac, x)
         fjac[1,1] = -1
         fjac[1,2] = 0
         fjac[2,1] = -20x[1]
@@ -22,13 +22,13 @@ end
 
 function powell_singular()
     name = "powell_singular"
-    function f!(x, fvec)
+    function f!(fvec, x)
         fvec[1] = x[1] + 10x[2]
         fvec[2] = sqrt(5)*(x[3] - x[4])
         fvec[3] = (x[2] - 2x[3])^2
         fvec[4] = sqrt(10)*(x[1] - x[4])^2
     end
-    function g!(x, fjac)
+    function g!(fjac, x)
         fill!(fjac, 0)
         fjac[1,1] = 1
         fjac[1,2] = 10
@@ -47,11 +47,11 @@ function powell_badly_scaled()
     name = "powell_badly_scaled"
     const c1 = 1e4
     const c2 = 1.0001
-    function f!(x, fvec)
+    function f!(fvec, x)
         fvec[1] = c1*x[1]*x[2] - 1
         fvec[2] = exp(-x[1]) + exp(-x[2]) - c2
     end
-    function g!(x, fjac)
+    function g!(fjac, x)
         fjac[1,1] = c1*x[2]
         fjac[1,2] = c1*x[1]
         fjac[2,1] = -exp(-x[1])
@@ -68,7 +68,7 @@ function wood()
     const c5 = 1.98e1
     const c6 = 1.8e2
 
-    function f!(x, fvec)
+    function f!(fvec, x)
         temp1 = x[2] - x[1]^2
         temp2 = x[4] - x[3]^2
         fvec[1] = -c3*x[1]*temp1 - (1 - x[1])
@@ -77,7 +77,7 @@ function wood()
         fvec[4] = c6*temp2 + c4*(x[4] - 1) + c5*(x[2] - 1)
     end
 
-    function g!(x, fjac)
+    function g!(fjac, x)
         fill!(fjac, 0)
         temp1 = x[2] - 3x[1]^2
         temp2 = x[4] - 3x[3]^2
@@ -102,7 +102,7 @@ function helical_valley()
     const c7 = 2.5e-1
     const c8 = 5e-1
 
-    function f!(x, fvec)
+    function f!(fvec, x)
         if x[1] > 0
             temp1 = atan(x[2]/x[1])/tpi
         elseif x[1] < 0
@@ -116,7 +116,7 @@ function helical_valley()
         fvec[3] = x[3]
     end
 
-    function g!(x, fjac)
+    function g!(fjac, x)
         temp = x[1]^2 + x[2]^2
         temp1 = tpi*temp
         temp2 = sqrt(temp)
@@ -138,7 +138,7 @@ function watson(n::Integer)
     name = "watson"
     const c9 = 2.9e1
 
-    function f!(x, fvec)
+    function f!(fvec, x)
         fill!(fvec, 0)
         for i = 1:29
             ti = i/c9
@@ -167,7 +167,7 @@ function watson(n::Integer)
         fvec[2] += temp
     end
 
-    function g!(x, fjac)
+    function g!(fjac, x)
         fill!(fjac, 0)
         for i = 1:29
             ti = i/c9
@@ -215,7 +215,7 @@ function chebyquad(n::Integer)
     name = "chebyquad"
     const tk = 1/n
 
-    function f!(x, fvec)
+    function f!(fvec, x)
         fill!(fvec, 0)
         for j = 1:n
             temp1 = 1.0
@@ -238,7 +238,7 @@ function chebyquad(n::Integer)
         end
     end
 
-    function g!(x, fjac)
+    function g!(fjac, x)
         for j = 1:n
             temp1 = 1.
             temp2 = 2x[j] - 1
@@ -262,7 +262,7 @@ end
 
 function brown_almost_linear(n::Integer)
     name = "brown_almost_linear"
-    function f!(x, fvec)
+    function f!(fvec, x)
         sum1 = sum(x) - (n+1)
         for k = 1:(n-1)
             fvec[k] = x[k] + sum1
@@ -270,7 +270,7 @@ function brown_almost_linear(n::Integer)
         fvec[n] = prod(x) - 1
     end
 
-    function g!(x, fjac)
+    function g!(fjac, x)
         fill!(fjac, 1)
         fjac[diagind(fjac)] = 2
         prd = prod(x)
@@ -295,7 +295,7 @@ function discrete_boundary_value(n::Integer)
     name = "discrete_boundary_value"
     const h = 1/(n+1)
 
-    function f!(x, fvec)
+    function f!(fvec, x)
         for k = 1:n
             temp = (x[k] + k*h + 1)^3
             if k != 1
@@ -312,7 +312,7 @@ function discrete_boundary_value(n::Integer)
         end
     end
 
-    function g!(x, fjac)
+    function g!(fjac, x)
         for k = 1:n
             temp = 3*(x[k]+k*h+1)^2
             for j = 1:n
@@ -336,7 +336,7 @@ function discrete_integral_equation(n::Integer)
     name = "discrete_integral_equation"
     const h = 1/(n+1)
 
-    function f!(x, fvec)
+    function f!(fvec, x)
         for k = 1:n
             tk = k*h
             sum1 = 0.0
@@ -356,7 +356,7 @@ function discrete_integral_equation(n::Integer)
         end
     end
 
-    function g!(x, fjac)
+    function g!(fjac, x)
         for k = 1:n
             tk = k*h
             for j = 1:n
@@ -375,7 +375,7 @@ end
 
 function trigonometric(n::Integer)
     name = "trigonometric"
-    function f!(x, fvec)
+    function f!(fvec, x)
         for j = 1:n
             fvec[j] = cos(x[j])
         end
@@ -385,7 +385,7 @@ function trigonometric(n::Integer)
         end
     end
 
-    function g!(x, fjac)
+    function g!(fjac, x)
         for j = 1:n
             temp = sin(x[j])
             for k = 1:n
@@ -400,7 +400,7 @@ end
 
 function variably_dimensioned(n::Integer)
     name = "variably_dimensioned"
-    function f!(x, fvec)
+    function f!(fvec, x)
         sum1 = 0.0
         for j = 1:n
             sum1 += j*(x[j]-1)
@@ -411,7 +411,7 @@ function variably_dimensioned(n::Integer)
         end
     end
 
-    function g!(x, fjac)
+    function g!(fjac, x)
         sum1 = 0.0
         for j = 1:n
             sum1 += j*(x[j]-1)
@@ -431,7 +431,7 @@ end
 
 function broyden_tridiagonal(n::Integer)
     name = "broyden_tridiagonal"
-    function f!(x, fvec)
+    function f!(fvec, x)
         for k = 1:n
             temp = (3-2x[k])*x[k]
             if k != 1
@@ -448,7 +448,7 @@ function broyden_tridiagonal(n::Integer)
         end
     end
 
-    function g!(x, fjac)
+    function g!(fjac, x)
         fill!(fjac, 0)
         for k = 1:n
             fjac[k,k] = 3-4x[k]
@@ -469,7 +469,7 @@ function broyden_banded(n::Integer)
     const ml = 5
     const mu = 1
 
-    function f!(x, fvec)
+    function f!(fvec, x)
         for k = 1:n
             k1 = max(1, k-ml)
             k2 = min(k+mu, n)
@@ -483,7 +483,7 @@ function broyden_banded(n::Integer)
         end
     end
 
-    function g!(x, fjac)
+    function g!(fjac, x)
         fill!(fjac, 0)
         for k = 1:n
             k1 = max(1, k-ml)
@@ -555,7 +555,7 @@ for (name, f!, g!, x) in alltests
     J = ones(length(x), length(x))
     J = sparse(J)
     fill!(J.nzval, 0)     
-    g!(x, J)
+    g!(J, x)
     # try because g! may change symbolic factorizations (see Julia issue #9906)
     try
         nls = LeastSquaresProblem(x = x, y = fcur, f! = f!, J = J, g! = g!)

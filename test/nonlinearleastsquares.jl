@@ -6,7 +6,7 @@ using LeastSquaresOptim, Base.Test
 # but cholfact in sparse handles this case
 function factor()
     name = "factor"
-    function f!(x, fvec)
+    function f!(fvec, x)
         fvec[1] = 3.0 - x[1] * x[4]
         fvec[2] = 2.0 - x[1] * x[5]
         fvec[3] = 5.0 - x[1] * x[6]
@@ -20,7 +20,7 @@ function factor()
         fvec[9] = 1.5 - x[3] * x[6]
     end
 
-    function g!(x, J)
+    function g!(J, x)
         fill!(J, 0.0)
         J[1, 1] = -x[4]
         J[1, 4] = -x[1]
@@ -44,7 +44,7 @@ function factor()
         J[9, 6] = -x[3]
     end
 
-    function g!(x, J::SparseMatrixCSC)
+    function g!(J::SparseMatrixCSC, x)
         Jvals = nonzeros(J)
         i = 0
         i += 1
@@ -95,7 +95,7 @@ for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg(), :dl), (LeastSqu
         name, f!, g!, x = factor()
         fcur = ones(9)
         J = ones(9, 6)
-        g!(x, J)
+        g!(J, x)
         if solver == LeastSquaresOptim.LSMR()
             J = sparse(J)
         end

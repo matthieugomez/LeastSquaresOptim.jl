@@ -1445,7 +1445,7 @@ function Bennett5()
 end
 
 
-function ff!(x, fcur, f, data)
+function ff!(fcur, x, f, data)
     for i in 1:size(data, 1)
         fcur[i] = data[i, 1] - f(data[i, 2], x)
     end
@@ -1461,7 +1461,7 @@ for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg(), :dl), (LeastSqu
         name, data, parameters, f, solution = test()
       #  @show solution
         for j in 1:size(parameters, 2)
-            nls = LeastSquaresProblem(x = parameters[:, j], f! = (x, fcur) -> ff!(x, fcur, f, data), output_length = size(data, 1))
+            nls = LeastSquaresProblem(x = parameters[:, j], f! = (fcur, x) -> ff!(fcur, x, f, data), output_length = size(data, 1))
             r = optimize!(nls, optimizer, xtol = 1e-50, ftol = 1e-36, grtol = 1e-50)
             n += norm(r.minimizer - solution) <= 1e-3
             N += 1

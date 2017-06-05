@@ -57,7 +57,7 @@ function optimize!(
     f_calls,  g_calls, mul_calls = 0, 0, 0
     converged, x_converged, f_converged, gr_converged, converged =
         false, false, false, false, false
-    f!(x, fcur)
+    f!(fcur, x)
     f_calls += 1
     ssr = sum(abs2, fcur)
     maxabs_gr = Inf
@@ -74,7 +74,7 @@ function optimize!(
         # compute step
         if !reuse
             #update gradient
-            g!(x, J)
+            g!(J, x)
             g_calls += 1
             colsumabs2!(dtd, J)
             clamp!(dtd, MIN_DIAGONAL, MAX_DIAGONAL)
@@ -134,7 +134,7 @@ function optimize!(
 
         #update x
         axpy!(-one(eTx), δx, x)
-        f!(x, ftrial)
+        f!(ftrial, x)
         f_calls += 1
 
         # trial ssr

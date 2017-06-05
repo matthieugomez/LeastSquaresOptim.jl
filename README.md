@@ -3,21 +3,18 @@
 [![Coverage Status](https://coveralls.io/repos/matthieugomez/LeastSquaresOptim.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/matthieugomez/LeastSquaresOptim.jl?branch=master)
 ## Motivation
 
-This package solves non linear least squares problems. The package is inspired by the [Ceres library](http://ceres-solver.org/solving.html). 
+This package solves non linear least squares optimization problems. The package is inspired by the [Ceres library](http://ceres-solver.org/solving.html). 
 
-To install the package,
-```julia
-Pkg.add("LeastSquaresOptim")
-```
+
 ## Syntax
 
 To find `x` that minimizes `f'(x)f(x)`, construct a `LeastSquaresProblem` object with:
  - `x` an initial set of parameters.
- - `f!` a callable object such that `f!(x, out)` writes `f(x)` in `out`.
+ - `f!` a callable object such that `f!(out, x)` writes `f(x)` in `out`.
  - `output_length` the length of the output vector. 
 
  And optionally
- - `g!` a function such that `g!(x, out)` writes the jacobian at x in `out`. Otherwise, the jacobian will be computed with the `ForwardDiff.jl` package
+ - `g!` a function such that `g!(out, x)` writes the jacobian at x in `out`. Otherwise, the jacobian will be computed with the `ForwardDiff.jl` package
  - `y` a preallocation for `f`
  - `J` a preallocation for the jacobian
 
@@ -26,13 +23,13 @@ A simple example:
 ```julia
 using LeastSquaresOptim
 
-function rosenbrock_f!(x, fcur)
+function rosenbrock_f!(fcur, x)
 	fcur[1] = 1 - x[1]
 	fcur[2] = 100 * (x[2]-x[1]^2)
 end
 x = [-1.2; 1.]
 optimize!(LeastSquaresProblem(x = x, f! = rosenbrock_f!, output_length = 2))
-function rosenbrock_g!(x, J)
+function rosenbrock_g!(J, x)
 	J[1, 1] = -1
 	J[1, 2] = 0
 	J[2, 1] = -200 * x[1]
@@ -93,3 +90,8 @@ Related:
 - Fong, DC. and Michael Saunders. (2011) *LSMR: An Iterative Algorithm for Sparse Least-Squares Problems*.  SIAM Journal on Scientific Computing
 - Agarwal, Sameer, Keir Mierle and Others. (2010) *Ceres Solver*
 
+## Installation
+To install the package,
+```julia
+Pkg.add("LeastSquaresOptim")
+```
