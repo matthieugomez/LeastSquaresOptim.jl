@@ -70,9 +70,7 @@ end
 abstract type AbstractOptimizer end
 struct Dogleg <: AbstractOptimizer end
 struct LevenbergMarquardt <: AbstractOptimizer end
-function optimize(f, x, t::AbstractOptimizer)
-    optimize!(LeastSquaresProblem(x = deepcopy(x), f! = (out, x) -> copy!(out, f(x)), output_length = length(f(x))), t)
-end
+
 
 
 # solver
@@ -132,6 +130,15 @@ function optimize!(nls::LeastSquaresProblem, optimizer::Union{Void, AbstractOpti
     optimize!(nlsp; kwargs...)
 end
 
+###############################################################################
+##
+## Optim-like syntax
+##
+##############################################################################
+
+function optimize(f, x, t::AbstractOptimizer; kwargs...)
+    optimize!(LeastSquaresProblem(x = deepcopy(x), f! = (out, x) -> copy!(out, f(x)), output_length = length(f(x))), t; kwargs...)
+end
 
 ###############################################################################
 ##
@@ -146,23 +153,23 @@ struct LeastSquaresResult{Tx}
     iterations::Int
     converged::Bool
     x_converged::Bool
-    xtol::Real
+    x_tol::Real
     f_converged::Bool
-    ftol::Real
-    gr_converged::Bool
-    grtol::Real
+    f_tol::Real
+    g_converged::Bool
+    g_tol::Real
     tr::OptimizationTrace
     f_calls::Int
     g_calls::Int
     mul_calls::Int
 end
 
-function LeastSquaresResult(optimizer::String, minimizer, ssr::Real, iterations::Int, converged::Bool, x_converged::Bool, xtol::Real, f_converged::Bool, ftol::Real, gr_converged::Bool, grtol::Real, tr::OptimizationTrace, f_calls::Int, g_calls::Int, mul_calls::Int)
-    LeastSquaresResult(optimizer, minimizer, convert(Float64, ssr), iterations, converged, x_converged, convert(Float64, xtol), f_converged, convert(Float64, ftol), gr_converged, convert(Float64, grtol), tr, f_calls, g_calls, mul_calls)
+function LeastSquaresResult(optimizer::String, minimizer, ssr::Real, iterations::Int, converged::Bool, x_converged::Bool, x_tol::Real, f_converged::Bool, f_tol::Real, g_converged::Bool, g_tol::Real, tr::OptimizationTrace, f_calls::Int, g_calls::Int, mul_calls::Int)
+    LeastSquaresResult(optimizer, minimizer, convert(Float64, ssr), iterations, converged, x_converged, convert(Float64, x_tol), f_converged, convert(Float64, f_tol), g_converged, convert(Float64, g_tol), tr, f_calls, g_calls, mul_calls)
 end
 
 function converged(r::LeastSquaresResult)
-    return r.x_converged || r.f_converged || r.gr_converged
+    return r.x_converged || r.f_converged || r.g_converged
 end
 
 
@@ -173,9 +180,9 @@ function Base.show(io::IO, r::LeastSquaresResult)
     @printf io " * Sum of squares at Minimum: %f\n" r.ssr
     @printf io " * Iterations: %d\n" r.iterations
     @printf io " * Convergence: %s\n" converged(r)
-    @printf io " * |x - x'| < %.1e: %s\n" r.xtol r.x_converged
-    @printf io " * |f(x) - f(x')| / |f(x)| < %.1e: %s\n" r.ftol r.f_converged
-    @printf io " * |g(x)| < %.1e: %s\n" r.grtol r.gr_converged
+    @printf io " * |x - x'| < %.1e: %s\n" r.x_tol r.x_converged
+    @printf io " * |f(x) - f(x')| / |f(x)| < %.1e: %s\n" r.f_tol r.f_converged
+    @printf io " * |g(x)| < %.1e: %s\n" r.g_tol r.g_converged
     @printf io " * Function Calls: %d\n" r.f_calls
     @printf io " * Gradient Calls: %d\n" r.g_calls
     @printf io " * Multiplication Calls: %d\n" r.mul_calls

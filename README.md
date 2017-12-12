@@ -18,12 +18,15 @@ end
 optimize(rosenbrock, zeros(2), Dogleg())
 optimize(rosenbrock, zeros(2), LevenbergMarquardt())
 ```
+You can also add the options : `x_tol`, `f_tol`, `g_tol`, `iterations` and `Δ` (initial radius).
+
+The gradient of `f` is computed using automatic differenciation, through the package `ForwardDiff.jl`. This requires that the function `f` can be called when `x` is a `DualNumber`. In particular, initiate temporary matrices/vector with the type of the input `eltype(x)`, rather than `Float64`.
 
 
 ## Advanced Syntax
-The advanced syntax allows to (i) do more operations in place (ii) to use sparse LeastSquareSolvers 
+The advanced syntax is particularly helpful for high dimensional problems. The package is written with large scale problems in mind. In particular, memory is allocated once and for all at the start of the function call ; objects are updated in place at each method iteration. 
 
-To find `x` that minimizes `f'(x)f(x)`, construct a `LeastSquaresProblem` object with:
+1. To find `x` that minimizes `f'(x)f(x)`, construct a `LeastSquaresProblem` object with:
  - `x` an initial set of parameters.
  - `f`, which outputs the vector to minimize
  And optionally
@@ -60,8 +63,7 @@ end
 optimize!(LeastSquaresProblem(x = x, f = rosenbrock_f, g! = rosenbrock_g!))
 ```
 
-
-With this syntax, you can also specify a particular least square solver (a least square optimization method proceeds by solving successively linear least squares problems `min||Ax - b||^2`). 
+2. You can also specify a particular least square solver (a least square optimization method proceeds by solving successively linear least squares problems `min||Ax - b||^2`). 
 - `LeastSquaresOptim.QR()`. Available for dense jacobians
 - `LeastSquaresOptim.Cholesky()`. Available for dense jacobians
 - `LeastSquaresOptim.LSMR()`. A conjugate gradient method ([LSMR]([http://web.stanford.edu/group/SOL/software/lsmr/) with diagonal preconditioner). The jacobian can be of any type that defines the following interface is defined:
@@ -77,20 +79,14 @@ For the `LSMR` solver, you can optionally specifying a function `preconditioner!
 
 The `optimizers` and `solvers` are presented in more depth in the [Ceres documentation](http://ceres-solver.org/solving.html). For dense jacobians, the default options are `Dogle()` and `QR()`. For sparse jacobians, the default options are  `LevenbergMarquardt()` and `LSMR()`. 
 
-`optimize!` also accept the options : `ftol`, `xtol`, `grtol`, `iterations` and `Δ` (initial radius).
-
-## Gradient
-The gradient is computed using `ForwardDiff.jl`. You need to make sure that the function `f` also works with DualNumbers. In particular, initiate temporary matrices/vector with the type of the inputs `eltype(x)`, rather than `Float64`.
-
-## Memory 
-The package is written with large scale problems in mind. In particular, memory is allocated once and for all at the start of the function call ; objects are updated in place at each method iteration. 
-
-You can even avoid initial allocations by directly passing a `LeastSquaresProblemAllocated` to the `optimize!` function. Such an object bundles a `LeastSquaresProblem` object with a few storage objects. This may be useful when repeatedly solving non linear least square problems.
+3. You can even avoid initial allocations by directly passing a `LeastSquaresProblemAllocated` to the `optimize!` function. Such an object bundles a `LeastSquaresProblem` object with a few storage objects. This may be useful when repeatedly solving non linear least square problems.
 ```julia
 rosenbrock = LeastSquaresProblemAllocated(x, fcur, rosenbrock_f!, J, rosenbrock_g!; 
                                           LeastSquaresOptim.Dogleg(), LeastSquaresOptim.QR())
 optimize!(rosenbrock)
 ```
+
+
 
 ## Related packages
 Related:

@@ -45,7 +45,7 @@ const INCREASE_THRESHOLD = 0.75
 
 function optimize!(
     anls::LeastSquaresProblemAllocated{Tx, Ty, Tf, TJ, Tg, Toptimizer, Tsolver};
-    xtol::Number = 1e-8, ftol::Number = 1e-8, grtol::Number = 1e-8,
+    x_tol::Number = 1e-8, f_tol::Number = 1e-8, g_tol::Number = 1e-8,
     iterations::Integer = 1_000, Δ::Number = 1.0, store_trace = false, show_trace = false, show_every = 1) where {Tx, Ty, Tf, TJ, Tg, Toptimizer <: AllocatedDogleg, Tsolver}
  
      δgn, δgr, δx, dtd = anls.optimizer.δgn, anls.optimizer.δgr, anls.optimizer.δx, anls.optimizer.dtd
@@ -55,7 +55,7 @@ function optimize!(
     # initialize
     reuse = false
     f_calls,  g_calls, mul_calls = 0, 0, 0
-    converged, x_converged, f_converged, gr_converged, converged =
+    converged, x_converged, f_converged, g_converged, converged =
         false, false, false, false, false
     f!(fcur, x)
     f_calls += 1
@@ -147,8 +147,8 @@ function optimize!(
         predicted_ssr = sum(abs2, fpredict)
 
         ρ = (ssr - trial_ssr) / (ssr - predicted_ssr)
-        x_converged, f_converged, gr_converged, converged = 
-            assess_convergence(δx, x, maxabs_gr, ssr, trial_ssr, xtol, ftol, grtol)
+        x_converged, f_converged, g_converged, converged = 
+            assess_convergence(δx, x, maxabs_gr, ssr, trial_ssr, x_tol, f_tol, g_tol)
 
         if ρ >= MIN_STEP_QUALITY
             # Successful iteration
@@ -169,6 +169,6 @@ function optimize!(
        tracing && update!(tr, iter, ssr, maxabs_gr, store_trace, show_trace, show_every) 
     end
     LeastSquaresResult("Dogleg", x, ssr, iter, converged,
-                        x_converged, xtol, f_converged, ftol, gr_converged, grtol, tr, 
+                        x_converged, x_tol, f_converged, f_tol, g_converged, g_tol, tr, 
                         f_calls, g_calls, mul_calls)
 end

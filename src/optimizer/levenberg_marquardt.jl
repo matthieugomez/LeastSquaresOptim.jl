@@ -43,7 +43,7 @@ const MAX_DIAGONAL = 1e32
 
 function optimize!(
     anls::LeastSquaresProblemAllocated{Tx, Ty, Tf, TJ, Tg, Toptimizer, Tsolver};
-            xtol::Number = 1e-8, ftol::Number = 1e-8, grtol::Number = 1e-8,
+            x_tol::Number = 1e-8, f_tol::Number = 1e-8, g_tol::Number = 1e-8,
             iterations::Integer = 1_000, Δ::Number = 10.0, store_trace = false, show_trace = false, show_every = 1) where {Tx, Ty, Tf, TJ, Tg, Toptimizer <: AllocatedLevenbergMarquardt, Tsolver}
 
     δx, dtd = anls.optimizer.δx, anls.optimizer.dtd
@@ -53,7 +53,7 @@ function optimize!(
     decrease_factor = 2.0
     # initialize
     f_calls,  g_calls, mul_calls = 0, 0, 0
-    converged, x_converged, f_converged, gr_converged, converged =
+    converged, x_converged, f_converged, g_converged, converged =
         false, false, false, false, false
     f!(fcur, x)
     f_calls += 1
@@ -104,8 +104,8 @@ function optimize!(
         mul_calls += 1
 
 
-        x_converged, f_converged, gr_converged, converged =
-            assess_convergence(δx, x, maxabs_gr, ssr, trial_ssr, xtol, ftol, grtol)
+        x_converged, f_converged, g_converged, converged =
+            assess_convergence(δx, x, maxabs_gr, ssr, trial_ssr, x_tol, f_tol, g_tol)
 
         if ρ > MIN_STEP_QUALITY
             copy!(fcur, ftrial)
@@ -123,6 +123,6 @@ function optimize!(
         tracing && update!(tr, iter, ssr, maxabs_gr, store_trace, show_trace, show_every)
     end
     LeastSquaresResult("LevenbergMarquardt", x, ssr, iter, converged,
-                        x_converged, xtol, f_converged, ftol, gr_converged, grtol, tr,
+                        x_converged, x_tol, f_converged, f_tol, g_converged, g_tol, tr,
                         f_calls, g_calls, mul_calls)
 end
