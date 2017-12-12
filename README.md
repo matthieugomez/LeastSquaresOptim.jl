@@ -10,10 +10,9 @@ This package solves non linear least squares optimization problems. The package 
 
 To find `x` that minimizes `f'(x)f(x)`, construct a `LeastSquaresProblem` object with:
  - `x` an initial set of parameters.
- - `f!` a callable object such that `f!(out, x)` writes `f(x)` in `out`.
- - `output_length` the length of the output vector. 
-
+ - `f`, which outputs the vector to minimize
  And optionally
+ - `f!` instead of `f` to only use in place memory. In this case, also use  the option `output_length` to specify the length of the output vector. 
  - `g!` a function such that `g!(out, x)` writes the jacobian at x in `out`. Otherwise, the jacobian will be computed with the `ForwardDiff.jl` package
  - `y` a preallocation for `f`
  - `J` a preallocation for the jacobian
@@ -23,19 +22,27 @@ A simple example:
 ```julia
 using LeastSquaresOptim
 
-function rosenbrock_f!(fcur, x)
-	fcur[1] = 1 - x[1]
-	fcur[2] = 100 * (x[2]-x[1]^2)
+function rosenbrock_f(x)
+	[1 - x[1], 100 * (x[2]-x[1]^2)]
 end
 x = [-1.2; 1.]
+optimize!(LeastSquaresProblem(x = x, f = rosenbrock_f))
+
+# if you want to use in place function
+function rosenbrock_f!(out, x)
+	out[1] = 1 - x[1]
+	out[2] = 100 * (x[2]-x[1]^2)
+end
 optimize!(LeastSquaresProblem(x = x, f! = rosenbrock_f!, output_length = 2))
+
+# if you want to use gradient
 function rosenbrock_g!(J, x)
 	J[1, 1] = -1
 	J[1, 2] = 0
 	J[2, 1] = -200 * x[1]
 	J[2, 2] = 109
 end
-optimize!(LeastSquaresProblem(x = x, f! = rosenbrock_f!, g! = rosenbrock_g!, output_length = 2))
+optimize!(LeastSquaresProblem(x = x, f = rosenbrock_f, g! = rosenbrock_g!))
 ```
 
 ## Optimizer and Solver

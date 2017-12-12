@@ -35,7 +35,12 @@ end
 
 
 
-function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! = error("initial f! required"), g! = nothing, J = nothing, output_length = 0)
+function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! = error("initial f! required"), g! = nothing, J = nothing, output_length = 0, f = nothing)
+    if typeof(f) != nothing
+        fx = f(x)
+        f!(out, x) = copy!(out, fx)
+        output_length = length(fx)
+    end
     if typeof(y) == Void
         if output_length == 0
             output_length = size(J, 2)
