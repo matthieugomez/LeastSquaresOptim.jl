@@ -35,12 +35,7 @@ end
 
 
 
-function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! = error("initial f! required"), g! = nothing, J = nothing, output_length = 0, f = nothing)
-    if typeof(f) != nothing
-        fx = f(x)
-        f!(out, x) = copy!(out, fx)
-        output_length = length(fx)
-    end
+function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! = error("initial f! required"), g! = nothing, J = nothing, output_length = 0)
     if typeof(y) == Void
         if output_length == 0
             output_length = size(J, 2)
@@ -65,8 +60,6 @@ end
 
 
 
-
-
 ###############################################################################
 ##
 ## Non Linear Least Squares Allocated
@@ -77,6 +70,9 @@ end
 abstract type AbstractOptimizer end
 struct Dogleg <: AbstractOptimizer end
 struct LevenbergMarquardt <: AbstractOptimizer end
+function optimize(f, x, t::AbstractOptimizer)
+    optimize!(LeastSquaresProblem(x = deepcopy(x), f! = (out, x) -> copy!(out, f(x)), output_length = length(f(x))), t)
+end
 
 
 # solver

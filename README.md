@@ -6,7 +6,22 @@
 This package solves non linear least squares optimization problems. The package is inspired by the [Ceres library](http://ceres-solver.org/solving.html). 
 
 
-## Syntax
+## Simple Syntax
+
+The  syntax mirrors the `Optim.jl` syntax
+
+```julia
+using LeastSquaresOptim
+function rosenbrock(x)
+	[1 - x[1], 100 * (x[2]-x[1]^2)]
+end
+optimize(rosenbrock, zeros(2), Dogleg())
+optimize(rosenbrock, zeros(2), LevenbergMarquardt())
+```
+
+
+## Advanced Syntax
+The advanced syntax allows to (i) do more operations in place (ii) to use sparse LeastSquareSolvers 
 
 To find `x` that minimizes `f'(x)f(x)`, construct a `LeastSquaresProblem` object with:
  - `x` an initial set of parameters.
@@ -45,16 +60,8 @@ end
 optimize!(LeastSquaresProblem(x = x, f = rosenbrock_f, g! = rosenbrock_g!))
 ```
 
-## Optimizer and Solver
 
-The main `optimize!` method accepts two main arguments : `optimizer` and `solver`
-
-1. Choose an optimization method:
-
-	- `LeastSquaresOptim.LevenbergMarquardt()`
-	- `LeastSquaresOptim.Dogleg()`
-
-2. Choose a least square solver (a least square optimization method proceeds by solving successively linear least squares problems `min||Ax - b||^2`). 
+With this syntax, you can also specify a particular least square solver (a least square optimization method proceeds by solving successively linear least squares problems `min||Ax - b||^2`). 
 	- `LeastSquaresOptim.QR()`. Available for dense jacobians
 	- `LeastSquaresOptim.Cholesky()`. Available for dense jacobians
 	- `LeastSquaresOptim.LSMR()`. A conjugate gradient method ([LSMR]([http://web.stanford.edu/group/SOL/software/lsmr/) with diagonal preconditioner). The jacobian can be of any type that defines the following interface is defined:
@@ -68,7 +75,7 @@ The main `optimize!` method accepts two main arguments : `optimizer` and `solver
 
 		For the `LSMR` solver, you can optionally specifying a function `preconditioner!` and a matrix `P` such that `preconditioner(x, J, P)` updates `P` as a preconditioner for `J'J` in the case of a Dogleg optimization method, and such that `preconditioner(x, J, λ, P)` updates `P` as a preconditioner for `J'J + λ` in the case of LevenbergMarquardt optimization method. By default, the preconditioner is chosen as the diagonal of of the matrix `J'J`. The preconditioner can be any type that supports `A_ldiv_B!(x, P, y)`
 
-The `optimizers` and `solvers` are presented in more depth in the [Ceres documentation](http://ceres-solver.org/solving.html). For dense jacobians, the default options are `Dogle()` and `QR()`. For sparse jacobians, the default options are  `LevenbergMarquardt` and `LSMR()`. 
+The `optimizers` and `solvers` are presented in more depth in the [Ceres documentation](http://ceres-solver.org/solving.html). For dense jacobians, the default options are `Dogle()` and `QR()`. For sparse jacobians, the default options are  `LevenbergMarquardt()` and `LSMR()`. 
 
 `optimize!` also accept the options : `ftol`, `xtol`, `grtol`, `iterations` and `Δ` (initial radius).
 

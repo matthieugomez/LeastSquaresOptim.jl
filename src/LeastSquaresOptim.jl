@@ -10,6 +10,7 @@ module LeastSquaresOptim
 
 import Base: A_mul_B!, Ac_mul_B!, A_ldiv_B!, copy!, fill!, scale!, norm, axpy!, eltype, length, size
 using ForwardDiff
+import Optim: optimize
 
 ##############################################################################
 ##
@@ -20,7 +21,10 @@ using ForwardDiff
 export optimize!, 
 LeastSquaresProblem,
 LeastSquaresProblemAllocated,
-LeastSquaresResult
+LeastSquaresResult,
+Dogleg,
+LevenbergMarquardt,
+optimize
 
 ##############################################################################
 ##
