@@ -20,7 +20,7 @@ optimize(rosenbrock, zeros(2), LevenbergMarquardt())
 ```
 You can also add the options : `x_tol`, `f_tol`, `g_tol`, `iterations` and `Δ` (initial radius).
 
-The gradient of `f` is computed using automatic differenciation, through the package `ForwardDiff.jl`. This requires that the function `f` can be called when `x` is a `DualNumber`. In particular, initiate temporary matrices/vector with the type of the input `eltype(x)`, rather than `Float64`.
+The gradient of `f` is computed using automatic differenciation, through the package `ForwardDiff.jl`. This means that the function `f` should work when `x` is a `DualNumber`. In particular, initiate temporary matrices/vector with the type of the input `eltype(x)`, rather than `Float64`.
 
 
 ## Advanced Syntax
