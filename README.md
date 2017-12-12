@@ -24,7 +24,7 @@ The gradient of `f` is computed using automatic differenciation, through the pac
 
 
 ## Advanced Syntax
-The advanced syntax is particularly helpful for high dimensional problems. The package is written with large scale problems in mind. In particular, memory is allocated once and for all at the start of the function call ; objects are updated in place at each method iteration. 
+This package is written with large scale problems in mind. In particular, memory is allocated once and for all at the start of the function call ; objects are updated in place at each method iteration.  The advanced syntax allows to take full advantage of this.
 
 1. To find `x` that minimizes `f'(x)f(x)`, construct a `LeastSquaresProblem` object with:
  - `x` an initial set of parameters.
