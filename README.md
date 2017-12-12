@@ -79,7 +79,8 @@ The `optimizers` and `solvers` are presented in more depth in the [Ceres documen
 
 `optimize!` also accept the options : `ftol`, `xtol`, `grtol`, `iterations` and `Δ` (initial radius).
 
-
+## Gradient
+The gradient is computed using `ForwardDiff.jl`. You need to make sure that the function `f` also works with DualNumbers. In particular, initiate temporary matrices/vector with the type of the inputs `eltype(x)`, rather than `Float64`.
 
 ## Memory 
 The package is written with large scale problems in mind. In particular, memory is allocated once and for all at the start of the function call ; objects are updated in place at each method iteration. 
