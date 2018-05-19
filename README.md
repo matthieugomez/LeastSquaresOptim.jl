@@ -3,7 +3,7 @@
 [![Coverage Status](https://coveralls.io/repos/matthieugomez/LeastSquaresOptim.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/matthieugomez/LeastSquaresOptim.jl?branch=master)
 ## Motivation
 
-This package solves non linear least squares optimization problems. The package is inspired by the [Ceres library](http://ceres-solver.org/solving.html). 
+This package solves non linear least squares optimization problems. The package is inspired by the [Ceres library](http://ceres-solver.org/nnls_solving.html). 
 
 
 ## Simple Syntax
