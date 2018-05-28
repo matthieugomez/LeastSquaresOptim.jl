@@ -1,4 +1,4 @@
-[![LeastSquaresOptim](http://pkg.julialang.org/badges/LeastSquaresOptim_0.5.svg)](http://pkg.julialang.org/?pkg=LeastSquaresOptim)
+[![LeastSquaresOptim](http://pkg.julialang.org/badges/LeastSquaresOptim_0.6.svg)](http://pkg.julialang.org/?pkg=LeastSquaresOptim)
 [![Build Status](https://travis-ci.org/matthieugomez/LeastSquaresOptim.jl.svg?branch=master)](https://travis-ci.org/matthieugomez/LeastSquaresOptim.jl)
 [![Coverage Status](https://coveralls.io/repos/matthieugomez/LeastSquaresOptim.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/matthieugomez/LeastSquaresOptim.jl?branch=master)
 ## Motivation
@@ -23,7 +23,7 @@ You can also add the options : `x_tol`, `f_tol`, `g_tol`, `iterations` and `Δ` 
 The gradient of `f` is computed using automatic differenciation, through the package `ForwardDiff.jl`. This means that the function `f` should work when `x` is a `DualNumber`.
 
 
-## Advanced Syntax
+## Non Allocating Syntax
 This package is written with large scale problems in mind. In particular, memory is allocated once and for all at the start of the function call ; objects are updated in place at each method iteration.  The advanced syntax allows to take full advantage of this.
 
 1. To find `x` that minimizes `f'(x)f(x)`, construct a `LeastSquaresProblem` object with:
