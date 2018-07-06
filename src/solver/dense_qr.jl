@@ -4,16 +4,16 @@
 ##
 ##############################################################################
 struct DenseQRAllocatedSolver{Tqr <: StridedMatrix, Tu <: AbstractVector} <: AbstractAllocatedSolver
-    qr::Tqr
+    qrm::Tqr
     u::Tu
-    function DenseQRAllocatedSolver{Tqr, Tu}(qr, u) where {Tqr <: StridedMatrix, Tu <: AbstractVector}
-        length(u) == size(qr, 1) || throw(DimensionMismatch("u must have length size(J, 1)"))
-        new(qr, u)
+    function DenseQRAllocatedSolver{Tqr, Tu}(qrm, u) where {Tqr <: StridedMatrix, Tu <: AbstractVector}
+        length(u) == size(qrm, 1) || throw(DimensionMismatch("u must have length size(J, 1)"))
+        new(qrm, u)
     end
 end
 
-function DenseQRAllocatedSolver(qr::Tqr, u::Tu) where {Tqr <: StridedMatrix, Tu <: AbstractVector}
-    DenseQRAllocatedSolver{Tqr, Tu}(qr, u)
+function DenseQRAllocatedSolver(qrm::Tqr, u::Tu) where {Tqr <: StridedMatrix, Tu <: AbstractVector}
+    DenseQRAllocatedSolver{Tqr, Tu}(qrm, u)
 end
 
 ##############################################################################
@@ -26,11 +26,11 @@ function AbstractAllocatedSolver(nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}, o
     return DenseQRAllocatedSolver(similar(nls.J), _zeros(nls.y))
 end
 
-function A_ldiv_B!(x::AbstractVector, J::StridedMatrix,  y::AbstractVector, A::DenseQRAllocatedSolver)
-    u, qr = A.u, A.qr
-    copy!(qr, J)
-    copy!(u, y)
-    A_ldiv_B!(qrfact!(qr, Val{true}), u)
+function ldiv!(x::AbstractVector, J::StridedMatrix,  y::AbstractVector, A::DenseQRAllocatedSolver)
+    u, qrm = A.u, A.qrm
+    copyto!(qrm, J)
+    copyto!(u, y)
+    ldiv!(qr!(qrm, Val(true)), u)
     for i in 1:length(x)
         x[i] = u[i]
     end
@@ -44,29 +44,29 @@ end
 ##############################################################################
 
 function AbstractAllocatedSolver(nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}, optimizer::LevenbergMarquardt, solver::QR) where {Tx, Ty, Tf, TJ <: StridedVecOrMat, Tg}
-    qr = zeros(eltype(nls.J), length(nls.y) + length(nls.x), length(nls.x))
+    qrm = zeros(eltype(nls.J), length(nls.y) + length(nls.x), length(nls.x))
     u = zeros(length(nls.y) + length(nls.x))
-    return DenseQRAllocatedSolver(qr, u)
+    return DenseQRAllocatedSolver(qrm, u)
 end
 
-function A_ldiv_B!(x::AbstractVector, J::StridedMatrix, y::AbstractVector, 
+function ldiv!(x::AbstractVector, J::StridedMatrix, y::AbstractVector, 
                 damp::AbstractVector, A::DenseQRAllocatedSolver, verbose::Bool = false)
-    u, qr = A.u, A.qr
+    u, qrm = A.u, A.qrm
     
     # transform dammp
     length(u) ==  length(y) + length(x) || throw(DimensionMismatch("length(u) should equal length(x) + length(y)"))
 
     # update qr as |J; diagm(damp)|
-    fill!(qr, zero(eltype(qr)))
+    fill!(qrm, zero(eltype(qrm)))
     for j in 1:size(J, 2)
         for i in 1:size(J, 1)
-            qr[i, j] = J[i, j]
+            qrm[i, j] = J[i, j]
         end
     end
 
     leny = length(y)
     for i in 1:length(damp)
-        qr[leny + i, i] = sqrt(damp[i])
+        qrm[leny + i, i] = sqrt(damp[i])
     end
 
     # update u as |J; 0|
@@ -80,7 +80,7 @@ function A_ldiv_B!(x::AbstractVector, J::StridedMatrix, y::AbstractVector,
     end
 
     # solve
-    A_ldiv_B!(qrfact!(qr, Val{true}), u)
+    ldiv!(qr!(qrm, Val(true)), u)
     if verbose
         @show mean(u)
         sleep(1)

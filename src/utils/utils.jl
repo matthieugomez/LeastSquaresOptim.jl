@@ -41,7 +41,7 @@ Base.show(io::IO, e::IsFiniteException) = print(io,
   " of the following equation(s) resulted in a non-finite number: $(e.indices)")
 
 function check_isfinite(x::Vector)
-    i = find(.!isfinite.(x))
+    i = findall(.!isfinite.(x))
     if !isempty(i)
         throw(IsFiniteException(i))
     end
@@ -108,13 +108,6 @@ Base.getindex(t::OptimizationTrace, i::Integer) = getindex(t.states, i)
 ##
 ##############################################################################
 
-
-for (name, symbol) in ((:Ac_mul_B!, 'T'),
-                       (:A_mul_B!, 'N'))
-    @eval begin
-        $name(α::Number, A::StridedVecOrMat, x::AbstractVector, β, y::AbstractVector) = BLAS.gemm!($symbol, 'N', convert(eltype(y), α), A, x, convert(eltype(y), β), y)
-    end
-end
 
 function colsumabs2!(v::AbstractVector, A::StridedVecOrMat)
     length(v) == size(A, 2) || error("v should have length size(A, 2)")

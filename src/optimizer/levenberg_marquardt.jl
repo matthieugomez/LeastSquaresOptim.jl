@@ -81,8 +81,8 @@ function optimize!(
         end
         colsumabs2!(dtd, J)
         clamp!(dtd, MIN_DIAGONAL, MAX_DIAGONAL)
-        scale!(dtd, 1/Δ)        
-        δx, lmiter = A_ldiv_B!(δx, J, fcur, dtd,  anls.solver)
+        rmul!(dtd, 1/Δ)        
+        δx, lmiter = ldiv!(δx, J, fcur, dtd,  anls.solver)
         mul_calls += lmiter
         #update x
         axpy!(-one(eTx), δx, x)
@@ -93,13 +93,12 @@ function optimize!(
         trial_ssr = sum(abs2, ftrial)
 
         # predicted ssr
-        A_mul_B!(one(eTx), J, δx, zero(eTx), fpredict)
+        mul!(fpredict, J, δx, one(eTx), zero(eTx))
         mul_calls += 1
         axpy!(-one(eTy), fcur, fpredict)
         predicted_ssr = sum(abs2, fpredict)
         ρ = (ssr - trial_ssr) / (ssr - predicted_ssr)
-
-        Ac_mul_B!(one(eTx), J, fcur, zero(eTx), dtd)
+        mul!(dtd, J', fcur, one(eTx), zero(eTx))
         maxabs_gr = maximum(abs, dtd)
         mul_calls += 1
 
@@ -108,7 +107,7 @@ function optimize!(
             assess_convergence(δx, x, maxabs_gr, ssr, trial_ssr, x_tol, f_tol, g_tol)
 
         if ρ > MIN_STEP_QUALITY
-            copy!(fcur, ftrial)
+            copyto!(fcur, ftrial)
             ssr = trial_ssr
             # increase trust region radius (from Ceres solver)
             Δ = min(Δ / max(1/3, 1.0 - (2.0 * ρ - 1.0)^3), MAX_Δ)

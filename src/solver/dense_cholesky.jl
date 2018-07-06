@@ -5,19 +5,19 @@
 ##############################################################################
 
 struct DenseCholeskyAllocatedSolver{Tc <: StridedMatrix} <: AbstractAllocatedSolver
-    chol::Tc
-    function DenseCholeskyAllocatedSolver{Tc}(chol) where {Tc <: StridedMatrix}
-        size(chol, 1) == size(chol, 2) || throw(DimensionMismatch("chol must be square"))
-        new(chol)
+    cholm::Tc
+    function DenseCholeskyAllocatedSolver{Tc}(cholm) where {Tc <: StridedMatrix}
+        size(cholm, 1) == size(cholm, 2) || throw(DimensionMismatch("chol must be square"))
+        new(cholm)
     end
 end
-function DenseCholeskyAllocatedSolver(chol::Tc) where {Tc <: StridedMatrix}
-    DenseCholeskyAllocatedSolver{Tc}(chol)
+function DenseCholeskyAllocatedSolver(cholm::Tc) where {Tc <: StridedMatrix}
+    DenseCholeskyAllocatedSolver{Tc}(cholm)
 end
 
 
 function AbstractAllocatedSolver(nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}, optimizer, ::Cholesky) where {Tx, Ty, Tf, TJ <: StridedVecOrMat, Tg}
-    return DenseCholeskyAllocatedSolver(Array{eltype(nls.J)}(length(nls.x), length(nls.x)))
+    return DenseCholeskyAllocatedSolver(Array{eltype(nls.J)}(undef, length(nls.x), length(nls.x)))
 end
 
 ##############################################################################
@@ -26,11 +26,11 @@ end
 ##
 ##############################################################################
 
-function A_ldiv_B!(x::AbstractVector, J::StridedMatrix, y::AbstractVector, A::DenseCholeskyAllocatedSolver)
-    chol = A.chol
-    Ac_mul_B!(chol, J,  J)
-    Ac_mul_B!(x, J,  y)
-    A_ldiv_B!(cholfact!(chol, :U, Val{true}), x)
+function ldiv!(x::AbstractVector, J::StridedMatrix, y::AbstractVector, A::DenseCholeskyAllocatedSolver)
+    cholm = A.cholm
+    mul!(cholm, J',  J)
+    mul!(x, J',  y)
+    ldiv!(cholesky!(Symmetric(cholm), Val(true)), x)
     return x, 1
 end
 
@@ -40,21 +40,21 @@ end
 ##
 ##############################################################################
 
-function A_ldiv_B!(x::AbstractVector, J::StridedMatrix, y::AbstractVector, 
+function ldiv!(x::AbstractVector, J::StridedMatrix, y::AbstractVector, 
             damp::AbstractVector, A::DenseCholeskyAllocatedSolver)
-    chol = A.chol
+    cholm = A.cholm
     
-    # update chol as J'J + λdtd
-    Ac_mul_B!(chol, J, J)
+    # update cholm as J'J + λdtd
+    mul!(cholm, J', J)
     # transform dammp
-    size(chol, 1) == length(damp) || throw(DimensionMismatch("size(chol, 1) should equal length(damp)"))
-   for i in 1:size(chol, 1)
-        chol[i, i] += damp[i]
+    size(cholm, 1) == length(damp) || throw(DimensionMismatch("size(chol, 1) should equal length(damp)"))
+   for i in 1:size(cholm, 1)
+        cholm[i, i] += damp[i]
     end
 
     # solve
-    Ac_mul_B!(x, J, y)
-    A_ldiv_B!(cholfact!(chol), x)
+    mul!(x, J', y)
+    ldiv!(cholesky!(Symmetric(cholm)), x)
     return x, 1
 end
 

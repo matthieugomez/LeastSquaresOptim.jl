@@ -54,6 +54,9 @@ function optimize!(
 
     # initialize
     reuse = false
+    wnorm_δgn = 0.0
+    wnorm_δgr = 0.0
+    α = 0.0
     f_calls,  g_calls, mul_calls = 0, 0, 0
     converged, x_converged, f_converged, g_converged, converged =
         false, false, false, false, false
@@ -86,34 +89,35 @@ function optimize!(
                 end
             end
             # compute (opposite) gradient
-            Ac_mul_B!(one(eTx), J, fcur, zero(eTx), δgr)
+            mul!(δgr, J', fcur, one(eTx), zero(eTx))
             mul_calls += 1
             maxabs_gr = maximum(abs, δgr)
             wnorm_δgr = wnorm(δgr, dtd)
 
             # compute Cauchy point
             map!((x, y) -> x * sqrt(y), δgn, δgr, dtd)
-            A_mul_B!(one(eTy), J, δgn, zero(eTy), fpredict)
+            mul!(fpredict, J, δgn, one(eTy), zero(eTy))
+            mul!(fpredict, J, δgn)
             mul_calls += 1
             α = wnorm_δgr^2 / sum(abs2, fpredict)
 
             # compute Gauss Newton step δgn
             fill!(δgn, zero(eTx))
-            δgn, ls_iter = A_ldiv_B!(δgn, J, fcur, anls.solver)
+            δgn, ls_iter = ldiv!(δgn, J, fcur, anls.solver)
             mul_calls += ls_iter
             wnorm_δgn = wnorm(δgn, dtd)
         end
         # compute δx
         if wnorm_δgn <= Δ
             #  Case 1. The Gauss-Newton step lies inside the trust region
-            copy!(δx, δgn)
+            copyto!(δx, δgn)
             wnorm_δx = wnorm_δgn
         elseif wnorm_δgr * α >= Δ
             # Case 2. The Cauchy point and the Gauss-Newton steps lie outside
             # the trust region.
             # rescale Cauchy step within the trust region and return
-            copy!(δx, δgr)
-            scale!(δx, Δ / wnorm_δgr)
+            copyto!(δx, δgr)
+            rmul!(δx, Δ / wnorm_δgr)
             wnorm_δx = Δ
         else
             # Case 3. The Cauchy point is inside the trust region nd the
@@ -125,8 +129,8 @@ function optimize!(
             c =  b_dot_a - a_squared_norm
             d = sqrt(c^2 + b_minus_a_squared_norm * (Δ^2 - a_squared_norm))
             β = (c <= 0) ? (d - c)/ b_minus_a_squared_norm : (Δ^2 - a_squared_norm) / (d + c)
-            copy!(δx, δgn)
-            scale!(δx, β)
+            copyto!(δx, δgn)
+            rmul!(δx, β)
             axpy!(α * (1 - β), δgr, δx)
             wnorm_δx = wnorm(δx, dtd)
         end
@@ -141,7 +145,7 @@ function optimize!(
         trial_ssr = sum(abs2, ftrial)
 
         # predicted ssr
-        A_mul_B!(one(eTx), J, δx, zero(eTx), fpredict)
+        mul!(fpredict, J, δx, one(eTx), zero(eTx))
         mul_calls += 1
         axpy!(-one(eTy), fcur, fpredict)
         predicted_ssr = sum(abs2, fpredict)
@@ -153,7 +157,7 @@ function optimize!(
         if ρ >= MIN_STEP_QUALITY
             # Successful iteration
             reuse = false
-            copy!(fcur, ftrial)
+            copyto!(fcur, ftrial)
             ssr = trial_ssr
         else
             # unsucessful iteration

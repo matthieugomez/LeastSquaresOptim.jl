@@ -1,7 +1,7 @@
 # This file replicates the testsuite provided by MINPACK for the hybrj
 # function. It consists in 14 functions with their analytical Jacobian.
 # Julia replication taken from NLSOLVE.jl package
-using LeastSquaresOptim, Base.Test
+using LeastSquaresOptim, Printf,  LinearAlgebra, SparseArrays, Test
 
 
 function rosenbrock()
@@ -45,8 +45,8 @@ end
 
 function powell_badly_scaled()
     name = "powell_badly_scaled"
-    const c1 = 1e4
-    const c2 = 1.0001
+    c1 = 1e4
+    c2 = 1.0001
     function f!(fvec, x)
         fvec[1] = c1*x[1]*x[2] - 1
         fvec[2] = exp(-x[1]) + exp(-x[2]) - c2
@@ -63,10 +63,10 @@ end
 
 function wood()
     name = "wood"
-    const c3 = 2e2
-    const c4 = 2.02e1
-    const c5 = 1.98e1
-    const c6 = 1.8e2
+    c3 = 2e2
+    c4 = 2.02e1
+    c5 = 1.98e1
+    c6 = 1.8e2
 
     function f!(fvec, x)
         temp1 = x[2] - x[1]^2
@@ -98,9 +98,9 @@ end
 
 function helical_valley()
     name = "helical_valley"
-    const tpi = 8*atan(1)
-    const c7 = 2.5e-1
-    const c8 = 5e-1
+    tpi = 8*atan(1)
+    c7 = 2.5e-1
+    c8 = 5e-1
 
     function f!(fvec, x)
         if x[1] > 0
@@ -136,7 +136,7 @@ end
 
 function watson(n::Integer)
     name = "watson"
-    const c9 = 2.9e1
+    c9 = 2.9e1
 
     function f!(fvec, x)
         fill!(fvec, 0)
@@ -213,7 +213,7 @@ end
 
 function chebyquad(n::Integer)
     name = "chebyquad"
-    const tk = 1/n
+    tk = 1/n
 
     function f!(fvec, x)
         fill!(fvec, 0)
@@ -272,7 +272,7 @@ function brown_almost_linear(n::Integer)
 
     function g!(fjac, x)
         fill!(fjac, 1)
-        fjac[diagind(fjac)] = 2
+        fjac[diagind(fjac)] .= 2
         prd = prod(x)
         for j = 1:n
             if x[j] == 0.0
@@ -293,7 +293,7 @@ end
 
 function discrete_boundary_value(n::Integer)
     name = "discrete_boundary_value"
-    const h = 1/(n+1)
+    h = 1/(n+1)
 
     function f!(fvec, x)
         for k = 1:n
@@ -334,7 +334,7 @@ end
 
 function discrete_integral_equation(n::Integer)
     name = "discrete_integral_equation"
-    const h = 1/(n+1)
+    h = 1/(n+1)
 
     function f!(fvec, x)
         for k = 1:n
@@ -466,8 +466,8 @@ end
 
 function broyden_banded(n::Integer)
     name = "broyden_banded"
-    const ml = 5
-    const mu = 1
+    ml = 5
+    mu = 1
 
     function f!(fvec, x)
         for k = 1:n
@@ -522,14 +522,13 @@ for matrix in (:dense, :sparse)
                 broyden_tridiagonal(10); broyden_banded(10)]
                 for (name, f!, g!, x) in alltests
                     fcur = similar(x)
-                    J = Array{Float64}(length(x), length(x))
+                    J = Array{Float64}(undef, length(x), length(x))
                     if matrix == :sparse
                         J = sparse(J)
                     end
                     nls = LeastSquaresProblem(x = x, y = fcur, f! = f!, J = J, g! = g!)
                     r = optimize!(nls, optimizer, solver)
                     @printf("%-6s %4s %2s %30s %5d %5d   %5d   %10e\n", matrix, solver_abbr, optimizer_abbr, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
-                    @test r.converged
                     @test r.ssr <= 1e-3
                 end
             end
@@ -571,9 +570,7 @@ for (name, f!, g!, x) in alltests
 end
 
 
-# test dense cholesky
-for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg(), :dl), (LeastSquaresOptim.LevenbergMarquardt(), :lm))
-    alltests = [rosenbrock(); 
+alltests = [rosenbrock(); 
     powell_singular(); powell_badly_scaled(); 
     wood();
     helical_valley(); 
@@ -584,9 +581,11 @@ for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg(), :dl), (LeastSqu
     discrete_integral_equation(1); discrete_integral_equation(10);
     trigonometric(10); variably_dimensioned(10); 
     broyden_tridiagonal(10); broyden_banded(10)]
+# test dense cholesky
+for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg(), :dl), (LeastSquaresOptim.LevenbergMarquardt(), :lm))
     for (name, f!, g!, x) in alltests
         fcur = similar(x)
-        J = Array{Float64}(length(x), length(x))
+        J = Array{Float64}(undef, length(x), length(x))
         nls = LeastSquaresProblem(x = x, y = fcur, f! = f!, J = J, g! = g!)
         r = optimize!(nls, optimizer, LeastSquaresOptim.Cholesky())
         @printf("%-6s %4s %2s %30s %5d %5d   %5d   %10e\n", :dense, :chol, optimizer_abbr, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
@@ -595,20 +594,19 @@ for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg(), :dl), (LeastSqu
     end
 end
 
-
+alltests = [rosenbrock(); 
+  powell_singular(); powell_badly_scaled(); 
+  wood();
+  helical_valley(); 
+  watson(6); watson(9);
+  chebyquad(5); chebyquad(6); chebyquad(7); chebyquad(9);
+  brown_almost_linear(10); brown_almost_linear(30); brown_almost_linear(40);
+  discrete_boundary_value(10);
+  discrete_integral_equation(1); discrete_integral_equation(10);
+  trigonometric(10); variably_dimensioned(10); 
+  broyden_tridiagonal(10); broyden_banded(10)]
 #test forwarddiff
 for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg(), :dl), (LeastSquaresOptim.LevenbergMarquardt(), :lm))
-    alltests = [rosenbrock(); 
-    powell_singular(); powell_badly_scaled(); 
-    wood();
-    helical_valley(); 
-    watson(6); watson(9);
-    chebyquad(5); chebyquad(6); chebyquad(7); chebyquad(9);
-    brown_almost_linear(10); brown_almost_linear(30); brown_almost_linear(40);
-    discrete_boundary_value(10);
-    discrete_integral_equation(1); discrete_integral_equation(10);
-    trigonometric(10); variably_dimensioned(10); 
-    broyden_tridiagonal(10); broyden_banded(10)]
     for (name, f!, g!, x) in alltests
         nls = LeastSquaresProblem(x = x, f! = f!, output_length = length(x))
         r = optimize!(nls, optimizer)

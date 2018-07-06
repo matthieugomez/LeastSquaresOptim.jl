@@ -36,17 +36,17 @@ end
 
 
 function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! = error("initial f! required"), g! = nothing, J = nothing, output_length = 0)
-    if typeof(y) == Void
+    if typeof(y) == Nothing
         if output_length == 0
             output_length = size(J, 2)
         end
         y = zeros(eltype(x), output_length)
     end
-    if typeof(J) == Void
+    if typeof(J) == Nothing
         J = zeros(eltype(x), length(y), length(x))
     end
     newg! = g!
-    if typeof(g!) == Void
+    if typeof(g!) == Nothing
         # test argument order
         x0 = deepcopy(x)
         f!(y, x0)
@@ -90,13 +90,13 @@ function default_solver(x::AbstractSolver, J)
     end
     x
 end
-default_solver(::Void, J::StridedVecOrMat) = QR()
-default_solver(::Void, J) = LSMR()
+default_solver(::Nothing, J::StridedVecOrMat) = QR()
+default_solver(::Nothing, J) = LSMR()
 
 ## for LSMR, default to levenberg_marquardt ; otherwise dogleg
 default_optimizer(x::AbstractOptimizer, y) = x
-default_optimizer(::Void, ::LSMR) = LevenbergMarquardt()
-default_optimizer(::Void, ::AbstractSolver) = Dogleg()
+default_optimizer(::Nothing, ::LSMR) = LevenbergMarquardt()
+default_optimizer(::Nothing, ::AbstractSolver) = Dogleg()
 
 
 
@@ -114,7 +114,7 @@ mutable struct LeastSquaresProblemAllocated{Tx, Ty, Tf, TJ, Tg, Toptimizer <: Ab
 end
 
 # Constructor
-function LeastSquaresProblemAllocated(nls::LeastSquaresProblem, optimizer::Union{Void, AbstractOptimizer}, solver::Union{Void, AbstractSolver})
+function LeastSquaresProblemAllocated(nls::LeastSquaresProblem, optimizer::Union{Nothing, AbstractOptimizer}, solver::Union{Nothing, AbstractSolver})
     solver = default_solver(solver, nls.J)
     optimizer = default_optimizer(optimizer, solver)
     LeastSquaresProblemAllocated(
@@ -125,7 +125,7 @@ function LeastSquaresProblemAllocated(args...; kwargs...)
 end
 
 # optimize
-function optimize!(nls::LeastSquaresProblem, optimizer::Union{Void, AbstractOptimizer} = nothing, solver::Union{Void, AbstractSolver} = nothing; kwargs...)
+function optimize!(nls::LeastSquaresProblem, optimizer::Union{Nothing, AbstractOptimizer} = nothing, solver::Union{Nothing, AbstractSolver} = nothing; kwargs...)
     nlsp = LeastSquaresProblemAllocated(nls, optimizer, solver)
     optimize!(nlsp; kwargs...)
 end
@@ -137,7 +137,7 @@ end
 ##############################################################################
 
 function optimize(f, x, t::AbstractOptimizer; kwargs...)
-    optimize!(LeastSquaresProblem(x = deepcopy(x), f! = (out, x) -> copy!(out, f(x)), output_length = length(f(x))), t; kwargs...)
+    optimize!(LeastSquaresProblem(x = deepcopy(x), f! = (out, x) -> copyto!(out, f(x)), output_length = length(f(x))), t; kwargs...)
 end
 
 ###############################################################################

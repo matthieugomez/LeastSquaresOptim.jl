@@ -1,7 +1,7 @@
 ## LSMR works on any matrix with the following methods:
-## eltype, size, A_mul_B!, Ac_mul_B!
+## eltype, size, mul!
 ## LSMR works on any vector with the following methods:
-## eltype, length, scale!, norm
+## eltype, length, rmul!, norm
 
 #############################################################################
 ## 
@@ -17,28 +17,32 @@ struct PreconditionedMatrix{TA, Tp, Tx}
 end
 eltype(A::PreconditionedMatrix) = eltype(A.A)
 size(A::PreconditionedMatrix, i::Integer) = size(A.A, i)
-function A_mul_B!(α::Number, pm::PreconditionedMatrix{TA, Tp, Tx}, a::Tx, 
-                β::Number, b) where {TA, Tp, Tx}
-    A_ldiv_B!(a, pm.preconditioner, pm.tmp)
-    A_mul_B!(α, pm.A, pm.tmp, β, b)
+
+Base.adjoint(M::PreconditionedMatrix) = Adjoint(M)
+
+function mul!(b, pm::PreconditionedMatrix{TA, Tp, Tx}, a, α::Number, β::Number) where {TA, Tp, Tx}
+    ldiv!(a, pm.preconditioner, pm.tmp)
+    mul!(b, pm.A, pm.tmp, α, β)
     return b
 end
-function Ac_mul_B!(α::Number, pm::PreconditionedMatrix{TA, Tp, Tx}, a, 
-                β::Number, b::Tx) where {TA, Tp, Tx}
+
+function mul!(b, Cpm::Adjoint{Ta, PreconditionedMatrix{TA, Tp, Tx}}, a, α::Number, β::Number) where {Ta, TA, Tp, Tx}
+    pm = adjoint(Cpm)
     T = eltype(b)
     β = convert(T, β)
-    Ac_mul_B!(one(T), pm.A, a, zero(T), pm.tmp)
-    A_ldiv_B!(pm.tmp, pm.preconditioner, pm.tmp2)
+    mul!(pm.tmp, pm.A',  a, one(T), zero(T))
+    ldiv!(pm.tmp, pm.preconditioner, pm.tmp2)
     if β != one(T)
         if β == zero(T)
             fill!(b, β)
         else
-            scale!(b, β)
+            rmul!(b, β)
         end
     end
     axpy!(α, pm.tmp2, b)
     return b
 end
+
 
 #############################################################################
 ## 
@@ -53,9 +57,9 @@ struct DampenedVector{Ty, Tx}
 end
 eltype(a::DampenedVector) =  promote_type(eltype(a.y), eltype(a.x))
 length(a::DampenedVector) = length(a.y) + length(a.x)
-function scale!(a::DampenedVector, α::Number)
-    scale!(a.y, α)
-    scale!(a.x, α)
+function rmul!(a::DampenedVector, α::Number)
+    rmul!(a.y, α)
+    rmul!(a.x, α)
     return a
 end
 norm(a::DampenedVector) = sqrt(norm(a.y)^2 + norm(a.x)^2)
@@ -71,28 +75,29 @@ function size(A::DampenedMatrix, dim::Integer)
     dim == 1 ? (m + l) : 
     dim == 2 ? n : 1
 end
-function A_mul_B!(α::Number, mw::DampenedMatrix, a, 
-                β::Number, b::DampenedVector)
+Base.adjoint(M::DampenedMatrix) = Adjoint(M)
+
+function mul!(b::DampenedVector, mw::DampenedMatrix, a, α::Number, β::Number)
     if β != 1
-        scale!(b, β)
+        rmul!(b, β)
     end
-    A_mul_B!(α, mw.A, a, 1, b.y)
+    mul!(b.y, mw.A, a, α, 1.0)
     map!((z, x, y)-> z + α * x * y, b.x, b.x, a, mw.diagonal)
     return b
 end
-function Ac_mul_B!(α::Number, mw::DampenedMatrix, a::DampenedVector, 
-                β::Number, b)
+function mul!(b, Cmw::Adjoint{Ta, DampenedMatrix{TA, Tx}}, a::DampenedVector, α::Number, β::Number) where {Ta, TA, Tx}
+    mw = adjoint(Cmw)
     T = eltype(b)
     β = convert(T, β)
     if β != one(T)
         if β == zero(T)
             fill!(b, β)
         else
-            scale!(b, β)
+            rmul!(b, β)
         end
     end
-    Ac_mul_B!(α, mw.A, a.y, one(T), b)
-    map!((z, x, y)-> z + α * x * y, b, b, a.x, mw.diagonal)  
+    mul!(b, mw.A', a.y, α, one(T))
+    map!((z, x, y)-> z + α * x * y, b, b, a.x, mw.diagonal)
     return b
 end
 
@@ -105,7 +110,7 @@ end
 struct InverseDiagonal{Tx}
     _::Tx
 end
-function A_ldiv_B!(x, ID::InverseDiagonal, y)
+function ldiv!(x, ID::InverseDiagonal, y)
     map!(*, y, x, ID._)
 end
 
@@ -117,10 +122,10 @@ end
 ## with A = J / sqrt(diag(J'J)) (diagonal preconditioner)
 ##
 ## LSMR works on any matrix with the following methods:
-## eltype, size, A_mul_B!, Ac_mul_B!
+## eltype, size, mul!
 ##
 ##############################################################################
-function getpreconditioner(nls::LeastSquaresProblem, optimizer::Dogleg, solver::LSMR{Void, Void})
+function getpreconditioner(nls::LeastSquaresProblem, optimizer::Dogleg, solver::LSMR{Nothing, Nothing})
     preconditioner! = function(x, J, out)
         colsumabs2!(out._, J)
         Tout = eltype(out._)
@@ -152,14 +157,14 @@ function AbstractAllocatedSolver(nls::LeastSquaresProblem, optimizer::Dogleg, so
         _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.y))
 end
 
-function A_ldiv_B!(x, J, y, A::LSMRAllocatedSolver)
+function ldiv!(x, J, y, A::LSMRAllocatedSolver)
     preconditioner!, preconditioner, tmp, tmp2, v, h, hbar, u = A.preconditioner!, A.preconditioner, A.tmp, A.tmp2, A.v, A.h, A.hbar, A.u
 
     # prepare x
     fill!(x, 0)
 
     # prepare b
-    copy!(u, y)
+    copyto!(u, y)
 
     # prepare A
     fill!(tmp, 0)
@@ -168,8 +173,8 @@ function A_ldiv_B!(x, J, y, A::LSMRAllocatedSolver)
 
     # solve
     x, ch = lsmr!(x, A, u, v, h, hbar)
-    A_ldiv_B!(x, preconditioner, tmp)
-    copy!(x, tmp)
+    ldiv!(x, preconditioner, tmp)
+    copyto!(x, tmp)
     return x, ch.mvps
 end
 
@@ -188,7 +193,7 @@ end
 
 ##
 ##############################################################################
-function getpreconditioner(nls::LeastSquaresProblem, optimizer::LevenbergMarquardt, ::LSMR{Void, Void})
+function getpreconditioner(nls::LeastSquaresProblem, optimizer::LevenbergMarquardt, ::LSMR{Nothing, Nothing})
     preconditioner! = function(x, J, damp, out)
         colsumabs2!(out._, J)
         Tout = eltype(out._)
@@ -221,14 +226,14 @@ function AbstractAllocatedSolver(nls::LeastSquaresProblem, optimizer::LevenbergM
     LSMRDampenedAllocatedSolver(preconditioner!, preconditioner, _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.x),  _zeros(nls.x), _zeros(nls.y))
 end
 
-function A_ldiv_B!(x, J, y, damp, A::LSMRDampenedAllocatedSolver)
+function ldiv!(x, J, y, damp, A::LSMRDampenedAllocatedSolver)
     preconditioner!, preconditioner, tmp, tmp2, v, h, hbar, zerosvector, u = 
             A.preconditioner!, A.preconditioner, A.tmp, A.tmp2, A.v, A.h, A.hbar, A.zerosvector, A.u
     # prepare x
     fill!(x, 0)
 
     # prepare b
-    copy!(u, y)
+    copyto!(u, y)
     fill!(zerosvector, 0)
     b = DampenedVector(u, zerosvector)
 
@@ -239,7 +244,7 @@ function A_ldiv_B!(x, J, y, damp, A::LSMRDampenedAllocatedSolver)
     A = PreconditionedMatrix(DampenedMatrix(J, damp), preconditioner, tmp, tmp2)
     # solve
     x, ch = lsmr!(x, A, b, v, h, hbar, btol = 0.5)
-    A_ldiv_B!(x, preconditioner, tmp)
-    copy!(x, tmp)
+    ldiv!(x, preconditioner, tmp)
+    copyto!(x, tmp)
     return x, ch.mvps
 end

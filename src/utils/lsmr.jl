@@ -1,3 +1,4 @@
+
 Adivtype(A, b) = typeof(one(eltype(b))/one(eltype(A)))
 function zerox(A, b)
     T = Adivtype(A, b)
@@ -5,11 +6,20 @@ function zerox(A, b)
 end
 
 
-type ConvergenceHistory{T, R}
+struct ConvergenceHistory{T, R}
     isconverged::Bool
     threshold::T
     mvps::Int
     residuals::R
+end
+
+
+function mul!(C::Vector{Float64}, A::Matrix{Float64}, B::Vector{Float64}, α::Number, β::Number)
+    gemm!('N', 'N', convert(Float64, α), A, B, convert(Float64, β), C)
+end
+
+function mul!(C::Vector{Float64}, A::Adjoint{Float64, Matrix{Float64}}, B::Vector{Float64}, α::Number, β::Number)
+    gemm!('C', 'N', convert(Float64, α), A', B, convert(Float64, β), C)
 end
 
 ##############################################################################
@@ -17,18 +27,33 @@ end
 ##
 ## Minimize ||Ax-b||^2 + λ^2 ||x||^2
 ##
-## Arguments:
-## x is initial x0. Transformed in place to the solution.
-## b equals initial b. Transformed in place
-## v, h, hbar are storage arrays of length size(A, 2) = length(x)
-## 
 ## Adapted from the BSD-licensed Matlab implementation at
-##  http://web.stanford.edu/group/SOL/software/lsmr/
+## http://web.stanford.edu/group/SOL/software/lsmr/
 ##
-## A is a sparse matrix or anything that implements
-## A_mul_B!(α, A, b, β, c) updates c -> α Ab + βc
-## Ac_mul_B!(α, A, b, β, c) updates c -> α A'b + βc
+## A is a StridedVecOrMat or anything that implements 
+## gemm!('N', 'N', α, A, b, β, c) updates c -> α Ab + βc
+## gemm!('C', 'N', α, A, b, β, c) updates c -> α A'b + βc
+## eltype(A)
+## size(A)
+## (this includes SparseMatrixCSC)
+## x, v, h, hbar are AbstractVectors or anything that implements
+## norm(x)
+## copyto!(x1, x2)
+## rmul!(x, α)
+## axpy!(α, x1, x2)
+## similar(x, T)
+## length(x)
+## b is an AbstractVector or anything that implements
+## eltype(b)
+## norm(b)
+## copyto!(x1, x2)
+## fill!(b, α)
+## rmul!(b, α)
+## similar(b, T)
+## length(b)
+
 ##############################################################################
+
 
 ## Arguments:
 ## x is initial x0. Transformed in place to the solution.
@@ -54,12 +79,12 @@ function lsmr!(x, A, b, v, h, hbar;
     normArs = Tr[]
     conlim > 0 ? ctol = convert(Tr, inv(conlim)) : ctol = zero(Tr)
     # form the first vectors u and v (satisfy  β*u = b,  α*v = A'u)
-    u = A_mul_B!(-1, A, x, 1, b)
+    u = mul!(b, A, x, -1, 1)
     β = norm(u)
-    β > 0 && scale!(u, inv(β))
-    Ac_mul_B!(1, A, u, 0, v)
+    β > 0 && rmul!(u, inv(β))
+    mul!(v, A', u, 1, 0)
     α = norm(v)
-    α > 0 && scale!(v, inv(α))
+    α > 0 && rmul!(v, inv(α))
 
     # Initialize variables for 1st iteration.
     ζbar = α * β
@@ -69,7 +94,7 @@ function lsmr!(x, A, b, v, h, hbar;
     cbar = one(Tr)
     sbar = zero(Tr)
 
-    copy!(h, v)
+    copyto!(h, v)
     fill!(hbar, zero(Tr))
 
     # Initialize variables for estimation of ||r||.
@@ -98,13 +123,13 @@ function lsmr!(x, A, b, v, h, hbar;
     if normAr != 0 
         while iter < maxiter
             iter += 1
-            A_mul_B!(1, A, v, -α, u)
+            mul!(u, A, v, 1, -α)
             β = norm(u)
             if β > 0
-                scale!(u, inv(β))
-                Ac_mul_B!(1, A, u, -β, v)
+                rmul!(u, inv(β))
+                mul!(v, A', u, 1, -β)
                 α = norm(v)
-                α > 0 && scale!(v, inv(α))
+                α > 0 && rmul!(v, inv(α))
             end
         
             # Construct rotation Qhat_{k,2k+1}.
@@ -132,10 +157,10 @@ function lsmr!(x, A, b, v, h, hbar;
             ζbar = - sbar * ζbar
         
             # Update h, h_hat, x.
-            scale!(hbar, - θbar * ρ / (ρold * ρbarold))
+            rmul!(hbar, - θbar * ρ / (ρold * ρbarold))
             axpy!(1, h, hbar)
             axpy!(ζ / (ρ * ρbar), hbar, x)
-            scale!(h, - θnew / ρ)
+            rmul!(h, - θnew / ρ)
             axpy!(1, v, h)
         
             ##############################################################################

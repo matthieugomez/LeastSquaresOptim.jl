@@ -1,4 +1,4 @@
-using LeastSquaresOptim, Base.Test
+using LeastSquaresOptim, Printf, SparseArrays, Test
 
 # simple factor model
 # only problem with "real" optimization 
@@ -87,20 +87,19 @@ function factor()
     x = ones(6)
     return name, f!, g!, x
 end
-
 iter = 0
 for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg(), :dl), (LeastSquaresOptim.LevenbergMarquardt(), :lm))
     for (solver, solver_abbr) in ((LeastSquaresOptim.QR(), :qr), (LeastSquaresOptim.LSMR(), :iter))
-        iter += 1
-        name, f!, g!, x = factor()
-        fcur = ones(9)
-        J = ones(9, 6)
+        global iter += 1
+        global name, f!, g!, x = factor()
+        global fcur = ones(9)
+        global J = ones(9, 6)
         g!(J, x)
         if solver == LeastSquaresOptim.LSMR()
             J = sparse(J)
         end
-        nls = LeastSquaresProblem(x = x, y = fcur, f! = f!, J = J, g! = g!)
-        r = optimize!(nls, optimizer, solver)
+        global nls = LeastSquaresProblem(x = x, y = fcur, f! = f!, J = J, g! = g!)
+        global r = optimize!(nls, optimizer, solver)
         if iter == 1
             show(r)
         end

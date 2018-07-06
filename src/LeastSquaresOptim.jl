@@ -8,7 +8,15 @@ module LeastSquaresOptim
 ##
 ##############################################################################
 
-import Base: A_mul_B!, Ac_mul_B!, A_ldiv_B!, copy!, fill!, scale!, norm, axpy!, eltype, length, size
+import Base: copyto!, fill!, eltype, length, size
+import LinearAlgebra: mul!, rmul!, norm, cholesky!, qr!, Symmetric, dot, eigen, axpy!, svd, ldiv!, Transpose, adjoint, Adjoint
+import LinearAlgebra.BLAS: gemm!
+import Printf: @printf, @sprintf
+if Base.USE_GPL_LIBS
+    import SuiteSparse.SPQR: QRSparse
+    import SparseArrays: SparseMatrixCSC, sparse, nzrange, nonzeros
+end
+import Statistics: mean
 using ForwardDiff
 import Optim: optimize
 

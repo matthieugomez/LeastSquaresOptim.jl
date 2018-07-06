@@ -1,4 +1,4 @@
-using LeastSquaresOptim, Base.Test
+using LeastSquaresOptim, Statistics, Test
 
 # StRD tests (in progress)
 # http://www.itl.nist.gov/div898/strd/nls/nls_main.shtml
@@ -1458,11 +1458,11 @@ for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg(), :dl), (LeastSqu
     n = 0
     N = 0
     for test in tests
-        name, data, parameters, f, solution = test()
+        global name, data, parameters, f, solution = test()
       #  @show solution
         for j in 1:size(parameters, 2)
-            nls = LeastSquaresProblem(x = parameters[:, j], f! = (fcur, x) -> ff!(fcur, x, f, data), output_length = size(data, 1))
-            r = optimize!(nls, optimizer, LeastSquaresOptim.QR(), x_tol = 1e-50, f_tol = 1e-36, g_tol = 1e-50)
+            global nls = LeastSquaresProblem(x = parameters[:, j], f! = (fcur, x) -> ff!(fcur, x, f, data), output_length = size(data, 1))
+            global r = optimize!(nls, optimizer, LeastSquaresOptim.QR(), x_tol = 1e-50, f_tol = 1e-36, g_tol = 1e-50)
             n += norm(r.minimizer - solution) <= 1e-3
             N += 1
             @test !isnan(mean(r.minimizer) )
