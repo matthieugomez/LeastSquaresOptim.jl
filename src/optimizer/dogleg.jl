@@ -97,7 +97,6 @@ function optimize!(
             # compute Cauchy point
             map!((x, y) -> x * sqrt(y), δgn, δgr, dtd)
             mul!(fpredict, J, δgn, one(eTy), zero(eTy))
-            mul!(fpredict, J, δgn)
             mul_calls += 1
             α = wnorm_δgr^2 / sum(abs2, fpredict)
 
