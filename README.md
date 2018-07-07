@@ -1,4 +1,4 @@
-[![LeastSquaresOptim](http://pkg.julialang.org/badges/LeastSquaresOptim_0.6.svg)](http://pkg.julialang.org/?pkg=LeastSquaresOptim)
+[![LeastSquaresOptim](http://pkg.julialang.org/badges/LeastSquaresOptim_0.7.svg)](http://pkg.julialang.org/?pkg=LeastSquaresOptim)
 [![Build Status](https://travis-ci.org/matthieugomez/LeastSquaresOptim.jl.svg?branch=master)](https://travis-ci.org/matthieugomez/LeastSquaresOptim.jl)
 [![Coverage Status](https://coveralls.io/repos/matthieugomez/LeastSquaresOptim.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/matthieugomez/LeastSquaresOptim.jl?branch=master)
 ## Motivation
@@ -62,8 +62,8 @@ This package is written with large scale problems in mind. In particular, memory
 	- `LeastSquaresOptim.QR()`. Available for dense jacobians
 	- `LeastSquaresOptim.Cholesky()`. Available for dense jacobians
 	- `LeastSquaresOptim.LSMR()`. A conjugate gradient method ([LSMR]([http://web.stanford.edu/group/SOL/software/lsmr/) with diagonal preconditioner). The jacobian can be of any type that defines the following interface is defined:
-	    - `A_mul_B!(α::Number, A, x, β::Number, y)` updates y to αAx + βy
-		- `Ac_mul_B!(α::Number, A, y, β::Number, x)` updates x to αA'y + βx
+	    - `mul!(y, A, x, α::Number, β::Number)` updates y to αAx + βy
+		- `mul!(x, A', y, α::Number, β::Number)` updates x to αA'y + βx
 		- `colsumabs2!(x, A)` updates x to the sum of squared elements of each column
 		- `size(A, d)` returns the nominal dimensions along the dth axis in the equivalent matrix representation of A.
 		- `eltype(A)` returns the element type implicit in the equivalent matrix representation of A.
