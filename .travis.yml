@@ -1,15 +1,13 @@
 language: julia
 julia:
 - 0.7
+- 1.0
 - nightly
 matrix:
   allow_failures:
     - julia: nightly
-script:
-- if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-- julia --check-bounds=yes -e 'Pkg.update() ; Pkg.clone(pwd()); Pkg.build("LeastSquaresOptim"); Pkg.test("LeastSquaresOptim"; coverage=true)'
 after_success:
-- julia -e 'cd(Pkg.dir("LeastSquaresOptim")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
+- julia -e 'using Pkg; cd(Pkg.dir("LeastSquaresOptim")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
 notifications:
   email: false
   on_success: never 
