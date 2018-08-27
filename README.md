@@ -99,5 +99,6 @@ Related:
 ## Installation
 To install the package,
 ```julia
+using Pkg
 Pkg.add("LeastSquaresOptim")
 ```
