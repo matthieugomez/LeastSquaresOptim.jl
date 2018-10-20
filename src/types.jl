@@ -51,6 +51,7 @@ function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! =
         f!(y, x0)
         all(x0 .≈ x) || throw("The order of argument and allocation arrays has been switched: use f!(fvec, x)")
         # end test argument order
+        @show autodiff
         if autodiff == :forward
             central_cache = DiffEqDiffTools.JacobianCache(similar(x), similar(y), similar(y))
             newg! = (Jp::Matrix, xp::Vector) -> DiffEqDiffTools.finite_difference_jacobian!(Jp, f, x, central_cache)
@@ -133,8 +134,8 @@ function LeastSquaresProblemAllocated(args...; kwargs...)
 end
 
 # optimize
-function optimize!(nls::LeastSquaresProblem, optimizer::Union{Nothing, AbstractOptimizer} = nothing, solver::Union{Nothing, AbstractSolver} = nothing; kwargs...)
-    nlsp = LeastSquaresProblemAllocated(nls, optimizer, solver)
+function optimize!(nls::LeastSquaresProblem, optimizer::Union{Nothing, AbstractOptimizer} = nothing, solver::Union{Nothing, AbstractSolver} = nothing; autodiff = :forward, kwargs...)
+    nlsp = LeastSquaresProblemAllocated(nls, optimizer, solver, autodiff = autodiff)
     optimize!(nlsp; kwargs...)
 end
 
@@ -144,8 +145,8 @@ end
 ##
 ##############################################################################
 
-function optimize(f, x, t::AbstractOptimizer; kwargs...)
-    optimize!(LeastSquaresProblem(x = deepcopy(x), f! = (out, x) -> copyto!(out, f(x)), output_length = length(f(x))), t; kwargs...)
+function optimize(f, x, t::AbstractOptimizer; autodiff = :forward, kwargs...)
+    optimize!(LeastSquaresProblem(x = deepcopy(x), f! = (out, x) -> copyto!(out, f(x)), output_length = length(f(x)), autodiff = autodiff), t; kwargs...)
 end
 
 ###############################################################################
