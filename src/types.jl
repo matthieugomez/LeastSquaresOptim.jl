@@ -51,18 +51,14 @@ function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! =
         f!(y, x0)
         all(x0 .≈ x) || throw("The order of argument and allocation arrays has been switched: use f!(fvec, x)")
         # end test argument order
-        @show autodiff
         if autodiff == :forward
             central_cache = DiffEqDiffTools.JacobianCache(similar(x), similar(y), similar(y))
-            newg! = (Jp::Matrix, xp::Vector) -> DiffEqDiffTools.finite_difference_jacobian!(Jp, f, x, central_cache)
-           end
+            newg! = (J::Matrix, xp::Vector) -> DiffEqDiffTools.finite_difference_jacobian!(J, f!, x, central_cache)
         elseif autodiff == :central
             jac_cfg = ForwardDiff.JacobianConfig(f, y, x, ForwardDiff.Chunk(x))
             ForwardDiff.checktag(jac_cfg, f, x)
-            y0 = deepcopy(y)
-            newg! = (Jp::Matrix, xp::Vector) -> ForwardDiff.jacobian!(Jp, f!, y0, x, jac_cfg, Val{False}())
+            newg! = (J::Matrix, xp::Vector) -> ForwardDiff.jacobian!(J, f!, deepcopy(y), x, jac_cfg, Val{False}())
         end
-
     end
     LeastSquaresProblem(x, y , f!, J, newg!)
 end
