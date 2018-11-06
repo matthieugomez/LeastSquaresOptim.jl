@@ -71,7 +71,7 @@ This package is written with large scale problems in mind. In particular, memory
 
 	For the `LSMR` solver, you can optionally specifying a function `preconditioner!` and a matrix `P` such that `preconditioner(x, J, P)` updates `P` as a preconditioner for `J'J` in the case of a Dogleg optimization method, and such that `preconditioner(x, J, λ, P)` updates `P` as a preconditioner for `J'J + λ` in the case of LevenbergMarquardt optimization method. By default, the preconditioner is chosen as the diagonal of of the matrix `J'J`. The preconditioner can be any type that supports `A_ldiv_B!(x, P, y)`
 
-	The `optimizers` and `solvers` are presented in more depth in the [Ceres documentation](http://ceres-solver.org/solving.html). For dense jacobians, the default options are `Dogle()` and `QR()`. For sparse jacobians, the default options are  `LevenbergMarquardt()` and `LSMR()`. 
+	The `optimizers` and `solvers` are presented in more depth in the [Ceres documentation](http://ceres-solver.org/nnls_solving.html). For dense jacobians, the default options are `Dogle()` and `QR()`. For sparse jacobians, the default options are  `LevenbergMarquardt()` and `LSMR()`. 
 
 3. You can even avoid initial allocations by directly passing a `LeastSquaresProblemAllocated` to the `optimize!` function. Such an object bundles a `LeastSquaresProblem` object with a few storage objects. This allows to save memory when repeatedly solving non linear least square problems.
 	```julia
