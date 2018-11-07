@@ -48,7 +48,7 @@ This package is written with large scale problems in mind. In particular, memory
 	    J[1, 1] = -1
 	    J[1, 2] = 0
 	    J[2, 1] = -200 * x[1]
-	    J[2, 2] = 109
+	    J[2, 2] = 100
 	end
 	optimize!(LeastSquaresProblem(x = zeros(2), f! = rosenbrock_f!, g! = rosenbrock_g!, output_length = 2))
 	```
