@@ -38,19 +38,19 @@ This package is written with large scale problems in mind. In particular, memory
 	```julia
 	using LeastSquaresOptim
 	function rosenbrock_f!(out, x)
-		out[1] = 1 - x[1]
-		out[2] = 100 * (x[2]-x[1]^2)
+	    out[1] = 1 - x[1]
+	    out[2] = 100 * (x[2]-x[1]^2)
 	end
-	optimize!(LeastSquaresProblem(x = x, f! = rosenbrock_f!, output_length = 2))
+	optimize!(LeastSquaresProblem(x = zeros(2), f! = rosenbrock_f!, output_length = 2))
 
 	# if you want to use gradient
 	function rosenbrock_g!(J, x)
-		J[1, 1] = -1
-		J[1, 2] = 0
-		J[2, 1] = -200 * x[1]
-		J[2, 2] = 109
+	    J[1, 1] = -1
+	    J[1, 2] = 0
+	    J[2, 1] = -200 * x[1]
+	    J[2, 2] = 100
 	end
-	optimize!(LeastSquaresProblem(x = x, f = rosenbrock_f, g! = rosenbrock_g!))
+	optimize!(LeastSquaresProblem(x = zeros(2), f! = rosenbrock_f!, g! = rosenbrock_g!, output_length = 2))
 	```
 
 2. You can also specify a particular least square solver (a least square optimization method proceeds by solving successively linear least squares problems `min||Ax - b||^2`). 
