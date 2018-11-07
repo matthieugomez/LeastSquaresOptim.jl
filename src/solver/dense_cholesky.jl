@@ -16,7 +16,7 @@ function DenseCholeskyAllocatedSolver(cholm::Tc) where {Tc <: StridedMatrix}
 end
 
 
-function AbstractAllocatedSolver(nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}, optimizer, ::Cholesky) where {Tx, Ty, Tf, TJ <: StridedVecOrMat, Tg}
+function AbstractAllocatedSolver(nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}, optimizer::AbstractOptimizer{Cholesky}) where {Tx, Ty, Tf, TJ <: StridedVecOrMat, Tg}
     return DenseCholeskyAllocatedSolver(Array{eltype(nls.J)}(undef, length(nls.x), length(nls.x)))
 end
 

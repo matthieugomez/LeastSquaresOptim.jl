@@ -1454,7 +1454,7 @@ end
 
 tests =  [misra1a, Chwirut2, Chwitrut1, Lanczos3, Gauss1, Gauss2, DanWood, Misra1b, MGH09, Thurber, BoxBOD, Rat42, MGH10, Eckerle4, Rat43, Bennett5]
 
-for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg(), :dl), (LeastSquaresOptim.LevenbergMarquardt(), :lm))
+for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg, :dl), (LeastSquaresOptim.LevenbergMarquardt, :lm))
     n = 0
     N = 0
     for test in tests
@@ -1462,7 +1462,7 @@ for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg(), :dl), (LeastSqu
       #  @show solution
         for j in 1:size(parameters, 2)
             global nls = LeastSquaresProblem(x = parameters[:, j], f! = (fcur, x) -> ff!(fcur, x, f, data), output_length = size(data, 1))
-            global r = optimize!(nls, optimizer, LeastSquaresOptim.QR(), x_tol = 1e-50, f_tol = 1e-36, g_tol = 1e-50)
+            global r = optimize!(nls, optimizer(LeastSquaresOptim.QR()), x_tol = 1e-50, f_tol = 1e-36, g_tol = 1e-50)
             n += norm(r.minimizer - solution) <= 1e-3
             N += 1
             @test !isnan(mean(r.minimizer) )

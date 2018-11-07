@@ -125,7 +125,7 @@ end
 ## eltype, size, mul!
 ##
 ##############################################################################
-function getpreconditioner(nls::LeastSquaresProblem, optimizer::Dogleg, solver::LSMR{Nothing, Nothing})
+function getpreconditioner(nls::LeastSquaresProblem, optimizer::Dogleg{LSMR{Nothing, Nothing}})
     preconditioner! = function(x, J, out)
         colsumabs2!(out._, J)
         Tout = eltype(out._)
@@ -135,8 +135,8 @@ function getpreconditioner(nls::LeastSquaresProblem, optimizer::Dogleg, solver::
     preconditioner = InverseDiagonal(_zeros(nls.x))
     return preconditioner!, preconditioner
 end
-function getpreconditioner(nls::LeastSquaresProblem, optimizer::Dogleg, solver::LSMR)
-    return solver.preconditioner!, solver.preconditioner
+function getpreconditioner(nls::LeastSquaresProblem, optimizer::Dogleg{LSMR{T1, T2}}) where {T1, T2}
+    return optimizer.solver.preconditioner!, optimizer.solver.preconditioner
 end
 
 struct LSMRAllocatedSolver{Tx0, Tx1, Tx2, Tx22, Tx3, Tx4, Tx5, Ty} <: AbstractAllocatedSolver
@@ -151,8 +151,8 @@ struct LSMRAllocatedSolver{Tx0, Tx1, Tx2, Tx22, Tx3, Tx4, Tx5, Ty} <: AbstractAl
 end
 
 
-function AbstractAllocatedSolver(nls::LeastSquaresProblem, optimizer::Dogleg, solver::LSMR)
-    preconditioner!, preconditioner = getpreconditioner(nls, optimizer, solver)
+function AbstractAllocatedSolver(nls::LeastSquaresProblem, optimizer::Dogleg{LSMR{T1, T2}}) where {T1, T2}
+    preconditioner!, preconditioner = getpreconditioner(nls, optimizer)
     LSMRAllocatedSolver(preconditioner!, preconditioner, _zeros(nls.x), _zeros(nls.x), 
         _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.y))
 end
@@ -193,7 +193,7 @@ end
 
 ##
 ##############################################################################
-function getpreconditioner(nls::LeastSquaresProblem, optimizer::LevenbergMarquardt, ::LSMR{Nothing, Nothing})
+function getpreconditioner(nls::LeastSquaresProblem, optimizer::LevenbergMarquardt{LSMR{Nothing, Nothing}})
     preconditioner! = function(x, J, damp, out)
         colsumabs2!(out._, J)
         Tout = eltype(out._)
@@ -205,9 +205,10 @@ function getpreconditioner(nls::LeastSquaresProblem, optimizer::LevenbergMarquar
     return preconditioner!, preconditioner
 end
 
-function getpreconditioner(nls::LeastSquaresProblem, optimizer::LevenbergMarquardt, solver::LSMR)
-    return solver.preconditioner!, solver.preconditioner
+function getpreconditioner(nls::LeastSquaresProblem, optimizer::LevenbergMarquardt{LSMR{T1, T2}}) where {T1, T2}
+    return optimizer.solver.preconditioner!, optimizer.solver.preconditioner
 end
+
 
 struct LSMRDampenedAllocatedSolver{Tx0, Tx1, Tx2, Tx22, Tx3, Tx4, Tx5, Tx6, Ty} <: AbstractAllocatedSolver
     preconditioner!::Tx0
@@ -221,8 +222,8 @@ struct LSMRDampenedAllocatedSolver{Tx0, Tx1, Tx2, Tx22, Tx3, Tx4, Tx5, Tx6, Ty} 
     u::Ty
 end
 
-function AbstractAllocatedSolver(nls::LeastSquaresProblem, optimizer::LevenbergMarquardt, solver::LSMR)
-    preconditioner!, preconditioner = getpreconditioner(nls, optimizer, solver)
+function AbstractAllocatedSolver(nls::LeastSquaresProblem,  optimizer::LevenbergMarquardt{LSMR{T1, T2}}) where {T1, T2}
+    preconditioner!, preconditioner = getpreconditioner(nls, optimizer)
     LSMRDampenedAllocatedSolver(preconditioner!, preconditioner, _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.x),  _zeros(nls.x), _zeros(nls.y))
 end
 

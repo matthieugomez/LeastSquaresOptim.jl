@@ -88,7 +88,7 @@ function factor()
     return name, f!, g!, x
 end
 iter = 0
-for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg(), :dl), (LeastSquaresOptim.LevenbergMarquardt(), :lm))
+for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg, :dl), (LeastSquaresOptim.LevenbergMarquardt, :lm))
     for (solver, solver_abbr) in ((LeastSquaresOptim.QR(), :qr), (LeastSquaresOptim.LSMR(), :iter))
         global iter += 1
         global name, f!, g!, x = factor()
@@ -99,7 +99,7 @@ for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg(), :dl), (LeastSqu
             J = sparse(J)
         end
         global nls = LeastSquaresProblem(x = x, y = fcur, f! = f!, J = J, g! = g!)
-        global r = optimize!(nls, optimizer, solver)
+        global r = optimize!(nls, optimizer(solver))
         if iter == 1
             show(r)
         end

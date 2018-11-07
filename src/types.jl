@@ -1,6 +1,6 @@
- ##############################################################################
+##############################################################################
 ##
-## Non Linear Least Squares
+## Non Linear Least Squares Problem
 ##
 ##############################################################################
 
@@ -33,7 +33,6 @@ function LeastSquaresProblem(x::Tx, y::Ty, f!::Tf, J::TJ, g!::Tg) where {Tx, Ty,
 end
 
 
-
 function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! = error("initial f! required"), g! = nothing, J = nothing, output_length = 0, autodiff = :central)
     if typeof(y) == Nothing
         if output_length == 0
@@ -64,18 +63,11 @@ function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! =
 end
 
 
-
 ###############################################################################
 ##
-## Non Linear Least Squares Allocated
-## groups a LeastSquaresProblem with allocations
+## Optimizer and SOlver
 ##
 ##############################################################################
-# optimizer
-abstract type AbstractOptimizer end
-struct Dogleg <: AbstractOptimizer end
-struct LevenbergMarquardt <: AbstractOptimizer end
-
 
 
 # solver
@@ -88,6 +80,24 @@ struct LSMR{T1, T2} <: AbstractSolver
 end
 LSMR() = LSMR(nothing, nothing)
 
+
+# optimizer
+abstract type AbstractOptimizer{T} end
+struct Dogleg{T} <: AbstractOptimizer{T}
+    solver::T
+end
+Dogleg() = Dogleg(nothing)
+struct LevenbergMarquardt{T} <: AbstractOptimizer{T}
+    solver::T
+end
+LevenbergMarquardt() = LevenbergMarquardt(nothing)
+
+
+_solver(x::AbstractOptimizer) = x.solver
+_solver(x::Nothing) = nothing
+
+
+
 ## for dense matrices, default to cholesky ; otherwise LSMR
 function default_solver(x::AbstractSolver, J)
     if (typeof(x) <: QR) && (typeof(J) <: SparseMatrixCSC)
@@ -99,11 +109,19 @@ default_solver(::Nothing, J::StridedVecOrMat) = QR()
 default_solver(::Nothing, J) = LSMR()
 
 ## for LSMR, default to levenberg_marquardt ; otherwise dogleg
-default_optimizer(x::AbstractOptimizer, y) = x
-default_optimizer(::Nothing, ::LSMR) = LevenbergMarquardt()
-default_optimizer(::Nothing, ::AbstractSolver) = Dogleg()
+default_optimizer(x::Dogleg, y::AbstractSolver) = Dogleg(y)
+default_optimizer(x::LevenbergMarquardt, y::AbstractSolver) = LevenbergMarquardt(y)
+default_optimizer(::Nothing, ::LSMR) = LevenbergMarquardt(LSMR())
+default_optimizer(::Nothing, x) = Dogleg(x)
 
 
+
+
+##############################################################################
+##
+## Non Linear Least Squares Problem Allocated
+##
+##############################################################################
 
 abstract type AbstractAllocatedOptimizer end
 abstract type AbstractAllocatedSolver end
@@ -119,22 +137,15 @@ mutable struct LeastSquaresProblemAllocated{Tx, Ty, Tf, TJ, Tg, Toptimizer <: Ab
 end
 
 # Constructor
-function LeastSquaresProblemAllocated(nls::LeastSquaresProblem, optimizer::Union{Nothing, AbstractOptimizer}, solver::Union{Nothing, AbstractSolver})
-    solver = default_solver(solver, nls.J)
+function LeastSquaresProblemAllocated(nls::LeastSquaresProblem, optimizer::Union{Nothing, AbstractOptimizer})
+    solver = default_solver(_solver(optimizer), nls.J)
     optimizer = default_optimizer(optimizer, solver)
     LeastSquaresProblemAllocated(
-        nls.x, nls.y, nls.f!, nls.J, nls.g!, AbstractAllocatedOptimizer(nls, optimizer), AbstractAllocatedSolver(nls, optimizer, solver))
+        nls.x, nls.y, nls.f!, nls.J, nls.g!, AbstractAllocatedOptimizer(nls, optimizer), AbstractAllocatedSolver(nls, optimizer))
 end
 function LeastSquaresProblemAllocated(args...; kwargs...)
     LeastSquaresProblemAllocated(LeastSquaresProblem(args...); kwargs...)
 end
-
-# optimize
-function optimize!(nls::LeastSquaresProblem, optimizer::Union{Nothing, AbstractOptimizer} = nothing, solver::Union{Nothing, AbstractSolver} = nothing; kwargs...)
-    nlsp = LeastSquaresProblemAllocated(nls, optimizer, solver)
-    optimize!(nlsp; kwargs...)
-end
-
 ###############################################################################
 ##
 ## Optim-like syntax
@@ -144,6 +155,20 @@ end
 function optimize(f, x, t::AbstractOptimizer; autodiff = :central, kwargs...)
     optimize!(LeastSquaresProblem(x = deepcopy(x), f! = (out, x) -> copyto!(out, f(x)), output_length = length(f(x)), autodiff = autodiff), t; kwargs...)
 end
+
+function optimize!(nls::LeastSquaresProblem, optimizer::Union{Nothing, AbstractOptimizer} = nothing; kwargs...)
+    optimize!(LeastSquaresProblemAllocated(nls, optimizer); kwargs...)
+end
+
+
+
+
+Base.@deprecate optimize!(nls::LeastSquaresProblem, optimizer::AbstractOptimizer, solver::Union{Nothing, AbstractSolver}; kwargs...) optimize!(nls, typeof{optimizer}(solver); kwargs...)
+Base.@deprecate optimize!(nls::LeastSquaresProblem, solver::AbstractSolver; kwargs...) optimize!(nls, Dogleg{solver}; kwargs...)
+Base.@deprecate LeastSquaresProblemAllocated(nls::LeastSquaresProblem, optimizer::AbstractOptimizer, solver::AbstractSolver) LeastSquaresProblemAllocated(nls, default_optimizer(optimizer, solver))
+
+
+
 
 ###############################################################################
 ##

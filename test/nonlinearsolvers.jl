@@ -508,7 +508,7 @@ for matrix in (:dense, :sparse)
             # tests below
             continue
         else
-            for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg(), :dl), (LeastSquaresOptim.LevenbergMarquardt(), :lm))
+            for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg, :dl), (LeastSquaresOptim.LevenbergMarquardt, :lm))
                 alltests = [rosenbrock(); 
                 powell_singular(); powell_badly_scaled(); 
                 wood();
@@ -527,7 +527,7 @@ for matrix in (:dense, :sparse)
                         J = sparse(J)
                     end
                     nls = LeastSquaresProblem(x = x, y = fcur, f! = f!, J = J, g! = g!)
-                    r = optimize!(nls, optimizer, solver)
+                    r = optimize!(nls, optimizer(solver))
                     @printf("%-6s %4s %2s %30s %5d %5d   %5d   %10e\n", matrix, solver_abbr, optimizer_abbr, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
                     @test r.ssr <= 1e-3
                 end
@@ -558,7 +558,7 @@ for (name, f!, g!, x) in alltests
     # try because g! may change symbolic factorizations (see Julia issue #9906)
     try
         nls = LeastSquaresProblem(x = x, y = fcur, f! = f!, J = J, g! = g!)
-        r = optimize!(nls, optimizer, solver)
+        r = optimize!(nls, optimizer(solver))
         @test r.converged
         @test r.ssr <= 1e-3
         @printf("%-6s %4s %2s %30s %5d %5d   %5d   %10e\n", :sparse, :fact, :dl, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
@@ -582,12 +582,12 @@ alltests = [rosenbrock();
     trigonometric(10); variably_dimensioned(10); 
     broyden_tridiagonal(10); broyden_banded(10)]
 # test dense cholesky
-for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg(), :dl), (LeastSquaresOptim.LevenbergMarquardt(), :lm))
+for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg, :dl), (LeastSquaresOptim.LevenbergMarquardt, :lm))
     for (name, f!, g!, x) in alltests
         fcur = similar(x)
         J = Array{Float64}(undef, length(x), length(x))
         nls = LeastSquaresProblem(x = x, y = fcur, f! = f!, J = J, g! = g!)
-        r = optimize!(nls, optimizer, LeastSquaresOptim.Cholesky())
+        r = optimize!(nls, optimizer(LeastSquaresOptim.Cholesky()))
         @printf("%-6s %4s %2s %30s %5d %5d   %5d   %10e\n", :dense, :chol, optimizer_abbr, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
         @test r.converged
         @test r.ssr <= 1e-3
@@ -606,17 +606,15 @@ alltests = [rosenbrock();
   trigonometric(10); variably_dimensioned(10); 
   broyden_tridiagonal(10); broyden_banded(10)]
 #test forwarddiff
-for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg(), :dl), (LeastSquaresOptim.LevenbergMarquardt(), :lm))
+for (optimizer, optimizer_abbr) in ((LeastSquaresOptim.Dogleg, :dl), (LeastSquaresOptim.LevenbergMarquardt, :lm))
     for (name, f!, g!, x) in alltests
         nls = LeastSquaresProblem(x = x, f! = f!, output_length = length(x))
-        r = optimize!(nls, optimizer)
+        r = optimize!(nls, optimizer())
         @printf("%-10s %4s %2s %30s %5d %5d   %5d   %10e\n", :forwarddiff, :fact, optimizer_abbr, name, r.iterations, r.f_calls, r.g_calls, r.ssr)
         @test r.converged
         @test r.ssr <= 1e-3
     end
 end
-
-
 
 # check default are correctly 
 name, f!, g!, x = wood()
