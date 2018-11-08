@@ -61,7 +61,7 @@ optimize!(LeastSquaresProblem(x = x, f! = rosenbrock_f!, output_length = 2), Dog
 ```
 
 
-## Ducktyping
+## Duck Typing
 When using the solver `LeastSquaresOptim.LSMR()`, the jacobian can be any type that defines the following interface:
 	    - `mul!(y, A, x, α::Number, β::Number)` updates y to αAx + βy
 		- `mul!(x, A', y, α::Number, β::Number)` updates x to αA'y + βx
