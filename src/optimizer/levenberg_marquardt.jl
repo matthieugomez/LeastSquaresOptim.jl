@@ -44,11 +44,16 @@ const MAX_DIAGONAL = 1e32
 function optimize!(
     anls::LeastSquaresProblemAllocated{Tx, Ty, Tf, TJ, Tg, Toptimizer, Tsolver};
             x_tol::Number = 1e-8, f_tol::Number = 1e-8, g_tol::Number = 1e-8,
-            iterations::Integer = 1_000, Δ::Number = 10.0, store_trace = false, show_trace = false, show_every = 1) where {Tx, Ty, Tf, TJ, Tg, Toptimizer <: AllocatedLevenbergMarquardt, Tsolver}
+            iterations::Integer = 1_000, Δ::Number = 10.0, store_trace = false, show_trace = false, show_every = 1, lower::Vector{T} = Array{T}(undef, 0), upper::Vector{T} = Array{T}(undef, 0)) where {T, Tx, Ty, Tf, TJ, Tg, Toptimizer <: AllocatedLevenbergMarquardt, Tsolver}
 
     δx, dtd = anls.optimizer.δx, anls.optimizer.dtd
     ftrial, fpredict = anls.optimizer.ftrial, anls.optimizer.fpredict
     x, fcur, f!, J, g! = anls.x, anls.y, anls.f!, anls.J, anls.g!
+
+    #istempty
+    ((isempty(lower) || length(lower)==length(x)) && (isempty(upper) || length(upper)==length(x))) ||
+            throw(ArgumentError("Bounds must either be empty or of the same length as the number of parameters."))
+    ((isempty(lower) || all(x .>= lower)) && (isempty(upper) || all(x .<= upper))) ||             throw(ArgumentError("Initial guess must be within bounds."))
 
     decrease_factor = 2.0
     # initialize
@@ -83,6 +88,17 @@ function optimize!(
         clamp!(dtd, MIN_DIAGONAL, MAX_DIAGONAL)
         rmul!(dtd, 1/Δ)        
         δx, lmiter = ldiv!(δx, J, fcur, dtd,  anls.solver)
+        # apply box constraints
+        if !isempty(lower)
+            @simd for i in 1:length(x)
+               @inbounds δx[i] = min(δx[i], x[i] - lower[i])
+            end
+        end
+        if !isempty(upper)
+            @simd for i in 1:length(x)
+               @inbounds δx[i] = max(δx[i], x[i] - upper[i])
+            end
+        end
         mul_calls += lmiter
         #update x
         axpy!(-one(eTx), δx, x)
