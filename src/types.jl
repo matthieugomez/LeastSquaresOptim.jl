@@ -13,8 +13,6 @@ struct LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}
     function LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}(x, y, f!, J, g!) where {Tx, Ty, Tf, TJ, Tg}
         length(x) == size(J, 2) || throw(DimensionMismatch("x must have length size(J, 2)"))
         length(y) == size(J, 1) || throw(DimensionMismatch("y must have length size(J, 1)"))
-        size(J, 1) >= size(J, 2) || throw(DimensionMismatch("size(J, 1) must be greater than size(J, 2)"))
-        # end test argument order
         new(x, y, f!, J, g!) 
     end
 end
