@@ -126,7 +126,7 @@ end
 ##
 ##############################################################################
 function getpreconditioner(nls::LeastSquaresProblem, optimizer::Dogleg{LSMR{Nothing, Nothing}})
-    preconditioner! = function(x, J, out)
+    preconditioner! = function(out, x, J)
         colsumabs2!(out._, J)
         Tout = eltype(out._)
         map!(x -> x > zero(Tout) ? 1 / sqrt(x) : zero(Tout), out._, out._)
@@ -168,7 +168,7 @@ function ldiv!(x, J, y, A::LSMRAllocatedSolver)
 
     # prepare A
     fill!(tmp, 0)
-    preconditioner!(x, J, preconditioner)
+    preconditioner!(preconditioner, x, J)
     A = PreconditionedMatrix(J, preconditioner, tmp, tmp2)
 
     # solve
@@ -194,7 +194,7 @@ end
 ##
 ##############################################################################
 function getpreconditioner(nls::LeastSquaresProblem, optimizer::LevenbergMarquardt{LSMR{Nothing, Nothing}})
-    preconditioner! = function(x, J, damp, out)
+    preconditioner! = function(out, x, J, damp)
         colsumabs2!(out._, J)
         Tout = eltype(out._)
         axpy!(one(Tout), damp, out._)
@@ -240,7 +240,7 @@ function ldiv!(x, J, y, damp, A::LSMRDampenedAllocatedSolver)
 
     # prepare A
     fill!(tmp, 0)
-    preconditioner!(x, J, damp, preconditioner)
+    preconditioner!(preconditioner, x, J, damp)
     map!(sqrt, damp, damp)
     A = PreconditionedMatrix(DampenedMatrix(J, damp), preconditioner, tmp, tmp2)
     # solve

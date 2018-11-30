@@ -20,9 +20,33 @@ optimize(rosenbrock, x0, LevenbergMarquardt())
 You can also add the options : `x_tol`, `f_tol`, `g_tol`, `iterations`, `Δ` (initial radius), `autodiff` (`:central` to use finite difference method or `:forward` to use ForwardDiff package) as well as `lower` / `upper` arguments to impose boundary constraints.
 
 
-## Alternative in-place Syntax
+## Choice of Optimizer / Least Square Solver
+- You can specify two least squares optimizers, `Dogleg()` and `LevenbergMarquardt()`
+- You can specify three least squares solvers to be used within the optimizer
+	- `LeastSquaresOptim.QR()` or  `LeastSquaresOptim.Cholesky()` for dense jacobians
+	- `LeastSquaresOptim.LSMR()`. A conjugate gradient method ([LSMR]([http://web.stanford.edu/group/SOL/software/lsmr/) with diagonal preconditioner). Beyond `Matrix` and `SparseMatrixCSC`, the jacobian can be type that defines the following interface:
 
-Use the alternative syntax is useful when specifying in-place functions or the jacobian. The alternative syntax requires a `LeastSquaresProblem` object with:
+	- `mul!(y, A, x, α::Number, β::Number)` updates y to αAx + βy
+	- `mul!(x, A', y, α::Number, β::Number)` updates x to αA'y + βx
+	- `colsumabs2!(x, A)` updates x to the sum of squared elements of each column
+	- `size(A, d)` returns the nominal dimensions along the dth axis in the equivalent matrix representation of A.
+	- `eltype(A)` returns the element type implicit in the equivalent matrix representation of A.
+
+	Similarly, `x` or `f(x)` may be custom types. An example of the interface to define can be found in the package [SparseFactorModels.jl](https://github.com/matthieugomez/SparseFactorModels.jl).
+
+	Moreover, you can optionally specifying a function `preconditioner!` and a matrix `P` such that `preconditioner!(P, x, J)` updates `P` as a preconditioner for `J'J` in the case of a Dogleg optimization method, and such that `preconditioner!(P, x, J, λ)` updates `P` as a preconditioner for `J'J + λ` in the case of LevenbergMarquardt optimization method. The preconditioner can be any type that supports `A_ldiv_B!(x, P, y)`. By default, the preconditioner is chosen as the diagonal of the matrix `J'J`. 
+
+
+The optimizers and solvers are presented in more depth in the [Ceres documentation](http://ceres-solver.org/nnls_solving.html). For dense jacobians, the default option is `Doglel(QR())`. For sparse jacobians, the default option is  `LevenbergMarquardt(LSMR())`
+
+```julia
+optimize(rosenbrock, x0, Dogleg(LeastSquaresOptim.QR()))
+optimize(rosenbrock, x0, LevenbergMarquardt(LeastSquaresOptim.LSMR()))
+```
+
+
+## Alternative in-place Syntax
+The alternative syntax is useful when specifying in-place functions or the jacobian. Pass `optimize` a `LeastSquaresProblem` object with:
  - `x` an initial set of parameters.
  - `f!(out, x)` that writes `f(x)` in `out`.
  - the option `output_length` to specify the length of the output vector. 
@@ -45,31 +69,6 @@ function rosenbrock_g!(J, x)
 end
 optimize!(LeastSquaresProblem(x = zeros(2), f! = rosenbrock_f!, g! = rosenbrock_g!, output_length = 2), Dogleg())
 ```
-
-## Choice of Optimizer / Least Square Solver
-- You can specify two least squares optimizers, `Dogleg()` and `LevenbergMarquardt()`
-- You can specify three least squares solvers, used within the optimizer
-	- `LeastSquaresOptim.QR()`. Available for dense jacobians
-	- `LeastSquaresOptim.Cholesky()`. Available for dense jacobians
-	- `LeastSquaresOptim.LSMR()`. A conjugate gradient method ([LSMR]([http://web.stanford.edu/group/SOL/software/lsmr/) with diagonal preconditioner). 	You can optionally specifying a function `preconditioner!` and a matrix `P` such that `preconditioner(x, J, P)` updates `P` as a preconditioner for `J'J` in the case of a Dogleg optimization method, and such that `preconditioner(x, J, λ, P)` updates `P` as a preconditioner for `J'J + λ` in the case of LevenbergMarquardt optimization method. By default, the preconditioner is chosen as the diagonal of of the matrix `J'J`. The preconditioner can be any type that supports `A_ldiv_B!(x, P, y)`
-
-The optimizers and solvers are presented in more depth in the [Ceres documentation](http://ceres-solver.org/nnls_solving.html). For dense jacobians, the default option is `Doglel(QR())`. For sparse jacobians, the default option is  `LevenbergMarquardt(LSMR())`
-
-```julia
-optimize!(LeastSquaresProblem(x = x, f! = rosenbrock_f!, output_length = 2), Dogleg())
-optimize!(LeastSquaresProblem(x = x, f! = rosenbrock_f!, output_length = 2), Dogleg(LeastSquaresOptim.QR()))
-```
-
-## Duck Typing
-When using the solver `LeastSquaresOptim.LSMR()`, the jacobian can be any type that defines the following interface:
-
-- `mul!(y, A, x, α::Number, β::Number)` updates y to αAx + βy
-- `mul!(x, A', y, α::Number, β::Number)` updates x to αA'y + βx
-- `colsumabs2!(x, A)` updates x to the sum of squared elements of each column
-- `size(A, d)` returns the nominal dimensions along the dth axis in the equivalent matrix representation of A.
-- `eltype(A)` returns the element type implicit in the equivalent matrix representation of A.
-
-Similarly, `x` or `f(x)` may be custom types. An example of the interface to define can be found in the package [SparseFactorModels.jl](https://github.com/matthieugomez/SparseFactorModels.jl).
 
 
 
