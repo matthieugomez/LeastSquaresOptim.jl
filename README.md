@@ -17,10 +17,10 @@ x0 = zeros(2)
 optimize(rosenbrock, x0, Dogleg())
 optimize(rosenbrock, x0, LevenbergMarquardt())
 ```
-You can also add the options : `x_tol`, `f_tol`, `g_tol`, `iterations`, `Δ` (initial radius), and `autodiff`.
+You can also add the options : `x_tol`, `f_tol`, `g_tol`, `iterations`, `Δ` (initial radius), `autodiff` (`:central` to use finite difference method or `:forward` to use ForwardDiff package) as well as `lower` / `upper` arguments to impose boundary constraints.
 
 
-## Alternative Syntax
+## Alternative in-place Syntax
 
 Use the alternative syntax is useful when specifying in-place functions or the jacobian. The alternative syntax requires a `LeastSquaresProblem` object with:
  - `x` an initial set of parameters.
@@ -60,20 +60,22 @@ optimize!(LeastSquaresProblem(x = x, f! = rosenbrock_f!, output_length = 2), Dog
 optimize!(LeastSquaresProblem(x = x, f! = rosenbrock_f!, output_length = 2), Dogleg(LeastSquaresOptim.QR()))
 ```
 
-
 ## Duck Typing
 When using the solver `LeastSquaresOptim.LSMR()`, the jacobian can be any type that defines the following interface:
+
 	    - `mul!(y, A, x, α::Number, β::Number)` updates y to αAx + βy
 		- `mul!(x, A', y, α::Number, β::Number)` updates x to αA'y + βx
 		- `colsumabs2!(x, A)` updates x to the sum of squared elements of each column
 		- `size(A, d)` returns the nominal dimensions along the dth axis in the equivalent matrix representation of A.
 		- `eltype(A)` returns the element type implicit in the equivalent matrix representation of A.
+
 Similarly, `x` or `f(x)` may be custom types. An example of the interface to define can be found in the package [SparseFactorModels.jl](https://github.com/matthieugomez/SparseFactorModels.jl).
+
 
 
 ## Related packages
 Related:
-- [LSqfit.jl](https://github.com/JuliaOpt/LsqFit.jl) is a higher level package to fit curves (i.e. models of the form y = f(x, β))
+- [LSqfit.jl](https://github.com/JuliaOpt/LsqFit.jl) fits curves (i.e. models of the form y = f(x, β))
 - [Optim.jl](https://github.com/JuliaOpt/Optim.jl) solves general optimization problems.
 - [NLSolve.jl](https://github.com/EconForge/NLsolve.jl) solves non linear equations by least squares minimization.
 
