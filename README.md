@@ -63,11 +63,11 @@ optimize!(LeastSquaresProblem(x = x, f! = rosenbrock_f!, output_length = 2), Dog
 ## Duck Typing
 When using the solver `LeastSquaresOptim.LSMR()`, the jacobian can be any type that defines the following interface:
 
-	    - `mul!(y, A, x, α::Number, β::Number)` updates y to αAx + βy
-		- `mul!(x, A', y, α::Number, β::Number)` updates x to αA'y + βx
-		- `colsumabs2!(x, A)` updates x to the sum of squared elements of each column
-		- `size(A, d)` returns the nominal dimensions along the dth axis in the equivalent matrix representation of A.
-		- `eltype(A)` returns the element type implicit in the equivalent matrix representation of A.
+- `mul!(y, A, x, α::Number, β::Number)` updates y to αAx + βy
+- `mul!(x, A', y, α::Number, β::Number)` updates x to αA'y + βx
+- `colsumabs2!(x, A)` updates x to the sum of squared elements of each column
+- `size(A, d)` returns the nominal dimensions along the dth axis in the equivalent matrix representation of A.
+- `eltype(A)` returns the element type implicit in the equivalent matrix representation of A.
 
 Similarly, `x` or `f(x)` may be custom types. An example of the interface to define can be found in the package [SparseFactorModels.jl](https://github.com/matthieugomez/SparseFactorModels.jl).
 
