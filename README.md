@@ -22,9 +22,9 @@ You can also add the options : `x_tol`, `f_tol`, `g_tol`, `iterations`, `Δ` (in
 
 ## Choice of Optimizer / Least Square Solver
 - You can specify two least squares optimizers, `Dogleg()` and `LevenbergMarquardt()`
-- You can specify three least squares solvers to be used within the optimizer
+- You can specify three least squares solvers (used within the optimizer)
 	- `LeastSquaresOptim.QR()` or  `LeastSquaresOptim.Cholesky()` for dense jacobians
-	- `LeastSquaresOptim.LSMR()`. A conjugate gradient method ([LSMR]([http://web.stanford.edu/group/SOL/software/lsmr/) with diagonal preconditioner). Beyond `Matrix` and `SparseMatrixCSC`, the jacobian can be type that defines the following interface:
+	- `LeastSquaresOptim.LSMR()`. A conjugate gradient method ([LSMR]([http://web.stanford.edu/group/SOL/software/lsmr/) with diagonal preconditioner). Beyond `Matrix` and `SparseMatrixCSC`, the jacobian can be any type that defines the following interface:
 
 		- `mul!(y, A, x, α::Number, β::Number)` updates y to αAx + βy
 		- `mul!(x, A', y, α::Number, β::Number)` updates x to αA'y + βx
@@ -32,9 +32,9 @@ You can also add the options : `x_tol`, `f_tol`, `g_tol`, `iterations`, `Δ` (in
 		- `size(A, d)` returns the nominal dimensions along the dth axis in the equivalent matrix representation of A.
 		- `eltype(A)` returns the element type implicit in the equivalent matrix representation of A.
 
-		Similarly, `x` or `f(x)` may be custom types. An example of the interface to define can be found in the package [SparseFactorModels.jl](https://github.com/matthieugomez/SparseFactorModels.jl).
+		Similarly, `x` or `f(x)` may be custom types. An example of the interface can be found in the package [SparseFactorModels.jl](https://github.com/matthieugomez/SparseFactorModels.jl).
 
-		Moreover, you can optionally specifying a function `preconditioner!` and a matrix `P` such that `preconditioner!(P, x, J)` updates `P` as a preconditioner for `J'J` in the case of a Dogleg optimization method, and such that `preconditioner!(P, x, J, λ)` updates `P` as a preconditioner for `J'J + λ` in the case of LevenbergMarquardt optimization method. The preconditioner can be any type that supports `A_ldiv_B!(x, P, y)`. By default, the preconditioner is chosen as the diagonal of the matrix `J'J`. 
+		Moreover, you can optionally specifying a function `preconditioner!` and a matrix `P` such that `preconditioner!(P, x, J, λ)` updates `P` as a preconditioner for `J'J + λ`. The preconditioner can be any type that supports `A_ldiv_B!(x, P, y)`. By default, the preconditioner is chosen as the diagonal of the matrix `J'J + λ`. 
 
 
 The optimizers and solvers are presented in more depth in the [Ceres documentation](http://ceres-solver.org/nnls_solving.html). For dense jacobians, the default option is `Doglel(QR())`. For sparse jacobians, the default option is  `LevenbergMarquardt(LSMR())`

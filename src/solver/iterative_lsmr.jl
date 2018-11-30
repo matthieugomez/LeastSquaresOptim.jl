@@ -11,7 +11,7 @@
 
 struct PreconditionedMatrix{TA, Tp, Tx}
     A::TA
-    preconditioner::Tp
+    P::Tp
     tmp::Tx
     tmp2::Tx
 end
@@ -21,7 +21,7 @@ size(A::PreconditionedMatrix, i::Integer) = size(A.A, i)
 Base.adjoint(M::PreconditionedMatrix) = Adjoint(M)
 
 function mul!(b, pm::PreconditionedMatrix{TA, Tp, Tx}, a, α::Number, β::Number) where {TA, Tp, Tx}
-    ldiv!(a, pm.preconditioner, pm.tmp)
+    ldiv!(a, pm.P, pm.tmp)
     mul!(b, pm.A, pm.tmp, α, β)
     return b
 end
@@ -31,7 +31,7 @@ function mul!(b, Cpm::Adjoint{Ta, PreconditionedMatrix{TA, Tp, Tx}}, a, α::Numb
     T = eltype(b)
     β = convert(T, β)
     mul!(pm.tmp, pm.A',  a, one(T), zero(T))
-    ldiv!(pm.tmp, pm.preconditioner, pm.tmp2)
+    ldiv!(pm.tmp, pm.P, pm.tmp2)
     if β != one(T)
         if β == zero(T)
             fill!(b, β)
@@ -116,6 +116,31 @@ end
 
 #############################################################################
 ## 
+## Preconditioner
+##
+##############################################################################
+function getpreconditioner(nls::LeastSquaresProblem, optimizer::Union{Dogleg{LSMR{Nothing, Nothing}}, LevenbergMarquardt{LSMR{Nothing, Nothing}}})
+    preconditioner! = function(out, x, J, damp)
+        colsumabs2!(out._, J)
+        Tout = eltype(out._)
+        if damp != 0
+            axpy!(one(Tout), damp, out._)
+        end
+        map!(x -> x > zero(Tout) ? 1 / sqrt(x) : zero(Tout), out._, out._)
+        return out
+    end
+    P = InverseDiagonal(_zeros(nls.x))
+    return preconditioner!, P
+end
+
+function getpreconditioner(nls::LeastSquaresProblem, optimizer::Union{Dogleg{LSMR}, LevenbergMarquardt{LSMR}}) 
+    return optimizer.solver.preconditioner!, optimizer.solver.P
+end
+
+
+
+#############################################################################
+## 
 ## solve J'J \ J'y
 ##
 ## we use LSMR on Ax = y
@@ -125,23 +150,10 @@ end
 ## eltype, size, mul!
 ##
 ##############################################################################
-function getpreconditioner(nls::LeastSquaresProblem, optimizer::Dogleg{LSMR{Nothing, Nothing}})
-    preconditioner! = function(out, x, J)
-        colsumabs2!(out._, J)
-        Tout = eltype(out._)
-        map!(x -> x > zero(Tout) ? 1 / sqrt(x) : zero(Tout), out._, out._)
-        return out
-    end
-    preconditioner = InverseDiagonal(_zeros(nls.x))
-    return preconditioner!, preconditioner
-end
-function getpreconditioner(nls::LeastSquaresProblem, optimizer::Dogleg{LSMR{T1, T2}}) where {T1, T2}
-    return optimizer.solver.preconditioner!, optimizer.solver.preconditioner
-end
 
 struct LSMRAllocatedSolver{Tx0, Tx1, Tx2, Tx22, Tx3, Tx4, Tx5, Ty} <: AbstractAllocatedSolver
     preconditioner!::Tx0
-    preconditioner::Tx1
+    P::Tx1
     tmp::Tx2
     tmp2::Tx22
     v::Tx3
@@ -152,13 +164,13 @@ end
 
 
 function AbstractAllocatedSolver(nls::LeastSquaresProblem, optimizer::Dogleg{LSMR{T1, T2}}) where {T1, T2}
-    preconditioner!, preconditioner = getpreconditioner(nls, optimizer)
-    LSMRAllocatedSolver(preconditioner!, preconditioner, _zeros(nls.x), _zeros(nls.x), 
+    preconditioner!, P = getpreconditioner(nls, optimizer)
+    LSMRAllocatedSolver(preconditioner!, P, _zeros(nls.x), _zeros(nls.x), 
         _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.y))
 end
 
 function ldiv!(x, J, y, A::LSMRAllocatedSolver)
-    preconditioner!, preconditioner, tmp, tmp2, v, h, hbar, u = A.preconditioner!, A.preconditioner, A.tmp, A.tmp2, A.v, A.h, A.hbar, A.u
+    preconditioner!, P, tmp, tmp2, v, h, hbar, u = A.preconditioner!, A.P, A.tmp, A.tmp2, A.v, A.h, A.hbar, A.u
 
     # prepare x
     fill!(x, 0)
@@ -168,12 +180,12 @@ function ldiv!(x, J, y, A::LSMRAllocatedSolver)
 
     # prepare A
     fill!(tmp, 0)
-    preconditioner!(preconditioner, x, J)
-    A = PreconditionedMatrix(J, preconditioner, tmp, tmp2)
+    preconditioner!(P, x, J, 0)
+    A = PreconditionedMatrix(J, P, tmp, tmp2)
 
     # solve
     x, ch = lsmr!(x, A, u, v, h, hbar)
-    ldiv!(x, preconditioner, tmp)
+    ldiv!(x, P, tmp)
     copyto!(x, tmp)
     return x, ch.mvps
 end
@@ -193,26 +205,15 @@ end
 
 ##
 ##############################################################################
-function getpreconditioner(nls::LeastSquaresProblem, optimizer::LevenbergMarquardt{LSMR{Nothing, Nothing}})
-    preconditioner! = function(out, x, J, damp)
-        colsumabs2!(out._, J)
-        Tout = eltype(out._)
-        axpy!(one(Tout), damp, out._)
-        map!(x -> x > zero(Tout) ? 1 / sqrt(x) : zero(Tout), out._, out._)
-        return out
-    end
-    preconditioner = InverseDiagonal(_zeros(nls.x))
-    return preconditioner!, preconditioner
-end
 
 function getpreconditioner(nls::LeastSquaresProblem, optimizer::LevenbergMarquardt{LSMR{T1, T2}}) where {T1, T2}
-    return optimizer.solver.preconditioner!, optimizer.solver.preconditioner
+    return optimizer.solver.preconditioner!, optimizer.solver.P
 end
 
 
 struct LSMRDampenedAllocatedSolver{Tx0, Tx1, Tx2, Tx22, Tx3, Tx4, Tx5, Tx6, Ty} <: AbstractAllocatedSolver
     preconditioner!::Tx0
-    preconditioner::Tx1
+    P::Tx1
     tmp::Tx2
     tmp2::Tx22
     v::Tx3
@@ -223,13 +224,13 @@ struct LSMRDampenedAllocatedSolver{Tx0, Tx1, Tx2, Tx22, Tx3, Tx4, Tx5, Tx6, Ty} 
 end
 
 function AbstractAllocatedSolver(nls::LeastSquaresProblem,  optimizer::LevenbergMarquardt{LSMR{T1, T2}}) where {T1, T2}
-    preconditioner!, preconditioner = getpreconditioner(nls, optimizer)
-    LSMRDampenedAllocatedSolver(preconditioner!, preconditioner, _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.x),  _zeros(nls.x), _zeros(nls.y))
+    preconditioner!, P = getpreconditioner(nls, optimizer)
+    LSMRDampenedAllocatedSolver(preconditioner!, P, _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.x),  _zeros(nls.x), _zeros(nls.y))
 end
 
 function ldiv!(x, J, y, damp, A::LSMRDampenedAllocatedSolver)
-    preconditioner!, preconditioner, tmp, tmp2, v, h, hbar, zerosvector, u = 
-            A.preconditioner!, A.preconditioner, A.tmp, A.tmp2, A.v, A.h, A.hbar, A.zerosvector, A.u
+    preconditioner!, P, tmp, tmp2, v, h, hbar, zerosvector, u = 
+            A.preconditioner!, A.P, A.tmp, A.tmp2, A.v, A.h, A.hbar, A.zerosvector, A.u
     # prepare x
     fill!(x, 0)
 
@@ -240,12 +241,12 @@ function ldiv!(x, J, y, damp, A::LSMRDampenedAllocatedSolver)
 
     # prepare A
     fill!(tmp, 0)
-    preconditioner!(preconditioner, x, J, damp)
+    preconditioner!(P, x, J, damp)
     map!(sqrt, damp, damp)
-    A = PreconditionedMatrix(DampenedMatrix(J, damp), preconditioner, tmp, tmp2)
+    A = PreconditionedMatrix(DampenedMatrix(J, damp), P, tmp, tmp2)
     # solve
     x, ch = lsmr!(x, A, b, v, h, hbar, btol = 0.5)
-    ldiv!(x, preconditioner, tmp)
+    ldiv!(x, P, tmp)
     copyto!(x, tmp)
     return x, ch.mvps
 end

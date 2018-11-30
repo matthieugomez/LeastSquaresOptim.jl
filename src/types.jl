@@ -61,7 +61,7 @@ struct QR <: AbstractSolver end
 struct Cholesky <: AbstractSolver end
 struct LSMR{T1, T2} <: AbstractSolver
     preconditioner!::T1
-    preconditioner::T2
+    P::T2
 end
 LSMR() = LSMR(nothing, nothing)
 
