@@ -26,11 +26,11 @@ You can also add the options : `x_tol`, `f_tol`, `g_tol`, `iterations`, `Δ` (in
 	- `LeastSquaresOptim.QR()` or  `LeastSquaresOptim.Cholesky()` for dense jacobians
 	- `LeastSquaresOptim.LSMR()`. A conjugate gradient method ([LSMR]([http://web.stanford.edu/group/SOL/software/lsmr/) with diagonal preconditioner). Beyond `Matrix` and `SparseMatrixCSC`, the jacobian can be type that defines the following interface:
 
-	- `mul!(y, A, x, α::Number, β::Number)` updates y to αAx + βy
-	- `mul!(x, A', y, α::Number, β::Number)` updates x to αA'y + βx
-	- `colsumabs2!(x, A)` updates x to the sum of squared elements of each column
-	- `size(A, d)` returns the nominal dimensions along the dth axis in the equivalent matrix representation of A.
-	- `eltype(A)` returns the element type implicit in the equivalent matrix representation of A.
+		- `mul!(y, A, x, α::Number, β::Number)` updates y to αAx + βy
+		- `mul!(x, A', y, α::Number, β::Number)` updates x to αA'y + βx
+		- `colsumabs2!(x, A)` updates x to the sum of squared elements of each column
+		- `size(A, d)` returns the nominal dimensions along the dth axis in the equivalent matrix representation of A.
+		- `eltype(A)` returns the element type implicit in the equivalent matrix representation of A.
 
 	Similarly, `x` or `f(x)` may be custom types. An example of the interface to define can be found in the package [SparseFactorModels.jl](https://github.com/matthieugomez/SparseFactorModels.jl).
 
