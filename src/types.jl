@@ -146,11 +146,10 @@ function optimize!(nls::LeastSquaresProblem, optimizer::Union{Nothing, AbstractO
 end
 
 
-
-
 Base.@deprecate optimize!(nls::LeastSquaresProblem, optimizer::AbstractOptimizer, solver::Union{Nothing, AbstractSolver}; kwargs...) optimize!(nls, typeof{optimizer}(solver); kwargs...)
 Base.@deprecate optimize!(nls::LeastSquaresProblem, solver::AbstractSolver; kwargs...) optimize!(nls, Dogleg{solver}; kwargs...)
 Base.@deprecate LeastSquaresProblemAllocated(nls::LeastSquaresProblem, optimizer::AbstractOptimizer, solver::AbstractSolver) LeastSquaresProblemAllocated(nls, default_optimizer(optimizer, solver))
+
 
 
 

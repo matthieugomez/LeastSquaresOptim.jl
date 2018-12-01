@@ -44,7 +44,7 @@ const MAX_DIAGONAL = 1e32
 function optimize!(
     anls::LeastSquaresProblemAllocated{Tx, Ty, Tf, TJ, Tg, Toptimizer, Tsolver};
             x_tol::Number = 1e-8, f_tol::Number = 1e-8, g_tol::Number = 1e-8,
-            iterations::Integer = 1_000, Δ::Number = 10.0, store_trace = false, show_trace = false, show_every = 1, lower::Vector{Tx} = Array{Tx}(undef, 0), upper::Vector{Tx} = Array{Tx}(undef, 0)) where {Tx, Ty, Tf, TJ, Tg, Toptimizer <: AllocatedLevenbergMarquardt, Tsolver}
+            iterations::Integer = 1_000, Δ::Number = 10.0, store_trace = false, show_trace = false, show_every = 1, lower::Tx = Array{eltype(Tx)}(undef, 0), upper::Tx = Array{eltype(Tx)}(undef, 0)) where {Tx, Ty, Tf, TJ, Tg, Toptimizer <: AllocatedLevenbergMarquardt, Tsolver}
 
     δx, dtd = anls.optimizer.δx, anls.optimizer.dtd
     ftrial, fpredict = anls.optimizer.ftrial, anls.optimizer.fpredict
