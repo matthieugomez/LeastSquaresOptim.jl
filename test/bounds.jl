@@ -5,3 +5,4 @@ function rosenbrock(x)
 end
 x0 = zeros(2)
 optimize(rosenbrock, x0, Dogleg(), lower = fill(0.0, length(x0)))
+optimize(rosenbrock, x0, LevenbergMarquardt(), lower = fill(0.0, length(x0)))
