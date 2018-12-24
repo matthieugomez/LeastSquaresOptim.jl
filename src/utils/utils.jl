@@ -1,6 +1,6 @@
 ###############################################################################
 ##
-## Asses convergence
+## Assess convergence
 ##
 ##############################################################################
 
@@ -120,6 +120,17 @@ function colsumabs2!(v::AbstractVector, A::SparseMatrixCSC)
     length(v) == size(A, 2) || error("v should have length size(A, 2)")
     @inbounds for j in 1:length(v)
         v[j] = sum(abs2, view(nonzeros(A), nzrange(A, j)))
+    end
+end
+
+import LinearAlgebra.Transpose, LinearAlgebra.Adjoint
+colsumabs2!(v::AbstractVector, A::Adjoint{Tv, SparseMatrixCSC{Tv, Ti}}) where {Tv, Ti} = rowsumabs2!(v, A.parent)
+colsumabs2!(v::AbstractVector, A::Transpose{Tv, SparseMatrixCSC{Tv, Ti}}) where {Tv, Ti} = rowsumabs2!(v, A.parent)
+function rowsumabs2!(v::AbstractVector, A::SparseMatrixCSC)
+    length(v) == size(A, 1) || error("v should have length size(A, 1)")
+    fill!(v, zero(v[1]))
+    @inbounds for k in 1:length(A.nzval)
+        v[A.rowval[k]] += abs2(A.nzval[k])
     end
 end
 
