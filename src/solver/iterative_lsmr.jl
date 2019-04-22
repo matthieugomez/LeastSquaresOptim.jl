@@ -21,7 +21,7 @@ size(A::PreconditionedMatrix, i::Integer) = size(A.A, i)
 Base.adjoint(M::PreconditionedMatrix) = Adjoint(M)
 
 function mul!(b, pm::PreconditionedMatrix{TA, Tp, Tx}, a, α::Number, β::Number) where {TA, Tp, Tx}
-    ldiv!(a, pm.P, pm.tmp)
+    ldiv!(pm.tmp, pm.P, a)
     mul!(b, pm.A, pm.tmp, α, β)
     return b
 end
@@ -31,7 +31,7 @@ function mul!(b, Cpm::Adjoint{Ta, PreconditionedMatrix{TA, Tp, Tx}}, a, α::Numb
     T = eltype(b)
     β = convert(T, β)
     mul!(pm.tmp, pm.A',  a, one(T), zero(T))
-    ldiv!(pm.tmp, pm.P, pm.tmp2)
+    ldiv!(pm.tmp1, pm.P, pm.tmp)
     if β != one(T)
         if β == zero(T)
             fill!(b, β)
@@ -110,7 +110,7 @@ end
 struct InverseDiagonal{Tx}
     _::Tx
 end
-function ldiv!(x, ID::InverseDiagonal, y)
+function ldiv!(y, ID::InverseDiagonal, x)
     map!(*, y, x, ID._)
 end
 
@@ -185,7 +185,7 @@ function ldiv!(x, J, y, A::LSMRAllocatedSolver)
 
     # solve
     x, ch = lsmr!(x, A, u, v, h, hbar)
-    ldiv!(x, P, tmp)
+    ldiv!(tmp, P, x)
     copyto!(x, tmp)
     return x, ch.mvps
 end
@@ -246,7 +246,7 @@ function ldiv!(x, J, y, damp, A::LSMRDampenedAllocatedSolver)
     A = PreconditionedMatrix(DampenedMatrix(J, damp), P, tmp, tmp2)
     # solve
     x, ch = lsmr!(x, A, b, v, h, hbar, btol = 0.5)
-    ldiv!(x, P, tmp)
+    ldiv!(tmp, P, x)
     copyto!(x, tmp)
     return x, ch.mvps
 end

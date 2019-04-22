@@ -1,4 +1,0 @@
-julia 0.7
-ForwardDiff 0.3
-DiffEqDiffTools
-Optim

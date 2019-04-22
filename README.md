@@ -2,7 +2,7 @@
 [![Coverage Status](https://coveralls.io/repos/matthieugomez/LeastSquaresOptim.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/matthieugomez/LeastSquaresOptim.jl?branch=master)
 ## Motivation
 
-This package solves non linear least squares optimization problems. The package is inspired by the [Ceres library](http://ceres-solver.org/nnls_solving.html).  This package is written with large scale problems in mind (in particular for sparse Jacobians). 
+This package solves non linear least squares optimization problems.   This package is written with large scale problems in mind (in particular for sparse Jacobians). 
 
 
 ## Simple Syntax
@@ -74,9 +74,11 @@ optimize!(LeastSquaresProblem(x = zeros(2), f! = rosenbrock_f!, g! = rosenbrock_
 
 ## Related packages
 Related:
-- [LSqfit.jl](https://github.com/JuliaOpt/LsqFit.jl) fits curves (i.e. models of the form y = f(x, β))
+- [MINPACK.jl](https://github.com/sglyon/MINPACK.jl)] solves least squares problem (without boundary constraints)
 - [Optim.jl](https://github.com/JuliaOpt/Optim.jl) solves general optimization problems.
 - [NLSolve.jl](https://github.com/EconForge/NLsolve.jl) solves non linear equations by least squares minimization.
+- [LSqfit.jl](https://github.com/JuliaOpt/LsqFit.jl) fits curves (i.e. models of the form y = f(x, β))
+
 
 
 ## References
