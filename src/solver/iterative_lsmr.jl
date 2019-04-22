@@ -31,7 +31,7 @@ function mul!(b, Cpm::Adjoint{Ta, PreconditionedMatrix{TA, Tp, Tx}}, a, α::Numb
     T = eltype(b)
     β = convert(T, β)
     mul!(pm.tmp, pm.A',  a, one(T), zero(T))
-    ldiv!(pm.tmp1, pm.P, pm.tmp)
+    ldiv!(pm.tmp2, pm.P, pm.tmp)
     if β != one(T)
         if β == zero(T)
             fill!(b, β)
