@@ -9,7 +9,7 @@
 ##
 #############################################################################
 
-struct PreconditionedMatrix{TA, Tp, Tx}
+struct PreconditionedMatrix{TA, Tp, Tx} <: AbstractMatrix{Tx}
     A::TA
     P::Tp
     tmp::Tx
@@ -20,13 +20,13 @@ size(A::PreconditionedMatrix, i::Integer) = size(A.A, i)
 
 Base.adjoint(M::PreconditionedMatrix) = Adjoint(M)
 
-function mul!(b, pm::PreconditionedMatrix{TA, Tp, Tx}, a, α::Number, β::Number) where {TA, Tp, Tx}
+function mul!(b::AbstractVector{Tx}, pm::PreconditionedMatrix{TA, Tp, Tx}, a::AbstractVector{Tx}, α::Number, β::Number) where {TA, Tp, Tx}
     ldiv!(pm.tmp, pm.P, a)
     mul!(b, pm.A, pm.tmp, α, β)
     return b
 end
 
-function mul!(b, Cpm::Adjoint{Ta, PreconditionedMatrix{TA, Tp, Tx}}, a, α::Number, β::Number) where {Ta, TA, Tp, Tx}
+function mul!(b::AbstractVector{Tx}, Cpm::Adjoint{Ta, PreconditionedMatrix{TA, Tp, Tx}}, a::AbstractVector{Tx}, α::Number, β::Number) where {Ta, TA, Tp, Tx}
     pm = adjoint(Cpm)
     T = eltype(b)
     β = convert(T, β)
