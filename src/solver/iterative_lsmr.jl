@@ -9,7 +9,7 @@
 ##
 #############################################################################
 
-struct PreconditionedMatrix{TA, Tp, Tx} <: AbstractMatrix{Tx}
+struct PreconditionedMatrix{TA, Tp, Tx}
     A::TA
     P::Tp
     tmp::Tx
