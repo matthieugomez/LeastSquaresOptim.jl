@@ -76,7 +76,7 @@ function size(A::DampenedMatrix, dim::Integer)
 end
 Base.adjoint(M::DampenedMatrix) = Adjoint(M)
 
-function mul!(b::AbstractVector{T}, mw::DampenedMatrix, a::DampenedVector{T}, α::Number, β::Number) where {T}
+function mul!(b::DampenedVector{T}, mw::DampenedMatrix, a::AbstractVector{T}, α::Number, β::Number) where {T}
     if β != 1
         rmul!(b, β)
     end
