@@ -54,7 +54,7 @@ struct DampenedVector{T} <: AbstractVector{T}
     y::AbstractVector{T} # dimension of f(x)
     x::AbstractVector{T} # dimension of x
 end
-eltype(a::DampenedVector) = T
+eltype(a::DampenedVector{T}) where {T} = T
 length(a::DampenedVector) = length(a.y) + length(a.x)
 function rmul!(a::DampenedVector, α::Number)
     rmul!(a.y, α)
