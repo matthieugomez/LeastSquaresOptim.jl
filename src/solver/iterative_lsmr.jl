@@ -86,7 +86,6 @@ function mul!(b::AbstractVector{T}, mw::DampenedMatrix, a::DampenedVector{T}, α
 end
 function mul!(b::AbstractVector{T}, Cmw::Adjoint{Ta, DampenedMatrix{TA, Tx}}, a::DampenedVector{T}, α::Number, β::Number) where {T, Ta, TA, Tx}
     mw = adjoint(Cmw)
-    T = eltype(b)
     β = convert(T, β)
     if β != one(T)
         if β == zero(T)
