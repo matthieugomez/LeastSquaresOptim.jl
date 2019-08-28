@@ -28,7 +28,6 @@ end
 
 function mul!(b::AbstractVector{T}, Cpm::Adjoint{Ta, PreconditionedMatrix{TA, Tp, Tx}}, a::AbstractVector{T}, α::Number, β::Number) where {T, Ta, TA, Tp, Tx}
     pm = adjoint(Cpm)
-    T = eltype(b)
     β = convert(T, β)
     mul!(pm.tmp, pm.A',  a, one(T), zero(T))
     ldiv!(pm.tmp2, pm.P, pm.tmp)
