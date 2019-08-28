@@ -50,11 +50,11 @@ end
 #############################################################################
 
 
-struct DampenedVector{Ty, Tx}
-    y::Ty # dimension of f(x)
-    x::Tx # dimension of x
+struct DampenedVector{T} <: AbstractVector{T}
+    y::AbstractVector{T} # dimension of f(x)
+    x::AbstractVector{T} # dimension of x
 end
-eltype(a::DampenedVector) =  promote_type(eltype(a.y), eltype(a.x))
+eltype(a::DampenedVector) = T
 length(a::DampenedVector) = length(a.y) + length(a.x)
 function rmul!(a::DampenedVector, α::Number)
     rmul!(a.y, α)
