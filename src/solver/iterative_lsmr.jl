@@ -20,13 +20,13 @@ size(A::PreconditionedMatrix, i::Integer) = size(A.A, i)
 
 Base.adjoint(M::PreconditionedMatrix) = Adjoint(M)
 
-function mul!(b::AbstractVector{Tx}, pm::PreconditionedMatrix{TA, Tp, Tx}, a::AbstractVector{Tx}, α::Number, β::Number) where {TA, Tp, Tx}
+function mul!(b::AbstractVector{T}, pm::PreconditionedMatrix{TA, Tp, Tx}, a::AbstractVector{T}, α::Number, β::Number) where {T, TA, Tp, Tx}
     ldiv!(pm.tmp, pm.P, a)
     mul!(b, pm.A, pm.tmp, α, β)
     return b
 end
 
-function mul!(b::AbstractVector{Tx}, Cpm::Adjoint{Ta, PreconditionedMatrix{TA, Tp, Tx}}, a::AbstractVector{Tx}, α::Number, β::Number) where {Ta, TA, Tp, Tx}
+function mul!(b::AbstractVector{T}, Cpm::Adjoint{Ta, PreconditionedMatrix{TA, Tp, Tx}}, a::AbstractVector{T}, α::Number, β::Number) where {T, Ta, TA, Tp, Tx}
     pm = adjoint(Cpm)
     T = eltype(b)
     β = convert(T, β)
