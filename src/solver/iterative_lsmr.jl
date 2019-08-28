@@ -76,7 +76,7 @@ function size(A::DampenedMatrix, dim::Integer)
 end
 Base.adjoint(M::DampenedMatrix) = Adjoint(M)
 
-function mul!(b::DampenedVector, mw::DampenedMatrix, a, α::Number, β::Number)
+function mul!(b::AbstractVector{T}, mw::DampenedMatrix, a::DampenedVector{T}, α::Number, β::Number) where {T}
     if β != 1
         rmul!(b, β)
     end
@@ -84,7 +84,7 @@ function mul!(b::DampenedVector, mw::DampenedMatrix, a, α::Number, β::Number)
     map!((z, x, y)-> z + α * x * y, b.x, b.x, a, mw.diagonal)
     return b
 end
-function mul!(b, Cmw::Adjoint{Ta, DampenedMatrix{TA, Tx}}, a::DampenedVector, α::Number, β::Number) where {Ta, TA, Tx}
+function mul!(b::AbstractVector{T}, Cmw::Adjoint{Ta, DampenedMatrix{TA, Tx}}, a::DampenedVector{T}, α::Number, β::Number) where {T, Ta, TA, Tx}
     mw = adjoint(Cmw)
     T = eltype(b)
     β = convert(T, β)
