@@ -15,7 +15,7 @@ if Base.USE_GPL_LIBS
     import SparseArrays: SparseMatrixCSC, sparse, nzrange, nonzeros
 end
 import Statistics: mean
-using ForwardDiff, DiffEqDiffTools
+using ForwardDiff, FiniteDiff
 import Optim: optimize
 
 ##############################################################################

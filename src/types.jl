@@ -36,8 +36,8 @@ function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! =
     newg! = g!
     if typeof(g!) == Nothing
         if autodiff == :central
-            central_cache = DiffEqDiffTools.JacobianCache(similar(x), similar(y), similar(y))
-            newg! = (J::Matrix, xp::Vector) -> DiffEqDiffTools.finite_difference_jacobian!(J, f!, x, central_cache)
+            central_cache = FiniteDiff.JacobianCache(similar(x), similar(y), similar(y))
+            newg! = (J::Matrix, xp::Vector) -> FiniteDiff.finite_difference_jacobian!(J, f!, x, central_cache)
         elseif autodiff == :forward
             jac_cfg = ForwardDiff.JacobianConfig(f!, y, x, ForwardDiff.Chunk(x))
             ForwardDiff.checktag(jac_cfg, f!, x)
