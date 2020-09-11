@@ -42,6 +42,8 @@ function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! =
             jac_cfg = ForwardDiff.JacobianConfig(f!, y, x, ForwardDiff.Chunk(x))
             ForwardDiff.checktag(jac_cfg, f!, x)
             newg! = (J::Matrix, xp::Vector) -> ForwardDiff.jacobian!(J, f!, deepcopy(y), x, jac_cfg, Val{false}())
+        else
+            throw(DomainError(autodiff, "Invalid automatic differentiation method."))
         end
     end
     LeastSquaresProblem(x, y , f!, J, newg!)
