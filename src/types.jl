@@ -17,6 +17,9 @@ struct LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}
     end
 end
 
+function LeastSquaresProblem(x::Tx, y::Ty, f!::Tf, J::TJ, g!::Tg) where {Tx, Ty, Tf, TJ, Tg}
+    LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}(x, y, f!, J, g!)
+end
 
 function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! = error("initial f! required"), g! = nothing, J = nothing, output_length = 0, autodiff = :central)
     if typeof(y) == Nothing
