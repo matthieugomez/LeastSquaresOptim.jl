@@ -18,15 +18,14 @@ struct LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}
 end
 
 
-function LeastSquaresProblem(x::Tx, y::Ty, f!::Tf, J::TJ, g!::Tg) where {Tx, Ty, Tf, TJ, Tg}
-    LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}(x, y, f!, J, g!)
-end
-
-
 function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! = error("initial f! required"), g! = nothing, J = nothing, output_length = 0, autodiff = :central)
     if typeof(y) == Nothing
         if output_length == 0
-            output_length = size(J, 2)
+            if typeof(J) == Nothing
+                error("specify J or output_length")
+            else
+                output_length = size(J, 2)
+            end
         end
         y = zeros(eltype(x), output_length)
     end
@@ -148,12 +147,6 @@ function optimize!(nls::LeastSquaresProblem, optimizer::Union{Nothing, AbstractO
 end
 
 
-Base.@deprecate optimize!(nls::LeastSquaresProblem, optimizer::AbstractOptimizer, solver::Union{Nothing, AbstractSolver}; kwargs...) optimize!(nls, typeof{optimizer}(solver); kwargs...)
-Base.@deprecate optimize!(nls::LeastSquaresProblem, solver::AbstractSolver; kwargs...) optimize!(nls, Dogleg{solver}; kwargs...)
-Base.@deprecate LeastSquaresProblemAllocated(nls::LeastSquaresProblem, optimizer::AbstractOptimizer, solver::AbstractSolver) LeastSquaresProblemAllocated(nls, default_optimizer(optimizer, solver))
-
-
-
 
 
 ###############################################################################
@@ -204,4 +197,3 @@ function Base.show(io::IO, r::LeastSquaresResult)
     @printf io " * Multiplication Calls: %d\n" r.mul_calls
     return
 end
-

@@ -1,6 +1,6 @@
 name = "LeastSquaresOptim"
 uuid = "0fc2ff8b-aaa3-5acd-a817-1944a5e08891"
-version = "0.7.6"
+version = "0.8"
 
 [deps]
 FiniteDiff = "6a86dc24-6348-571c-b903-95158fe2bd41"
