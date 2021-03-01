@@ -1,6 +1,7 @@
 language: julia
 julia:
 - 1.2
+- 1.6
 - nightly
 matrix:
   allow_failures:
