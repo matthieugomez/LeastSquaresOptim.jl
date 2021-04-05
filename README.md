@@ -1,5 +1,5 @@
-[![Build Status](https://travis-ci.org/matthieugomez/LeastSquaresOptim.jl.svg?branch=master)](https://travis-ci.org/matthieugomez/LeastSquaresOptim.jl)
-[![Coverage Status](https://coveralls.io/repos/matthieugomez/LeastSquaresOptim.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/matthieugomez/LeastSquaresOptim.jl?branch=master)
+[![Build status](https://github.com/matthieugomez/LeastSquaresOptim.jl/workflows/CI/badge.svg)](https://github.com/matthieugomez/LeastSquaresOptim.jl/actions)
+
 ## Motivation
 
 This package solves non linear least squares optimization problems.   This package is written with large scale problems in mind (in particular for sparse Jacobians). 
