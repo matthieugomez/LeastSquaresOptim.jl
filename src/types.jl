@@ -39,11 +39,11 @@ function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! =
     if typeof(g!) == Nothing
         if autodiff == :central
             central_cache = FiniteDiff.JacobianCache(similar(x), similar(y), similar(y))
-            newg! = (J::Matrix, xp::Vector) -> FiniteDiff.finite_difference_jacobian!(J, f!, x, central_cache)
+            newg! = (J::Matrix, xp::Vector) -> FiniteDiff.finite_difference_jacobian!(J, f!, xp, central_cache)
         elseif autodiff == :forward
             jac_cfg = ForwardDiff.JacobianConfig(f!, y, x, ForwardDiff.Chunk(x))
             ForwardDiff.checktag(jac_cfg, f!, x)
-            newg! = (J::Matrix, xp::Vector) -> ForwardDiff.jacobian!(J, f!, deepcopy(y), x, jac_cfg, Val{false}())
+            newg! = (J::Matrix, xp::Vector) -> ForwardDiff.jacobian!(J, f!, deepcopy(y), xp, jac_cfg, Val{false}())
         else
             throw(DomainError(autodiff, "Invalid automatic differentiation method."))
         end
