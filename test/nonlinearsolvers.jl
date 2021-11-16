@@ -627,3 +627,15 @@ nls = LeastSquaresProblem(x = x, y = fcur, f! = f!, J = sparse(J), g! = g!)
 result = optimize!(nls, show_trace = true)
 @test result.optimizer == "LevenbergMarquardt"
 
+
+# bigfloat
+function f(x)
+    out = similar(x)
+    out[1] = 1 - x[1]
+    out[2] = 10(x[2]-x[1]^2)
+    return out
+end
+nls = optimize(f, [0.0, 0.0], Dogleg())
+nls = optimize(f, [BigFloat(0.0), BigFloat(0.0)], Dogleg())
+nls = optimize(f, [BigFloat(0.0), BigFloat(0.0)], Dogleg())
+

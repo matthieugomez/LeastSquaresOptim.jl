@@ -45,7 +45,7 @@ end
 
 function AbstractAllocatedSolver(nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}, optimizer::LevenbergMarquardt{QR}) where {Tx, Ty, Tf, TJ <: StridedVecOrMat, Tg}
     qrm = zeros(eltype(nls.J), length(nls.y) + length(nls.x), length(nls.x))
-    u = zeros(length(nls.y) + length(nls.x))
+    u = zeros(eltype(nls.y), length(nls.y) + length(nls.x))
     return DenseQRAllocatedSolver(qrm, u)
 end
 
