@@ -635,7 +635,6 @@ function f(x)
     out[2] = 10(x[2]-x[1]^2)
     return out
 end
-nls = optimize(f, [0.0, 0.0], Dogleg())
 nls = optimize(f, [BigFloat(0.0), BigFloat(0.0)], Dogleg())
-nls = optimize(f, [BigFloat(0.0), BigFloat(0.0)], Dogleg())
+nls = optimize(f, [BigFloat(0.0), BigFloat(0.0)], LevenbergMarquardt())
 
