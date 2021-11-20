@@ -629,12 +629,12 @@ result = optimize!(nls, show_trace = true)
 
 
 # bigfloat
-function f(x)
+function newf(x)
     out = similar(x)
     out[1] = 1 - x[1]
     out[2] = 10(x[2]-x[1]^2)
     return out
 end
-nls = optimize(f, [BigFloat(0.0), BigFloat(0.0)], Dogleg())
-nls = optimize(f, [BigFloat(0.0), BigFloat(0.0)], LevenbergMarquardt())
+nls = optimize(newf, [BigFloat(0.0), BigFloat(0.0)], Dogleg())
+nls = optimize(newf, [BigFloat(0.0), BigFloat(0.0)], LevenbergMarquardt())
 
