@@ -16,24 +16,24 @@ struct PreconditionedMatrix{TA, Tp, Tx}
     tmp2::Tx
 end
 
-eltype(A::PreconditionedMatrix) = eltype(A.A)
-size(A::PreconditionedMatrix, i::Integer) = size(A.A, i)
+Base.eltype(A::PreconditionedMatrix) = eltype(A.A)
+Base.size(A::PreconditionedMatrix, i::Integer) = size(A.A, i)
 
 # MyAdjoint that is a type which is NOT an AbstractMatrix to avoid method ambiguity
 struct MyAdjoint{S}
     parent::S
 end
-adjoint(x::MyAdjoint) = x.parent
+Base.adjoint(x::MyAdjoint) = x.parent
 
 
 Base.adjoint(M::PreconditionedMatrix) = MyAdjoint(M)
-function mul!(b, pm::PreconditionedMatrix{TA, Tp, Tx}, a, α::Number, β::Number) where {TA, Tp, Tx}
+function LinearAlgebra.mul!(b, pm::PreconditionedMatrix{TA, Tp, Tx}, a, α::Number, β::Number) where {TA, Tp, Tx}
     ldiv!(pm.tmp, pm.P, a)
     mul!(b, pm.A, pm.tmp, α, β)
     return b
 end
 
-function mul!(b, Cpm::MyAdjoint{PreconditionedMatrix{TA, Tp, Tx}}, a, α::Number, β::Number) where {TA, Tp, Tx}
+function LinearAlgebra.mul!(b, Cpm::MyAdjoint{PreconditionedMatrix{TA, Tp, Tx}}, a, α::Number, β::Number) where {TA, Tp, Tx}
     T = eltype(b)
     pm = adjoint(Cpm)
     β = convert(T, β)
@@ -62,21 +62,21 @@ struct DampenedVector{T1, T2}
     y::T1 # dimension of f(x)
     x::T2 # dimension of x
 end
-eltype(a::DampenedVector) = promote_type(eltype(a.y), eltype(a.x))
-length(a::DampenedVector) = length(a.y) + length(a.x)
-function rmul!(a::DampenedVector, α::Number)
+Base.eltype(a::DampenedVector) = promote_type(eltype(a.y), eltype(a.x))
+Base.length(a::DampenedVector) = length(a.y) + length(a.x)
+function LinearAlgebra.rmul!(a::DampenedVector, α::Number)
     rmul!(a.y, α)
     rmul!(a.x, α)
     return a
 end
-norm(a::DampenedVector) = sqrt(norm(a.y)^2 + norm(a.x)^2)
+LinearAlgebra.norm(a::DampenedVector) = sqrt(norm(a.y)^2 + norm(a.x)^2)
 
 struct DampenedMatrix{TA, Tx}
     A::TA
     diagonal::Tx 
 end
-eltype(A::DampenedMatrix) = promote_type(eltype(A.A), eltype(A.diagonal))
-function size(A::DampenedMatrix, dim::Integer)
+Base.eltype(A::DampenedMatrix) = promote_type(eltype(A.A), eltype(A.diagonal))
+function Base.size(A::DampenedMatrix, dim::Integer)
     m, n = size(A.A)
     l = length(A.diagonal)
     dim == 1 ? (m + l) : 
@@ -84,7 +84,7 @@ function size(A::DampenedMatrix, dim::Integer)
 end
 Base.adjoint(M::DampenedMatrix) = MyAdjoint(M)
 
-function mul!(b, mw::DampenedMatrix, a, α::Number, β::Number) where {T}
+function LinearAlgebra.mul!(b, mw::DampenedMatrix, a, α::Number, β::Number) where {T}
     if β != 1
         rmul!(b, β)
     end
@@ -92,7 +92,7 @@ function mul!(b, mw::DampenedMatrix, a, α::Number, β::Number) where {T}
     map!((z, x, y)-> z + α * x * y, b.x, b.x, a, mw.diagonal)
     return b
 end
-function mul!(b, Cmw::MyAdjoint{DampenedMatrix{TA, Tx}}, a, α::Number, β::Number) where {TA, Tx}
+function LinearAlgebra.mul!(b, Cmw::MyAdjoint{DampenedMatrix{TA, Tx}}, a, α::Number, β::Number) where {TA, Tx}
     T = eltype(b)
     mw = adjoint(Cmw)
     β = convert(T, β)
@@ -117,7 +117,7 @@ end
 struct InverseDiagonal{Tx}
     _::Tx
 end
-function ldiv!(y, ID::InverseDiagonal, x)
+function LinearAlgebra.ldiv!(y, ID::InverseDiagonal, x)
     map!(*, y, x, ID._)
 end
 
@@ -176,7 +176,7 @@ function AbstractAllocatedSolver(nls::LeastSquaresProblem, optimizer::Dogleg{LSM
         _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.y))
 end
 
-function ldiv!(x, J, y, A::LSMRAllocatedSolver)
+function LinearAlgebra.ldiv!(x, J, y, A::LSMRAllocatedSolver)
     preconditioner!, P, tmp, tmp2, v, h, hbar, u = A.preconditioner!, A.P, A.tmp, A.tmp2, A.v, A.h, A.hbar, A.u
 
     # prepare x
@@ -235,7 +235,7 @@ function AbstractAllocatedSolver(nls::LeastSquaresProblem,  optimizer::Levenberg
     LSMRDampenedAllocatedSolver(preconditioner!, P, _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.x), _zeros(nls.x),  _zeros(nls.x), _zeros(nls.y))
 end
 
-function ldiv!(x, J, y, damp, A::LSMRDampenedAllocatedSolver)
+function LinearAlgebra.ldiv!(x, J, y, damp, A::LSMRDampenedAllocatedSolver)
     preconditioner!, P, tmp, tmp2, v, h, hbar, zerosvector, u = 
             A.preconditioner!, A.P, A.tmp, A.tmp2, A.v, A.h, A.hbar, A.zerosvector, A.u
     # prepare x

@@ -26,7 +26,7 @@ end
 ##
 ##############################################################################
 
-function ldiv!(x::AbstractVector, J::StridedMatrix, y::AbstractVector, A::DenseCholeskyAllocatedSolver)
+function LinearAlgebra.ldiv!(x::AbstractVector, J::StridedMatrix, y::AbstractVector, A::DenseCholeskyAllocatedSolver)
     cholm = A.cholm
     mul!(cholm, J',  J)
     mul!(x, J',  y)
@@ -40,7 +40,7 @@ end
 ##
 ##############################################################################
 
-function ldiv!(x::AbstractVector, J::StridedMatrix, y::AbstractVector, 
+function LinearAlgebra.ldiv!(x::AbstractVector, J::StridedMatrix, y::AbstractVector, 
             damp::AbstractVector, A::DenseCholeskyAllocatedSolver)
     cholm = A.cholm
     
