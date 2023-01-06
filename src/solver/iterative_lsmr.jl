@@ -84,7 +84,7 @@ function Base.size(A::DampenedMatrix, dim::Integer)
 end
 Base.adjoint(M::DampenedMatrix) = MyAdjoint(M)
 
-function LinearAlgebra.mul!(b, mw::DampenedMatrix, a, α::Number, β::Number) where {T}
+function LinearAlgebra.mul!(b, mw::DampenedMatrix, a, α::Number, β::Number)
     if β != 1
         rmul!(b, β)
     end
@@ -92,7 +92,7 @@ function LinearAlgebra.mul!(b, mw::DampenedMatrix, a, α::Number, β::Number) wh
     map!((z, x, y)-> z + α * x * y, b.x, b.x, a, mw.diagonal)
     return b
 end
-function LinearAlgebra.mul!(b, Cmw::MyAdjoint{DampenedMatrix{TA, Tx}}, a, α::Number, β::Number) where {TA, Tx}
+function LinearAlgebra.mul!(b, Cmw::MyAdjoint{<:DampenedMatrix}, a, α::Number, β::Number)
     T = eltype(b)
     mw = adjoint(Cmw)
     β = convert(T, β)
