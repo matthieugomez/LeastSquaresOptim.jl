@@ -171,7 +171,7 @@ function optimize!(
         axpy!(-one(eTy), fcur, fpredict)
         predicted_ssr = sum(abs2, fpredict)
 
-        ρ = (ssr - trial_ssr) / (ssr - predicted_ssr)
+        ρ = (ssr - trial_ssr) / abs(ssr - predicted_ssr)
         x_converged, f_converged, g_converged, converged = 
             assess_convergence(δx, x, maxabs_gr, ssr, trial_ssr, x_tol, f_tol, g_tol)
 
