@@ -113,7 +113,7 @@ function optimize!(
         mul_calls += 1
         axpy!(-one(eTy), fcur, fpredict)
         predicted_ssr = sum(abs2, fpredict)
-        ρ = (ssr - trial_ssr) / (ssr - predicted_ssr)
+        ρ = (ssr - trial_ssr) / abs(ssr - predicted_ssr)
         mul!(dtd, J', fcur, one(eTx), zero(eTx))
         maxabs_gr = maximum(abs, dtd)
         mul_calls += 1
