@@ -2,7 +2,7 @@
 
 ## Motivation
 
-This package solves non linear least squares optimization problems.   This package is written with large scale problems in mind (in particular for sparse Jacobians). 
+This package solves non linear least squares optimization problems.   This package is written with large scale problems in mind and minimal allocation (in particular for sparse Jacobians). 
 
 
 ## Simple Syntax
