@@ -85,7 +85,7 @@ function optimize!(
             need_jacobian = false
         end
         colsumabs2!(dtd, J)
-        # this alows clamp! to be scaling irrelevant
+        # this ensures that the operation in clamp! is scaling irrelevant
         dtd_mean = sum(dtd) / length(dtd)
         clamp!(dtd, MIN_DIAGONAL * dtd_mean, MAX_DIAGONAL * dtd_mean)
         rmul!(dtd, 1/Δ)        
