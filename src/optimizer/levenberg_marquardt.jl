@@ -85,7 +85,9 @@ function optimize!(
             need_jacobian = false
         end
         colsumabs2!(dtd, J)
-        clamp!(dtd, MIN_DIAGONAL, MAX_DIAGONAL)
+        # this alows clamp! to be scaling irrelevant
+        dtd_mean = sum(dtd) / length(dtd)
+        clamp!(dtd, MIN_DIAGONAL * dtd_mean, MAX_DIAGONAL * dtd_mean)
         rmul!(dtd, 1/Δ)        
         δx, lmiter = ldiv!(δx, J, fcur, dtd,  anls.solver)
         # apply box constraints
