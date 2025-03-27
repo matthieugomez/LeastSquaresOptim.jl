@@ -1,6 +1,6 @@
 name = "LeastSquaresOptim"
 uuid = "0fc2ff8b-aaa3-5acd-a817-1944a5e08891"
-version = "0.8.6"
+version = "0.8.7"
 
 [deps]
 FiniteDiff = "6a86dc24-6348-571c-b903-95158fe2bd41"
@@ -14,7 +14,7 @@ SuiteSparse = "4607b0f0-06f3-5cda-b6b1-a6196a1729e9"
 
 [compat]
 FiniteDiff = "2"
-ForwardDiff = "0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.10"
+ForwardDiff = "0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.10, 1.0"
 Optim = "0.19, 0.20, 0.21, 0.22, 1.0"
 julia = "1.2"
 
