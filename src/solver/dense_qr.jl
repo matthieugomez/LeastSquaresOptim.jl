@@ -30,11 +30,7 @@ function LinearAlgebra.ldiv!(x::AbstractVector, J::StridedMatrix,  y::AbstractVe
     u, qrm = A.u, A.qrm
     copyto!(qrm, J)
     copyto!(u, y)
-    if VERSION >= v"1.7.0"
-        ldiv!(qr!(qrm, ColumnNorm()), u)
-    else
-        ldiv!(qr!(qrm, Val(true)), u)
-    end
+    ldiv!(qr!(qrm, ColumnNorm()), u)
     for i in 1:length(x)
         x[i] = u[i]
     end
@@ -53,8 +49,8 @@ function AbstractAllocatedSolver(nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}, o
     return DenseQRAllocatedSolver(qrm, u)
 end
 
-function LinearAlgebra.ldiv!(x::AbstractVector, J::StridedMatrix, y::AbstractVector, 
-                damp::AbstractVector, A::DenseQRAllocatedSolver, verbose::Bool = false)
+function LinearAlgebra.ldiv!(x::AbstractVector, J::StridedMatrix, y::AbstractVector,
+                damp::AbstractVector, A::DenseQRAllocatedSolver)
     u, qrm = A.u, A.qrm
     
     # transform dammp
@@ -78,21 +74,9 @@ function LinearAlgebra.ldiv!(x::AbstractVector, J::StridedMatrix, y::AbstractVec
     for i in 1:length(y)
         u[i] = y[i]
     end
-    if verbose
-        @show mean(u)
-        sleep(1)
-    end
 
     # solve
-    if VERSION >= v"1.7.0"
-        ldiv!(qr!(qrm, ColumnNorm()), u)
-    else
-        ldiv!(qr!(qrm, Val(true)), u)
-    end
-    if verbose
-        @show mean(u)
-        sleep(1)
-    end
+    ldiv!(qr!(qrm, ColumnNorm()), u)
     for i in 1:length(x)
         x[i] = u[i]
     end

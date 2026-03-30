@@ -22,9 +22,9 @@ function LeastSquaresProblem(x::Tx, y::Ty, f!::Tf, J::TJ, g!::Tg) where {Tx, Ty,
 end
 
 function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! = error("initial f! required"), g! = nothing, J = nothing, output_length = 0, autodiff = :central)
-    if typeof(y) == Nothing
+    if isnothing(y)
         if output_length == 0
-            if typeof(J) == Nothing
+            if isnothing(J)
                 error("specify J or output_length")
             else
                 output_length = size(J, 2)
@@ -32,11 +32,11 @@ function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! =
         end
         y = zeros(eltype(x), output_length)
     end
-    if typeof(J) == Nothing
+    if isnothing(J)
         J = zeros(eltype(x), length(y), length(x))
     end
     newg! = g!
-    if typeof(g!) == Nothing
+    if isnothing(g!)
         if autodiff == :central
             central_cache = JacobianCache(similar(x), similar(y), similar(y))
             newg! = (J::Matrix, xp::Vector) -> finite_difference_jacobian!(J, f!, xp, central_cache)
@@ -86,6 +86,13 @@ _solver(x::AbstractOptimizer) = x.solver
 _solver(x::Nothing) = nothing
 
 
+
+## Shared constants for optimizers
+const MIN_Δ = 1e-16 # minimum trust region radius
+const MAX_Δ = 1e16 # maximum trust region radius
+const MIN_STEP_QUALITY = 1e-3
+const MIN_DIAGONAL = 1e-6
+const MAX_DIAGONAL = 1e32
 
 ## for dense matrices, default to cholesky ; otherwise LSMR
 function default_solver(x::AbstractSolver, J)

@@ -35,11 +35,6 @@ end
 ##
 ##############################################################################
 
-const MIN_Δ = 1e-16 # maximum trust region radius
-const MAX_Δ = 1e16 # minimum trust region radius
-const MIN_STEP_QUALITY = 1e-3
-const MIN_DIAGONAL = 1e-6
-const MAX_DIAGONAL = 1e32
 const DECREASE_THRESHOLD = 0.25
 const INCREASE_THRESHOLD = 0.75
 

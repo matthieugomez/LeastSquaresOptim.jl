@@ -34,12 +34,7 @@ end
 ##############################################################################
 
 
-const MAX_Δ = 1e16 # minimum trust region radius
-const MIN_Δ = 1e-16 # maximum trust region radius
-const MIN_STEP_QUALITY = 1e-3
 const GOOD_STEP_QUALITY = 0.75
-const MIN_DIAGONAL = 1e-6
-const MAX_DIAGONAL = 1e32
 
 function optimize!(
     anls::LeastSquaresProblemAllocated{Tx, Ty, Tf, TJ, Tg, Toptimizer, Tsolver};

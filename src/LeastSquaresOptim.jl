@@ -6,21 +6,12 @@ module LeastSquaresOptim
 ##
 ##############################################################################
 
-using Base: copyto!, fill!, eltype, length, size
-using LinearAlgebra: LinearAlgebra, mul!, rmul!, norm, cholesky!, qr!, Symmetric, dot, eigen, axpy!, svd, ldiv!, Transpose, adjoint, Adjoint
-using LinearAlgebra.BLAS: gemm!
-if VERSION >= v"1.7.0"
-    using LinearAlgebra: ColumnNorm
-end
+using LinearAlgebra: LinearAlgebra, mul!, rmul!, norm, cholesky!, qr!, Symmetric, dot, eigen, axpy!, svd, ldiv!, Transpose, adjoint, Adjoint, ColumnNorm
 using Printf: @printf, @sprintf
-using Statistics: mean
+using SparseArrays: SparseMatrixCSC, sparse, nzrange, nonzeros
 using ForwardDiff: JacobianConfig, Chunk, checktag, jacobian!
 using FiniteDiff: JacobianCache, finite_difference_jacobian!
 import Optim: optimize
-if Base.USE_GPL_LIBS
-    using SuiteSparse.SPQR: QRSparse
-    using SparseArrays: SparseMatrixCSC, sparse, nzrange, nonzeros
-end
 
 ##############################################################################
 ##

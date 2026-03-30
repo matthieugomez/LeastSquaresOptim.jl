@@ -123,7 +123,6 @@ function colsumabs2!(v::AbstractVector, A::SparseMatrixCSC)
     end
 end
 
-import LinearAlgebra.Transpose, LinearAlgebra.Adjoint
 colsumabs2!(v::AbstractVector, A::Adjoint{Tv, SparseMatrixCSC{Tv, Ti}}) where {Tv, Ti} = rowsumabs2!(v, A.parent)
 colsumabs2!(v::AbstractVector, A::Transpose{Tv, SparseMatrixCSC{Tv, Ti}}) where {Tv, Ti} = rowsumabs2!(v, A.parent)
 function rowsumabs2!(v::AbstractVector, A::SparseMatrixCSC)
