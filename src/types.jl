@@ -21,6 +21,22 @@ function LeastSquaresProblem(x::Tx, y::Ty, f!::Tf, J::TJ, g!::Tg) where {Tx, Ty,
     LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}(x, y, f!, J, g!)
 end
 
+"""
+    LeastSquaresProblem(; x, f!, output_length, y, g!, J, autodiff)
+
+Define a non-linear least squares problem.
+
+## Required keyword arguments
+- `x`: Initial vector of parameters.
+- `f!`: In-place residual function `f!(out, x)` that writes `f(x)` into `out`.
+
+## Optional keyword arguments
+- `output_length::Int = 0`: Length of the residual vector. Required if neither `y` nor `J` is provided.
+- `y = nothing`: Pre-allocated residual vector. If `nothing`, allocated automatically using `output_length`.
+- `g! = nothing`: Jacobian function `g!(J, x)` that writes the Jacobian at `x` into `J`. If `nothing`, computed via automatic differentiation (see `autodiff`).
+- `J = nothing`: Pre-allocated Jacobian matrix. If `nothing`, allocated as a dense `Matrix`.
+- `autodiff::Symbol = :central`: Method for automatic Jacobian computation when `g!` is not provided. `:central` for central finite differences, `:forward` for `ForwardDiff.jl`.
+"""
 function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! = error("initial f! required"), g! = nothing, J = nothing, output_length = 0, autodiff = :central)
     if isnothing(y)
         if output_length == 0
@@ -148,10 +164,46 @@ end
 ##
 ##############################################################################
 
+"""
+    optimize(f, x, optimizer; autodiff = :central, kwargs...)
+
+Minimize `sum(f(x).^2)` with respect to `x`.
+
+## Arguments
+- `f`: Function from `x` to a residual vector.
+- `x`: Initial vector of parameters (will be copied).
+- `optimizer`: `Dogleg()` or `LevenbergMarquardt()`, optionally wrapping a solver (e.g. `Dogleg(LeastSquaresOptim.QR())`).
+
+## Keyword arguments
+- `autodiff::Symbol = :central`: `:central` for central finite differences, `:forward` for `ForwardDiff.jl`.
+
+All other keyword arguments are forwarded to [`optimize!`](@ref) (see below for the full list of convergence and display options).
+"""
 function optimize(f, x, t::AbstractOptimizer; autodiff = :central, kwargs...)
     optimize!(LeastSquaresProblem(x = deepcopy(x), f! = (out, x) -> copyto!(out, f(x)), output_length = length(f(x)), autodiff = autodiff), t; kwargs...)
 end
 
+"""
+    optimize!(nls::LeastSquaresProblem, optimizer = nothing; kwargs...)
+
+Solve the least squares problem `nls` in place, modifying `nls.x`.
+
+## Arguments
+- `nls`: A [`LeastSquaresProblem`](@ref).
+- `optimizer`: `Dogleg()`, `LevenbergMarquardt()`, or `nothing` (default chosen based on Jacobian type: `Dogleg(QR())` for dense, `LevenbergMarquardt(LSMR())` for sparse).
+
+## Keyword arguments
+- `x_tol::Number = 1e-8`: Convergence tolerance on parameter changes: `maximum(abs, δx) ≤ x_tol`.
+- `f_tol::Number = 1e-8`: Convergence tolerance on objective change: `|f(x) - f(x')| / |f(x)| ≤ f_tol`.
+- `g_tol::Number = 1e-8`: Convergence tolerance on gradient: `maximum(abs, J'f) ≤ g_tol`.
+- `iterations::Integer = 1_000`: Maximum number of iterations.
+- `Δ::Number`: Initial trust region radius. Default is `1.0` for `Dogleg` and `10.0` for `LevenbergMarquardt`.
+- `lower::Vector = eltype(x)[]`: Lower bounds on parameters (empty = no bounds).
+- `upper::Vector = eltype(x)[]`: Upper bounds on parameters (empty = no bounds).
+- `store_trace::Bool = false`: Store the optimization trace.
+- `show_trace::Bool = false`: Print the optimization trace during iteration.
+- `show_every::Int = 1`: Print trace every `show_every` iterations (only used when `show_trace = true`).
+"""
 function optimize!(nls::LeastSquaresProblem, optimizer::Union{Nothing, AbstractOptimizer} = nothing; kwargs...)
     optimize!(LeastSquaresProblemAllocated(nls, optimizer); kwargs...)
 end
@@ -165,7 +217,7 @@ end
 ##
 ##############################################################################
 
-struct LeastSquaresResult{Tx}
+struct LeastSquaresResult{Tx, TJ}
     optimizer::String
     minimizer::Tx
     ssr::Float64
@@ -181,10 +233,11 @@ struct LeastSquaresResult{Tx}
     f_calls::Int
     g_calls::Int
     mul_calls::Int
+    jacobian::TJ
 end
 
-function LeastSquaresResult(optimizer::String, minimizer, ssr::Real, iterations::Int, converged::Bool, x_converged::Bool, x_tol::Real, f_converged::Bool, f_tol::Real, g_converged::Bool, g_tol::Real, tr::OptimizationTrace, f_calls::Int, g_calls::Int, mul_calls::Int)
-    LeastSquaresResult(optimizer, minimizer, convert(Float64, ssr), iterations, converged, x_converged, convert(Float64, x_tol), f_converged, convert(Float64, f_tol), g_converged, convert(Float64, g_tol), tr, f_calls, g_calls, mul_calls)
+function LeastSquaresResult(optimizer::String, minimizer, ssr::Real, iterations::Int, converged::Bool, x_converged::Bool, x_tol::Real, f_converged::Bool, f_tol::Real, g_converged::Bool, g_tol::Real, tr::OptimizationTrace, f_calls::Int, g_calls::Int, mul_calls::Int, jacobian)
+    LeastSquaresResult(optimizer, minimizer, convert(Float64, ssr), iterations, converged, x_converged, convert(Float64, x_tol), f_converged, convert(Float64, f_tol), g_converged, convert(Float64, g_tol), tr, f_calls, g_calls, mul_calls, jacobian)
 end
 
 function converged(r::LeastSquaresResult)
@@ -194,16 +247,23 @@ end
 
 function Base.show(io::IO, r::LeastSquaresResult)
     @printf io "Results of Optimization Algorithm\n"
-    @printf io " * Algorithm: %s\n" r.optimizer
-    @printf io " * Minimizer: [%s]\n" join(r.minimizer, ",")
-    @printf io " * Sum of squares at Minimum: %f\n" r.ssr
-    @printf io " * Iterations: %d\n" r.iterations
-    @printf io " * Convergence: %s\n" converged(r)
-    @printf io " * |x - x'| < %.1e: %s\n" r.x_tol r.x_converged
-    @printf io " * |f(x) - f(x')| / |f(x)| < %.1e: %s\n" r.f_tol r.f_converged
-    @printf io " * |g(x)| < %.1e: %s\n" r.g_tol r.g_converged
-    @printf io " * Function Calls: %d\n" r.f_calls
-    @printf io " * Gradient Calls: %d\n" r.g_calls
-    @printf io " * Multiplication Calls: %d\n" r.mul_calls
+    @printf io " * Status: %s\n" (converged(r) ? "success" : "failure (reached maximum number of iterations)")
+    @printf io "\n"
+    @printf io " * Candidate solution\n"
+    @printf io "    Final objective value:     %.6e\n" r.ssr
+    @printf io "\n"
+    @printf io " * Found with\n"
+    @printf io "    Algorithm:     %s\n" r.optimizer
+    @printf io "\n"
+    @printf io " * Convergence measures\n"
+    @printf io "    |x - x'|               %s %.1e\n" (r.x_converged ? "≤" : "≰") r.x_tol
+    @printf io "    |f(x) - f(x')| / |f(x)| %s %.1e\n" (r.f_converged ? "≤" : "≰") r.f_tol
+    @printf io "    |g(x)|                 %s %.1e\n" (r.g_converged ? "≤" : "≰") r.g_tol
+    @printf io "\n"
+    @printf io " * Work counters\n"
+    @printf io "    Iterations:    %d\n" r.iterations
+    @printf io "    f(x) calls:    %d\n" r.f_calls
+    @printf io "    J(x) calls:    %d\n" r.g_calls
+    @printf io "    mul! calls:    %d\n" r.mul_calls
     return
 end

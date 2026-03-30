@@ -39,3 +39,8 @@ function rosenbrock_g!(J, x)
     J[2, 2] = 100
 end
 optimize!(LeastSquaresProblem(x = zeros(2), f! = rosenbrock_f!, g! = rosenbrock_g!, output_length = 2), Dogleg())
+
+# test scalar-valued function with multiple parameters (issue #41)
+func(x) = sum(x.^2)
+optimize(func, [1.0, 1.0], Dogleg())
+optimize(func, [1.0, 1.0], LevenbergMarquardt())

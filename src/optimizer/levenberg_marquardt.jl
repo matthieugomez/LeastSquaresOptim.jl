@@ -136,5 +136,5 @@ function optimize!(
     end
     LeastSquaresResult("LevenbergMarquardt", x, ssr, iter, converged,
                         x_converged, x_tol, f_converged, f_tol, g_converged, g_tol, tr,
-                        f_calls, g_calls, mul_calls)
+                        f_calls, g_calls, mul_calls, J)
 end

@@ -189,6 +189,6 @@ function optimize!(
        tracing && update!(tr, iter, ssr, maxabs_gr, store_trace, show_trace, show_every) 
     end
     LeastSquaresResult("Dogleg", x, ssr, iter, converged,
-                        x_converged, x_tol, f_converged, f_tol, g_converged, g_tol, tr, 
-                        f_calls, g_calls, mul_calls)
+                        x_converged, x_tol, f_converged, f_tol, g_converged, g_tol, tr,
+                        f_calls, g_calls, mul_calls, J)
 end

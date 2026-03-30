@@ -17,7 +17,17 @@ x0 = zeros(2)
 optimize(rosenbrock, x0, Dogleg())
 optimize(rosenbrock, x0, LevenbergMarquardt())
 ```
-You can also add the options : `x_tol`, `f_tol`, `g_tol`, `iterations`, `Δ` (initial radius), `autodiff` (`:central` to use finite difference method or `:forward` to use ForwardDiff package) as well as `lower` / `upper` arguments to impose boundary constraints.
+You can also pass the following keyword arguments:
+- `x_tol = 1e-8`: Convergence tolerance on parameter changes.
+- `f_tol = 1e-8`: Convergence tolerance on objective change.
+- `g_tol = 1e-8`: Convergence tolerance on gradient.
+- `iterations = 1_000`: Maximum number of iterations.
+- `Δ`: Initial trust region radius (`1.0` for `Dogleg`, `10.0` for `LevenbergMarquardt`).
+- `autodiff = :central`: Automatic differentiation method (`:central` for finite differences, `:forward` for `ForwardDiff.jl`).
+- `lower`, `upper`: Vectors of lower/upper bounds on parameters (empty by default, i.e. no bounds).
+- `store_trace = false`: Store the optimization trace.
+- `show_trace = false`: Print the optimization trace during iteration.
+- `show_every = 1`: Print trace every `show_every` iterations.
 
 
 ## Choice of Optimizer / Least Square Solver

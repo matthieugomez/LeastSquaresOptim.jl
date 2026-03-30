@@ -7,7 +7,7 @@ struct DenseQRAllocatedSolver{Tqr <: StridedMatrix, Tu <: AbstractVector} <: Abs
     qrm::Tqr
     u::Tu
     function DenseQRAllocatedSolver{Tqr, Tu}(qrm, u) where {Tqr <: StridedMatrix, Tu <: AbstractVector}
-        length(u) == size(qrm, 1) || throw(DimensionMismatch("u must have length size(J, 1)"))
+        length(u) >= size(qrm, 1) || throw(DimensionMismatch("u must have length >= size(J, 1)"))
         new(qrm, u)
     end
 end
@@ -23,13 +23,17 @@ end
 ##############################################################################
 
 function AbstractAllocatedSolver(nls::LeastSquaresProblem{Tx, Ty, Tf, TJ, Tg}, optimizer::Dogleg{QR}) where {Tx, Ty, Tf, TJ <: StridedVecOrMat, Tg}
-    return DenseQRAllocatedSolver(similar(nls.J), _zeros(nls.y))
+    m, n = size(nls.J)
+    return DenseQRAllocatedSolver(similar(nls.J), zeros(eltype(nls.y), max(m, n)))
 end
 
 function LinearAlgebra.ldiv!(x::AbstractVector, J::StridedMatrix,  y::AbstractVector, A::DenseQRAllocatedSolver)
     u, qrm = A.u, A.qrm
     copyto!(qrm, J)
-    copyto!(u, y)
+    fill!(u, zero(eltype(u)))
+    for i in 1:length(y)
+        u[i] = y[i]
+    end
     ldiv!(qr!(qrm, ColumnNorm()), u)
     for i in 1:length(x)
         x[i] = u[i]
