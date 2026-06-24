@@ -11,12 +11,15 @@ function assess_convergence(δx,
                             trial_ssr,
                             xtol::Real,
                             ftol::Real,
-                            grtol::Real)
+                            grtol::Real,
+                            step_accepted::Bool)
 
 
     x_converged, f_converged, gr_converged = false, false, false
-    maxabs_x = maximum(abs, x)
-    if abs(trial_ssr - ssr) <= ftol * (abs(ssr) + ftol) 
+    # The objective-change criterion is only meaningful for a step we actually
+    # took: on a rejected step trial_ssr ≈ ssr signals a poor local model (the
+    # trust region must shrink and retry), not convergence.
+    if step_accepted && abs(trial_ssr - ssr) <= ftol * (abs(ssr) + ftol)
         f_converged = true
     elseif maximum(abs, δx) <= xtol
             x_converged = true

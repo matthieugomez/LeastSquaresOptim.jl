@@ -44,3 +44,27 @@ optimize!(LeastSquaresProblem(x = zeros(2), f! = rosenbrock_f!, g! = rosenbrock_
 func(x) = sum(x.^2)
 optimize(func, [1.0, 1.0], Dogleg())
 optimize(func, [1.0, 1.0], LevenbergMarquardt())
+
+
+# --- regression tests ---
+using Test
+
+# When J is supplied but y/output_length are omitted, output_length must default
+# to the residual length size(J, 1), not size(J, 2) (only equal for square J).
+let
+    overdetermined!(out, x) = (out .= [x[1] - 1, x[2] - 2, x[3] - 3, x[1] + x[2], x[2] + x[3]])
+    J = zeros(5, 3)
+    p = LeastSquaresProblem(x = zeros(3), f! = overdetermined!, J = J)
+    @test length(p.y) == 5
+    r = optimize!(p, Dogleg())
+    @test r.converged
+end
+
+# store_trace = true must populate a trace of OptimizationState
+let
+    r = optimize(rosenbrock, zeros(2), LevenbergMarquardt(); store_trace = true)
+    @test eltype(r.tr.states) == LeastSquaresOptim.OptimizationState
+    @test length(r.tr.states) >= 1
+    r = optimize(rosenbrock, zeros(2), Dogleg(); store_trace = true)
+    @test length(r.tr.states) >= 1
+end

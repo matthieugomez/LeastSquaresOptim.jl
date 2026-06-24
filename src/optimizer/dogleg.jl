@@ -83,6 +83,10 @@ function optimize!(
             g!(J, x)
             g_calls += 1
             colsumabs2!(dtd, J)
+            # Keep the diagonal strictly positive: dtd is the trust-region metric and
+            # also the scaling of the steepest-descent direction below (which divides
+            # by it). Unlike LevenbergMarquardt, where dtd is an additive regulariser,
+            # an absolute floor here is intentional and empirically more robust.
             clamp!(dtd, MIN_DIAGONAL, MAX_DIAGONAL)
 
             if iter == 1
@@ -91,15 +95,18 @@ function optimize!(
                     Δ *= wnorm_x
                 end
             end
-            # compute (opposite) gradient
+            # compute gradient g = J'f
             mul!(δgr, J', fcur, one(eTx), zero(eTx))
             mul_calls += 1
             maxabs_gr = maximum(abs, δgr)
+            # Steepest-descent direction in the dtd-scaled trust-region metric is
+            # D⁻¹g (not the raw gradient g): this keeps the Cauchy leg consistent
+            # with the wnorm(·, dtd) ball and the Gauss-Newton step. Store it in δgr.
+            map!(/, δgr, δgr, dtd)
             wnorm_δgr = wnorm(δgr, dtd)
 
-            # compute Cauchy point
-            map!((x, y) -> x * sqrt(y), δgn, δgr, dtd)
-            mul!(fpredict, J, δgn, one(eTy), zero(eTy))
+            # compute Cauchy point a = α δgr, with α = ‖δgr‖²_D / ‖J δgr‖²
+            mul!(fpredict, J, δgr, one(eTy), zero(eTy))
             mul_calls += 1
             α = wnorm_δgr^2 / sum(abs2, fpredict)
 
@@ -166,11 +173,13 @@ function optimize!(
         axpy!(-one(eTy), fcur, fpredict)
         predicted_ssr = sum(abs2, fpredict)
 
-        ρ = (ssr - trial_ssr) / abs(ssr - predicted_ssr)
-        x_converged, f_converged, g_converged, converged = 
-            assess_convergence(δx, x, maxabs_gr, ssr, trial_ssr, x_tol, f_tol, g_tol)
+        predicted_reduction = abs(ssr - predicted_ssr)
+        ρ = predicted_reduction > 0 ? (ssr - trial_ssr) / predicted_reduction : zero(ssr)
+        step_accepted = ρ >= MIN_STEP_QUALITY
+        x_converged, f_converged, g_converged, converged =
+            assess_convergence(δx, x, maxabs_gr, ssr, trial_ssr, x_tol, f_tol, g_tol, step_accepted)
 
-        if ρ >= MIN_STEP_QUALITY
+        if step_accepted
             # Successful iteration
             reuse = false
             copyto!(fcur, ftrial)
