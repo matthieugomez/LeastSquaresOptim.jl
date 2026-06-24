@@ -97,6 +97,11 @@ function optimize!(
             end
         end
         mul_calls += lmiter
+        # gradient J'f at the current point, projected onto the active bounds for
+        # the (KKT) convergence test; evaluated here, before x is moved below.
+        mul!(dtd, J', fcur, one(eTx), zero(eTx))
+        mul_calls += 1
+        maxabs_gr = maxabs_projected_gradient(dtd, x, lower, upper)
         #update x
         axpy!(-one(eTx), δx, x)
         f!(ftrial, x)
@@ -112,9 +117,6 @@ function optimize!(
         predicted_ssr = sum(abs2, fpredict)
         predicted_reduction = abs(ssr - predicted_ssr)
         ρ = predicted_reduction > 0 ? (ssr - trial_ssr) / predicted_reduction : zero(ssr)
-        mul!(dtd, J', fcur, one(eTx), zero(eTx))
-        maxabs_gr = maximum(abs, dtd)
-        mul_calls += 1
 
 
         step_accepted = ρ > MIN_STEP_QUALITY

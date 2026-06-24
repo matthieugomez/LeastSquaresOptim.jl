@@ -30,6 +30,30 @@ function assess_convergence(δx,
     return x_converged, f_converged, gr_converged, converged
 end
 
+# Maximum-norm of the gradient g = J'f projected onto the active box bounds
+# l ≤ x ≤ u. A coordinate sitting at a bound whose gradient points further out of
+# the box is at a (local) KKT point and is dropped; every other coordinate keeps
+# g[i]. This makes the g_tol test reflect constrained stationarity instead of the
+# raw gradient (which never vanishes when a bound is active). With no bounds it
+# reduces to maximum(abs, g), so the unconstrained path is unchanged.
+function maxabs_projected_gradient(g, x, lower, upper)
+    haslower = !isempty(lower)
+    hasupper = !isempty(upper)
+    (haslower || hasupper) || return maximum(abs, g)
+    m = abs(zero(eltype(g)))
+    @inbounds for i in eachindex(g)
+        gi = g[i]
+        if haslower && x[i] <= lower[i] && gi > zero(gi)
+            gi = zero(gi)
+        elseif hasupper && x[i] >= upper[i] && gi < zero(gi)
+            gi = zero(gi)
+        end
+        a = abs(gi)
+        a > m && (m = a)
+    end
+    return m
+end
+
 ###############################################################################
 ##
 ## Finite Exception

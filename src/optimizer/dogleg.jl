@@ -95,10 +95,10 @@ function optimize!(
                     Δ *= wnorm_x
                 end
             end
-            # compute gradient g = J'f
+            # compute gradient g = J'f, and its bound-projected ∞-norm (KKT test)
             mul!(δgr, J', fcur, one(eTx), zero(eTx))
             mul_calls += 1
-            maxabs_gr = maximum(abs, δgr)
+            maxabs_gr = maxabs_projected_gradient(δgr, x, lower, upper)
             # Steepest-descent direction in the dtd-scaled trust-region metric is
             # D⁻¹g (not the raw gradient g): this keeps the Cauchy leg consistent
             # with the wnorm(·, dtd) ball and the Gauss-Newton step. Store it in δgr.
