@@ -97,6 +97,11 @@ function optimize!(
             end
         end
         mul_calls += lmiter
+        # gradient J'f at the current point, projected onto the active bounds for
+        # the (KKT) convergence test; evaluated here, before x is moved below.
+        mul!(dtd, J', fcur, one(eTx), zero(eTx))
+        mul_calls += 1
+        maxabs_gr = maxabs_projected_gradient(dtd, x, lower, upper)
         #update x
         axpy!(-one(eTx), δx, x)
         f!(ftrial, x)
@@ -110,16 +115,15 @@ function optimize!(
         mul_calls += 1
         axpy!(-one(eTy), fcur, fpredict)
         predicted_ssr = sum(abs2, fpredict)
-        ρ = (ssr - trial_ssr) / abs(ssr - predicted_ssr)
-        mul!(dtd, J', fcur, one(eTx), zero(eTx))
-        maxabs_gr = maximum(abs, dtd)
-        mul_calls += 1
+        predicted_reduction = abs(ssr - predicted_ssr)
+        ρ = predicted_reduction > 0 ? (ssr - trial_ssr) / predicted_reduction : zero(ssr)
 
 
+        step_accepted = ρ > MIN_STEP_QUALITY
         x_converged, f_converged, g_converged, converged =
-            assess_convergence(δx, x, maxabs_gr, ssr, trial_ssr, x_tol, f_tol, g_tol)
+            assess_convergence(δx, x, maxabs_gr, ssr, trial_ssr, x_tol, f_tol, g_tol, step_accepted)
 
-        if ρ > MIN_STEP_QUALITY
+        if step_accepted
             copyto!(fcur, ftrial)
             ssr = trial_ssr
             # increase trust region radius (from Ceres solver)

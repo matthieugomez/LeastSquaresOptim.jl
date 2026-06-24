@@ -43,7 +43,7 @@ function LeastSquaresProblem(;x = error("initial x required"), y = nothing, f! =
             if isnothing(J)
                 error("specify J or output_length")
             else
-                output_length = size(J, 2)
+                output_length = size(J, 1)
             end
         end
         y = zeros(eltype(x), output_length)
